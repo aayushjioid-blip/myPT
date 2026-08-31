@@ -1,0 +1,1336 @@
+{
+    "project": {
+        "name": "Fitness Trainer Platform",
+        "working_title": "FitTrainer",
+        "version": "1.0",
+        "status": "MVP_SPECIFICATION",
+        "description": "A trainer-first fitness management platform for independent personal trainers, with support for future gym-based organizations, head trainers, trainers and clients.",
+        "primary_platform": "mobile",
+        "recommended_frontend": "Flutter",
+        "recommended_backend": "Supabase",
+        "recommended_database": "PostgreSQL",
+        "recommended_storage": "Supabase Storage",
+        "recommended_web_deployment": "Vercel",
+        "themes": [
+            "light",
+            "dark"
+        ]
+    },
+    "product_principles": [
+        "The platform is trainer-first rather than gym-first.",
+        "A trainer can operate independently without belonging to a gym.",
+        "A trainer may later associate with one or more gyms.",
+        "A client must have an accepted trainer relationship before accessing trainer-specific functionality.",
+        "Clients cannot independently switch trainers when operating under an independent trainer.",
+        "Within a gym, the head trainer or authorized gym management can reassign clients.",
+        "A completed personal training session consumes exactly one package session credit.",
+        "Cancelled, rescheduled or no-show sessions do not consume a session credit unless a configured cancellation policy applies.",
+        "Own workouts performed by clients never consume personal training credits.",
+        "Database-level authorization must enforce all role permissions.",
+        "Feature flags controlled by Super Admin should allow future functionality to be enabled without redesigning the application."
+    ],
+    "roles": {
+        "SUPER_ADMIN": {
+            "description": "Platform administrator with global control.",
+            "scope": "GLOBAL"
+        },
+        "GYM_MANAGER": {
+            "description": "Person responsible for managing a gym organization.",
+            "scope": "GYM"
+        },
+        "HEAD_TRAINER": {
+            "description": "Senior trainer responsible for managing trainers and client assignments within a gym.",
+            "scope": "GYM"
+        },
+        "TRAINER": {
+            "description": "Personal trainer who can independently manage clients or work under one or more gyms.",
+            "scope": "TRAINER_OR_GYM"
+        },
+        "CLIENT": {
+            "description": "End customer receiving personal training services.",
+            "scope": "SELF"
+        }
+    },
+    "organization_model": {
+        "organization_types": [
+            "INDEPENDENT_TRAINER",
+            "GYM"
+        ],
+        "independent_model": {
+            "trainer_required": true,
+            "gym_required": false
+        },
+        "gym_model": {
+            "gym_required": true,
+            "roles": [
+                "GYM_MANAGER",
+                "HEAD_TRAINER",
+                "TRAINER",
+                "CLIENT"
+            ]
+        },
+        "trainer_membership": {
+            "can_be_independent": true,
+            "can_belong_to_multiple_gyms": true
+        }
+    },
+    "authentication": {
+        "methods": [
+            "MOBILE_OTP",
+            "GOOGLE"
+        ],
+        "signup_roles": [
+            "TRAINER",
+            "GYM_MANAGER",
+            "CLIENT"
+        ],
+        "test_accounts": {
+            "enabled": true,
+            "bypass_payment": true,
+            "bypass_subscription": true,
+            "bypass_trial_restrictions": true,
+            "bypass_verification": true
+        }
+    },
+    "trainer_onboarding": {
+        "steps": [
+            "authentication",
+            "basic_profile",
+            "professional_profile",
+            "specializations",
+            "services",
+            "availability",
+            "payment_information",
+            "trial_or_subscription",
+            "profile_completion"
+        ],
+        "profile_fields": [
+            "name",
+            "profile_photo",
+            "bio",
+            "experience_years",
+            "certifications",
+            "specializations",
+            "languages",
+            "location",
+            "training_style",
+            "services",
+            "contact_information"
+        ],
+        "verification": {
+            "required_for_app_usage": false,
+            "required_for_public_discovery": true,
+            "admin_controlled": true
+        }
+    },
+    "client_onboarding": {
+        "steps": [
+            "authentication",
+            "basic_profile",
+            "optional_personal_information",
+            "trainer_discovery"
+        ],
+        "personal_information": {
+            "enabled_by_super_admin": true,
+            "client_opt_in_required": true,
+            "sharing_label": "Share with my trainer",
+            "fields": [
+                "age",
+                "height",
+                "weight",
+                "fitness_goal",
+                "fitness_level",
+                "injuries",
+                "medical_information",
+                "exercise_restrictions",
+                "dietary_information",
+                "emergency_contact"
+            ]
+        },
+        "trainer_access": {
+            "required": true,
+            "accepted_relationship_required": true
+        }
+    },
+    "trainer_discovery": {
+        "enabled": true,
+        "mvp_methods": [
+            "SEARCH_BY_NAME",
+            "TRAINER_LIST",
+            "QR_CODE",
+            "TRAINER_CODE"
+        ],
+        "advanced_search": {
+            "feature_flag": "advanced_trainer_search",
+            "default_enabled": false,
+            "controlled_by": "SUPER_ADMIN",
+            "future_filters": [
+                "location",
+                "experience",
+                "specialization",
+                "training_type",
+                "availability",
+                "price_range",
+                "gender",
+                "language"
+            ]
+        },
+        "visibility_rules": {
+            "verified_trainers": "PUBLIC_DISCOVERY",
+            "unverified_trainers": "NOT_PUBLICLY_DISCOVERABLE",
+            "unverified_trainers_can_use_app": true
+        }
+    },
+    "trainer_profile": {
+        "public_profile": {
+            "fields": [
+                "profile_photo",
+                "name",
+                "bio",
+                "experience",
+                "certifications",
+                "specializations",
+                "languages",
+                "location",
+                "training_style",
+                "services",
+                "packages",
+                "pricing",
+                "availability",
+                "reviews",
+                "rating",
+                "verification_status"
+            ]
+        },
+        "trainer_qr": {
+            "enabled": true,
+            "purpose": "Client can scan QR to identify trainer."
+        },
+        "trainer_code": {
+            "enabled": true,
+            "unique_per_trainer": true
+        }
+    },
+    "client_trainer_relationship": {
+        "initial_relationship": "ONE_ACTIVE_TRAINER",
+        "relationship_states": [
+            "REQUESTED",
+            "PENDING",
+            "ACCEPTED",
+            "REJECTED",
+            "SUSPENDED",
+            "ENDED",
+            "REASSIGNED"
+        ],
+        "independent_trainer": {
+            "client_can_switch_trainer": false,
+            "trainer_can_reassign": false
+        },
+        "gym": {
+            "client_can_switch_trainer": false,
+            "head_trainer_can_reassign": true,
+            "gym_manager_can_reassign": true
+        },
+        "history": {
+            "preserve_previous_trainer_history": true
+        }
+    },
+    "consultation_flow": {
+        "purpose": "Allow a prospective client to express interest in a trainer before purchasing a package.",
+        "flow": [
+            "CLIENT_VIEWS_TRAINER",
+            "CLIENT_VIEWS_SERVICES",
+            "CLIENT_VIEWS_PACKAGES",
+            "CLIENT_CLICKS_INTERESTED",
+            "CONSULTATION_REQUEST_CREATED",
+            "TRAINER_RECEIVES_NOTIFICATION",
+            "TRAINER_ACCEPTS_OR_REJECTS",
+            "TRAINER_AND_CLIENT_DISCUSS_REQUIREMENTS",
+            "TRAINER_APPROVES_CLIENT",
+            "CLIENT_SELECTS_PACKAGE",
+            "CLIENT_COMPLETES_PAYMENT",
+            "PACKAGE_ACTIVATED"
+        ],
+        "mvp": {
+            "calendar_based_consultation": false,
+            "consultation_as_request": true
+        }
+    },
+    "packages": {
+        "created_by": [
+            "TRAINER",
+            "HEAD_TRAINER"
+        ],
+        "fields": [
+            "name",
+            "description",
+            "number_of_sessions",
+            "price",
+            "validity_days",
+            "validity_mode",
+            "session_duration",
+            "status"
+        ],
+        "validity": {
+            "default_mode": "SESSIONS_MULTIPLIED_BY_4",
+            "customization": true,
+            "supported_modes": [
+                "SESSIONS_MULTIPLIED_BY_4",
+                "SESSIONS_MULTIPLIED_BY_3",
+                "FIXED_DAYS",
+                "CUSTOM"
+            ],
+            "example": {
+                "sessions": 10,
+                "default_validity_days": 40
+            }
+        },
+        "package_status": [
+            "DRAFT",
+            "ACTIVE",
+            "INACTIVE",
+            "EXPIRED",
+            "SOLD_OUT"
+        ]
+    },
+    "package_purchase": {
+        "preconditions": [
+            "CLIENT_HAS_ACCEPTED_TRAINER_RELATIONSHIP",
+            "TRAINER_APPROVED_CLIENT",
+            "PACKAGE_IS_ACTIVE"
+        ],
+        "flow": [
+            "CLIENT_SELECTS_PACKAGE",
+            "PAYMENT_METHOD_DISPLAYED",
+            "CLIENT_MAKES_PAYMENT",
+            "CLIENT_SUBMITS_PAYMENT_CONFIRMATION",
+            "PAYMENT_STATUS_PENDING_VERIFICATION",
+            "TRAINER_VERIFIES_PAYMENT",
+            "PACKAGE_ACTIVATED"
+        ],
+        "session_balance": {
+            "initial_balance": "NUMBER_OF_PURCHASED_SESSIONS",
+            "decrement_condition": "SESSION_COMPLETED",
+            "zero_balance_blocks_new_pt_booking": true
+        }
+    },
+    "payments": {
+        "mvp": {
+            "online_gateway": false,
+            "offline_payment": true
+        },
+        "offline_payment_methods": [
+            "UPI_ID",
+            "MOBILE_NUMBER"
+        ],
+        "payment_flow": [
+            "DISPLAY_TRAINER_PAYMENT_DETAILS",
+            "CLIENT_PAYS_EXTERNALLY",
+            "CLIENT_CLICKS_I_HAVE_PAID",
+            "PAYMENT_PENDING_VERIFICATION",
+            "TRAINER_VERIFIES",
+            "PACKAGE_ACTIVATED"
+        ],
+        "payment_status": [
+            "PENDING",
+            "VERIFICATION_REQUIRED",
+            "PAID",
+            "REJECTED",
+            "REFUNDED"
+        ],
+        "future_online_payments": {
+            "feature_flag": "online_payments_enabled",
+            "default": false,
+            "controlled_by": "SUPER_ADMIN"
+        },
+        "payment_history": {
+            "client_access": true,
+            "trainer_access": true,
+            "super_admin_access": true
+        }
+    },
+    "sessions": {
+        "session_types": [
+            "PERSONAL_TRAINING",
+            "OWN_WORKOUT"
+        ],
+        "personal_training": {
+            "consumes_package_credit": true
+        },
+        "own_workout": {
+            "consumes_package_credit": false,
+            "label": "Own Workout"
+        },
+        "statuses": [
+            "REQUESTED",
+            "CONFIRMED",
+            "SCHEDULED",
+            "IN_PROGRESS",
+            "COMPLETED",
+            "CANCELLED",
+            "RESCHEDULED",
+            "NO_SHOW"
+        ],
+        "credit_rules": {
+            "completed": true,
+            "client_cancelled": false,
+            "trainer_cancelled": false,
+            "client_no_show": false,
+            "trainer_no_show": false,
+            "rescheduled": false,
+            "own_workout": false
+        }
+    },
+    "cancellation_policy": {
+        "configurable_by_trainer": true,
+        "modes": [
+            "NO_PENALTY",
+            "FOUR_HOUR_POLICY",
+            "CUSTOM"
+        ],
+        "four_hour_policy": {
+            "cancelled_at_least_four_hours_before": {
+                "deduct_credit": false
+            },
+            "cancelled_within_four_hours": {
+                "deduct_credit": true
+            }
+        },
+        "default": "NO_PENALTY"
+    },
+    "booking": {
+        "flow": [
+            "CLIENT_SELECTS_DATE",
+            "CLIENT_SELECTS_TIME",
+            "SYSTEM_CHECKS_TRAINER_AVAILABILITY",
+            "SYSTEM_CHECKS_CAPACITY",
+            "SYSTEM_CHECKS_ACTIVE_PACKAGE",
+            "SYSTEM_CHECKS_REMAINING_SESSIONS",
+            "CLIENT_SUBMITS_REQUEST",
+            "TRAINER_RECEIVES_REQUEST",
+            "TRAINER_ACCEPTS",
+            "SESSION_CONFIRMED"
+        ],
+        "automatic_confirmation": false,
+        "preconditions": [
+            "ACTIVE_TRAINER_RELATIONSHIP",
+            "ACTIVE_PACKAGE",
+            "REMAINING_SESSIONS_GREATER_THAN_ZERO",
+            "TRAINER_AVAILABLE",
+            "CAPACITY_AVAILABLE"
+        ]
+    },
+    "trainer_capacity": {
+        "configurable": true,
+        "time_dependent": true,
+        "example": {
+            "17:00-18:00": 3,
+            "18:00-19:00": 2,
+            "19:00-20:00": 3,
+            "20:00-21:00": 0
+        },
+        "rule": "BOOKING_CANNOT_EXCEED_CONFIGURED_CAPACITY"
+    },
+    "trainer_availability": {
+        "configurable": true,
+        "fields": [
+            "day",
+            "start_time",
+            "end_time",
+            "capacity"
+        ],
+        "features": [
+            "working_hours",
+            "blocked_slots",
+            "breaks",
+            "recurring_availability",
+            "capacity"
+        ]
+    },
+    "recurring_sessions": {
+        "enabled": true,
+        "examples": [
+            "EVERY_MONDAY",
+            "EVERY_WEDNESDAY",
+            "EVERY_FRIDAY"
+        ],
+        "configuration": [
+            "frequency",
+            "days",
+            "time",
+            "end_date",
+            "number_of_occurrences"
+        ]
+    },
+    "workout_system": {
+        "exercise_library": {
+            "global_library": true,
+            "trainer_custom_exercises": true,
+            "categories": [
+                "CHEST",
+                "BACK",
+                "SHOULDERS",
+                "BICEPS",
+                "TRICEPS",
+                "FOREARMS",
+                "QUADRICEPS",
+                "HAMSTRINGS",
+                "GLUTES",
+                "HIPS",
+                "CALVES",
+                "CORE",
+                "FULL_BODY"
+            ],
+            "exercise_fields": [
+                "name",
+                "description",
+                "target_muscles",
+                "equipment",
+                "exercise_type",
+                "difficulty",
+                "instructions",
+                "media"
+            ],
+            "equipment_examples": [
+                "DUMBBELLS",
+                "BARBELL",
+                "CABLE",
+                "MACHINE",
+                "BODYWEIGHT",
+                "KETTLEBELL",
+                "RESISTANCE_BAND"
+            ],
+            "exercise_types": [
+                "COMPOUND",
+                "ISOLATION",
+                "BODYWEIGHT",
+                "CARDIO",
+                "MOBILITY",
+                "STRETCHING"
+            ]
+        },
+        "workout_template": {
+            "enabled": true,
+            "fields": [
+                "name",
+                "description",
+                "exercises",
+                "trainer_notes"
+            ]
+        },
+        "exercise_logging": {
+            "fields": [
+                "sets",
+                "repetitions",
+                "weight",
+                "duration",
+                "rest_time",
+                "notes"
+            ]
+        },
+        "workout_assignment": {
+            "trainer_can_assign": true,
+            "client_can_view_upcoming_workout": true,
+            "upcoming_workout_visibility_optional": true
+        },
+        "own_workouts": {
+            "client_can_create": true,
+            "label": "Own Workout",
+            "consumes_pt_credit": false
+        }
+    },
+    "progress_tracking": {
+        "enabled": true,
+        "measurements": [
+            "weight",
+            "height",
+            "bmi",
+            "body_fat_percentage",
+            "chest",
+            "waist",
+            "hips",
+            "biceps",
+            "thighs",
+            "calves",
+            "neck"
+        ],
+        "measurement_history": true,
+        "progress_charts": true,
+        "progress_photos": {
+            "enabled": true,
+            "mandatory": false,
+            "recommended_views": [
+                "FRONT",
+                "SIDE",
+                "BACK"
+            ]
+        }
+    },
+    "reviews": {
+        "enabled": true,
+        "eligibility": {
+            "minimum_completed_pt_sessions": 1
+        },
+        "fields": [
+            "rating",
+            "review_text"
+        ],
+        "trainer_can_view": true,
+        "client_can_edit": false,
+        "super_admin_can_moderate": true
+    },
+    "notifications": {
+        "mvp_channels": [
+            "PUSH"
+        ],
+        "future_channels": [
+            "WHATSAPP"
+        ],
+        "events": [
+            "TRAINER_REQUEST_RECEIVED",
+            "TRAINER_REQUEST_ACCEPTED",
+            "TRAINER_REQUEST_REJECTED",
+            "CONSULTATION_REQUEST_RECEIVED",
+            "BOOKING_REQUEST_RECEIVED",
+            "BOOKING_CONFIRMED",
+            "BOOKING_CANCELLED",
+            "SESSION_REMINDER",
+            "WORKOUT_ASSIGNED",
+            "WORKOUT_UPDATED",
+            "PACKAGE_ACTIVATED",
+            "PAYMENT_PENDING_VERIFICATION",
+            "PAYMENT_VERIFIED",
+            "SESSIONS_LOW",
+            "SESSIONS_REMAINING_ONE",
+            "SESSIONS_EXHAUSTED",
+            "PACKAGE_EXPIRING",
+            "TRAINER_REASSIGNED"
+        ],
+        "low_session_threshold": [
+            2,
+            1,
+            0
+        ]
+    },
+    "trial": {
+        "enabled": true,
+        "default_duration_days": 365,
+        "payment_method_required": false,
+        "payment_requirement": {
+            "feature_flag": "trial_payment_requirement",
+            "default": false,
+            "controlled_by": "SUPER_ADMIN"
+        },
+        "profile_display": {
+            "show_days_remaining": true
+        }
+    },
+    "feature_flags": {
+        "advanced_trainer_search": {
+            "default": false,
+            "admin_controlled": true
+        },
+        "online_payments": {
+            "default": false,
+            "admin_controlled": true
+        },
+        "trial_payment_requirement": {
+            "default": false,
+            "admin_controlled": true
+        },
+        "client_personal_information": {
+            "default": true,
+            "admin_controlled": true
+        },
+        "trainer_reviews": {
+            "default": true,
+            "admin_controlled": true
+        },
+        "whatsapp_notifications": {
+            "default": false,
+            "admin_controlled": true
+        },
+        "subscription_enforcement": {
+            "default": false,
+            "admin_controlled": true
+        }
+    },
+    "trainer_dashboard": {
+        "navigation": [
+            "HOME",
+            "CLIENTS",
+            "CALENDAR",
+            "WORKOUTS",
+            "MORE",
+            "PROFILE"
+        ],
+        "home_widgets": [
+            "today_sessions",
+            "active_clients",
+            "pending_requests",
+            "revenue",
+            "remaining_sessions_alerts",
+            "upcoming_sessions"
+        ]
+    },
+    "client_dashboard": {
+        "navigation": [
+            "HOME",
+            "WORKOUT",
+            "PROGRESS",
+            "CALENDAR",
+            "PROFILE"
+        ],
+        "home_widgets": [
+            "next_session",
+            "remaining_sessions",
+            "upcoming_workout",
+            "recent_workout",
+            "progress_summary",
+            "package_status",
+            "trainer"
+        ]
+    },
+    "gym_dashboard": {
+        "navigation": [
+            "DASHBOARD",
+            "TRAINERS",
+            "CLIENTS",
+            "CALENDAR",
+            "PACKAGES",
+            "PAYMENTS",
+            "REPORTS",
+            "PROFILE"
+        ],
+        "metrics": [
+            "total_trainers",
+            "active_clients",
+            "sessions_today",
+            "sessions_completed",
+            "revenue",
+            "pending_payments"
+        ]
+    },
+    "super_admin": {
+        "scope": "GLOBAL",
+        "modules": [
+            "USERS",
+            "TRAINERS",
+            "CLIENTS",
+            "GYMS",
+            "HEAD_TRAINERS",
+            "PACKAGES",
+            "EXERCISE_LIBRARY",
+            "REVIEWS",
+            "PAYMENTS",
+            "TRIAL_SETTINGS",
+            "FEATURE_FLAGS",
+            "TEST_ACCOUNTS",
+            "REPORTS",
+            "PLATFORM_SETTINGS"
+        ],
+        "permissions": [
+            "CREATE",
+            "READ",
+            "UPDATE",
+            "DELETE",
+            "VERIFY",
+            "ENABLE_FEATURE",
+            "DISABLE_FEATURE"
+        ]
+    },
+    "permissions": {
+        "SUPER_ADMIN": {
+            "scope": "ALL_DATA",
+            "permissions": "FULL_ACCESS"
+        },
+        "GYM_MANAGER": {
+            "scope": "OWN_GYM",
+            "permissions": [
+                "MANAGE_TRAINERS",
+                "MANAGE_CLIENTS",
+                "VIEW_GYM_DATA",
+                "REASSIGN_CLIENTS",
+                "VIEW_FINANCIAL_DATA",
+                "VIEW_REPORTS"
+            ]
+        },
+        "HEAD_TRAINER": {
+            "scope": "OWN_GYM",
+            "permissions": [
+                "MANAGE_TRAINERS",
+                "MANAGE_ASSIGNED_CLIENTS",
+                "REASSIGN_CLIENTS",
+                "CREATE_WORKOUTS",
+                "EDIT_WORKOUTS",
+                "SCHEDULE_SESSIONS",
+                "START_SESSIONS",
+                "LOG_WORKOUTS"
+            ]
+        },
+        "TRAINER": {
+            "scope": "OWN_CLIENTS",
+            "permissions": [
+                "MANAGE_ASSIGNED_CLIENTS",
+                "CREATE_WORKOUTS",
+                "EDIT_WORKOUTS",
+                "SCHEDULE_SESSIONS",
+                "START_SESSIONS",
+                "LOG_WORKOUTS",
+                "MANAGE_PACKAGES",
+                "MANAGE_AVAILABILITY",
+                "VERIFY_OFFLINE_PAYMENTS",
+                "VIEW_CLIENT_PROGRESS",
+                "VIEW_CLIENT_PERSONAL_INFORMATION_IF_SHARED"
+            ]
+        },
+        "CLIENT": {
+            "scope": "OWN_DATA",
+            "permissions": [
+                "VIEW_PROFILE",
+                "VIEW_TRAINER",
+                "REQUEST_TRAINER",
+                "VIEW_PACKAGES",
+                "REQUEST_CONSULTATION",
+                "PURCHASE_PACKAGE",
+                "REQUEST_BOOKING",
+                "VIEW_WORKOUTS",
+                "CREATE_OWN_WORKOUT",
+                "VIEW_PROGRESS",
+                "UPDATE_PROGRESS",
+                "MAKE_PAYMENT",
+                "VIEW_PAYMENT_HISTORY",
+                "REVIEW_TRAINER"
+            ]
+        }
+    },
+    "database_entities": {
+        "users": [
+            "id",
+            "auth_id",
+            "role",
+            "name",
+            "email",
+            "mobile",
+            "profile_photo",
+            "status",
+            "created_at",
+            "updated_at"
+        ],
+        "trainers": [
+            "id",
+            "user_id",
+            "verification_status",
+            "bio",
+            "experience_years",
+            "certifications",
+            "specializations",
+            "languages",
+            "location",
+            "training_style",
+            "trainer_code",
+            "qr_code",
+            "upi_id",
+            "mobile_payment_number"
+        ],
+        "gyms": [
+            "id",
+            "name",
+            "owner_id",
+            "address",
+            "contact",
+            "status",
+            "created_at"
+        ],
+        "gym_memberships": [
+            "id",
+            "gym_id",
+            "trainer_id",
+            "role",
+            "status"
+        ],
+        "client_trainer_relationships": [
+            "id",
+            "client_id",
+            "trainer_id",
+            "gym_id",
+            "relationship_status",
+            "is_primary",
+            "assigned_by",
+            "start_date",
+            "end_date"
+        ],
+        "trainer_packages": [
+            "id",
+            "trainer_id",
+            "name",
+            "description",
+            "sessions",
+            "price",
+            "validity_days",
+            "validity_mode",
+            "session_duration",
+            "status"
+        ],
+        "client_packages": [
+            "id",
+            "client_id",
+            "trainer_id",
+            "package_id",
+            "purchase_date",
+            "activation_date",
+            "expiry_date",
+            "total_sessions",
+            "completed_sessions",
+            "remaining_sessions",
+            "payment_status",
+            "status"
+        ],
+        "payments": [
+            "id",
+            "client_id",
+            "trainer_id",
+            "package_id",
+            "amount",
+            "payment_method",
+            "payment_status",
+            "transaction_reference",
+            "created_at",
+            "verified_at"
+        ],
+        "sessions": [
+            "id",
+            "client_id",
+            "trainer_id",
+            "gym_id",
+            "client_package_id",
+            "session_type",
+            "scheduled_start",
+            "scheduled_end",
+            "status",
+            "credit_consumed",
+            "cancellation_reason",
+            "notes"
+        ],
+        "workouts": [
+            "id",
+            "trainer_id",
+            "client_id",
+            "name",
+            "description",
+            "workout_type",
+            "template_id",
+            "assigned_date",
+            "status"
+        ],
+        "workout_exercises": [
+            "id",
+            "workout_id",
+            "exercise_id",
+            "sequence",
+            "sets",
+            "repetitions",
+            "weight",
+            "duration",
+            "rest_time",
+            "notes"
+        ],
+        "exercises": [
+            "id",
+            "name",
+            "category",
+            "description",
+            "target_muscles",
+            "equipment",
+            "exercise_type",
+            "difficulty",
+            "instructions",
+            "created_by",
+            "is_global"
+        ],
+        "progress_measurements": [
+            "id",
+            "client_id",
+            "recorded_by",
+            "measurement_date",
+            "weight",
+            "height",
+            "bmi",
+            "body_fat_percentage",
+            "chest",
+            "waist",
+            "hips",
+            "biceps",
+            "thighs",
+            "calves",
+            "neck"
+        ],
+        "progress_photos": [
+            "id",
+            "client_id",
+            "photo_type",
+            "storage_path",
+            "uploaded_at"
+        ],
+        "reviews": [
+            "id",
+            "client_id",
+            "trainer_id",
+            "rating",
+            "review_text",
+            "created_at",
+            "status"
+        ],
+        "notifications": [
+            "id",
+            "user_id",
+            "type",
+            "title",
+            "message",
+            "read",
+            "created_at"
+        ],
+        "feature_flags": [
+            "id",
+            "key",
+            "enabled",
+            "description",
+            "updated_by"
+        ]
+    },
+    "security": {
+        "authentication_required": true,
+        "authorization": {
+            "enforce_at_database_level": true,
+            "technology": "PostgreSQL Row Level Security"
+        },
+        "rules": [
+            "Clients can only access their own private data.",
+            "Trainers can only access assigned client data.",
+            "Trainers can only access personal information explicitly shared by clients.",
+            "Gym managers can only access their gym's data.",
+            "Head trainers can only access their authorized gym scope.",
+            "Super Admin can access all platform data.",
+            "Progress photos must be private by default.",
+            "Personal information must not be publicly discoverable.",
+            "Payment information must be protected from unauthorized users."
+        ]
+    },
+    "design_system": {
+        "style": "Modern premium fitness application",
+        "principles": [
+            "Fitness-first visual identity",
+            "Modern",
+            "Energetic",
+            "Minimal",
+            "Premium",
+            "Mobile-first",
+            "Data-rich without feeling like a CRM"
+        ],
+        "themes": {
+            "light": true,
+            "dark": true,
+            "user_selectable": true,
+            "default": "SYSTEM"
+        },
+        "ui_patterns": [
+            "Large workout cards",
+            "Progress charts",
+            "Metric cards",
+            "Exercise cards",
+            "Calendar cards",
+            "Bottom navigation",
+            "Floating action buttons",
+            "Progress indicators",
+            "Clear CTA buttons",
+            "Minimal forms",
+            "Rounded cards",
+            "Workout-focused layouts"
+        ],
+        "design_priority": [
+            "Workout experience",
+            "Trainer-client interaction",
+            "Progress visualization",
+            "Calendar",
+            "Package/session visibility"
+        ]
+    },
+    "core_screens": {
+        "authentication": [
+            "Splash",
+            "Login",
+            "OTP Verification",
+            "Google Login",
+            "Role Selection"
+        ],
+        "trainer": [
+            "Trainer Dashboard",
+            "Trainer Profile",
+            "Clients",
+            "Client Detail",
+            "Client Progress",
+            "Client Personal Information",
+            "Calendar",
+            "Session Detail",
+            "Workout Library",
+            "Exercise Library",
+            "Workout Template",
+            "Workout Builder",
+            "Package Management",
+            "Payment Verification",
+            "Availability",
+            "Trainer Requests",
+            "Financial Dashboard",
+            "Notifications",
+            "Settings"
+        ],
+        "client": [
+            "Client Dashboard",
+            "Trainer Discovery",
+            "Trainer Search",
+            "Trainer Profile",
+            "Consultation Request",
+            "Package Selection",
+            "Payment",
+            "Payment Confirmation",
+            "My Package",
+            "Calendar",
+            "Upcoming Workout",
+            "Workout Session",
+            "Own Workout",
+            "Workout History",
+            "Progress",
+            "Measurements",
+            "Progress Photos",
+            "Trainer Profile",
+            "Notifications",
+            "Settings"
+        ],
+        "gym": [
+            "Gym Dashboard",
+            "Trainers",
+            "Head Trainer",
+            "Clients",
+            "Client Assignment",
+            "Calendar",
+            "Packages",
+            "Payments",
+            "Reports",
+            "Gym Settings"
+        ],
+        "super_admin": [
+            "Admin Dashboard",
+            "Users",
+            "Trainers",
+            "Gyms",
+            "Clients",
+            "Exercise Library",
+            "Reviews",
+            "Payments",
+            "Feature Flags",
+            "Trial Settings",
+            "Test Accounts",
+            "Platform Settings"
+        ]
+    },
+    "analytics": {
+        "trainer_metrics": [
+            "active_clients",
+            "packages_sold",
+            "sessions_completed",
+            "sessions_cancelled",
+            "revenue",
+            "pending_payments",
+            "client_retention"
+        ],
+        "gym_metrics": [
+            "total_trainers",
+            "active_clients",
+            "sessions_completed",
+            "revenue",
+            "trainer_utilization",
+            "package_sales"
+        ],
+        "client_metrics": [
+            "weight_change",
+            "body_measurement_change",
+            "sessions_completed",
+            "own_workouts",
+            "package_utilization"
+        ]
+    },
+    "test_accounts": {
+        "accounts": [
+            {
+                "role": "SUPER_ADMIN",
+                "email": "admin@test.local"
+            },
+            {
+                "role": "GYM_MANAGER",
+                "email": "gymmanager@test.local"
+            },
+            {
+                "role": "HEAD_TRAINER",
+                "email": "headtrainer@test.local"
+            },
+            {
+                "role": "TRAINER",
+                "email": "trainer@test.local"
+            },
+            {
+                "role": "CLIENT",
+                "email": "client@test.local"
+            }
+        ],
+        "requirements": [
+            "Test accounts must bypass payment requirements.",
+            "Test accounts must bypass subscription restrictions.",
+            "Test accounts must contain realistic seed data.",
+            "Test accounts must be clearly marked as test accounts.",
+            "Test accounts must not appear in public trainer discovery."
+        ]
+    },
+    "acceptance_criteria": {
+        "authentication": [
+            "User can authenticate using mobile OTP.",
+            "User can authenticate using Google.",
+            "Correct role is assigned after onboarding."
+        ],
+        "trainer_discovery": [
+            "Client can search trainers by name.",
+            "Client can browse verified trainers.",
+            "Client can join through QR.",
+            "Client can join through trainer code.",
+            "Unverified trainers do not appear in public discovery."
+        ],
+        "trainer_relationship": [
+            "Client cannot access trainer-specific features before acceptance.",
+            "Trainer can accept or reject client requests.",
+            "Independent trainer clients cannot independently switch trainers.",
+            "Gym management can reassign clients."
+        ],
+        "packages": [
+            "Client can view trainer packages.",
+            "Client cannot purchase before trainer approval.",
+            "Package has configurable validity.",
+            "Default validity can be calculated as sessions multiplied by four.",
+            "Remaining sessions update after completed PT sessions."
+        ],
+        "sessions": [
+            "Trainer capacity cannot be exceeded.",
+            "Client can request available sessions.",
+            "Trainer can accept booking requests.",
+            "Completed PT session deducts exactly one credit.",
+            "Cancelled session does not deduct unless configured cancellation policy applies.",
+            "Own workout does not deduct PT credit."
+        ],
+        "workouts": [
+            "Trainer can create workouts.",
+            "Trainer can assign workouts.",
+            "Trainer can log sets, reps and weight.",
+            "Client can view upcoming workouts.",
+            "Client can create own workouts.",
+            "Own workouts are clearly labelled."
+        ],
+        "progress": [
+            "Trainer can record client measurements.",
+            "Client can view progress.",
+            "Measurement history is retained.",
+            "Progress charts are available.",
+            "Progress photos are optional."
+        ],
+        "payments": [
+            "Client can view trainer payment information.",
+            "Client can submit payment confirmation.",
+            "Trainer must verify offline payment before package activation.",
+            "Payment history is retained."
+        ],
+        "security": [
+            "Client cannot access another client's data.",
+            "Trainer cannot access unassigned client data.",
+            "Private client information requires explicit sharing.",
+            "Database authorization prevents unauthorized data access."
+        ]
+    },
+    "future_modules": {
+        "online_payments": {
+            "status": "FUTURE"
+        },
+        "whatsapp_notifications": {
+            "status": "FUTURE"
+        },
+        "advanced_trainer_search": {
+            "status": "FUTURE"
+        },
+        "gym_membership_management": {
+            "status": "FUTURE"
+        },
+        "trainer_marketplace": {
+            "status": "FUTURE"
+        },
+        "subscription_billing": {
+            "status": "FUTURE"
+        },
+        "web_super_admin_dashboard": {
+            "status": "FUTURE"
+        }
+    },
+    "technical_architecture": {
+        "mobile": {
+            "framework": "Flutter",
+            "platforms": [
+                "Android",
+                "iOS"
+            ]
+        },
+        "backend": {
+            "platform": "Supabase",
+            "services": [
+                "Supabase Auth",
+                "PostgreSQL",
+                "Supabase Storage",
+                "Realtime"
+            ]
+        },
+        "database": {
+            "type": "PostgreSQL",
+            "authorization": "Row Level Security"
+        },
+        "storage": {
+            "use_cases": [
+                "profile_photos",
+                "progress_photos",
+                "exercise_media"
+            ]
+        },
+        "future_web": {
+            "framework": "Next.js",
+            "deployment": "Vercel"
+        },
+        "development": {
+            "source_control": "GitHub",
+            "environment_types": [
+                "development",
+                "staging",
+                "production"
+            ]
+        }
+    },
+    "implementation_rules": [
+        "Do not invent business rules that contradict this specification.",
+        "Do not make payment mandatory unless the corresponding feature flag is enabled.",
+        "Do not expose unverified trainers in public discovery.",
+        "Do not deduct PT session credits for own workouts.",
+        "Do not deduct PT session credits for cancelled or rescheduled sessions unless the configured cancellation policy explicitly requires it.",
+        "Do not allow clients to book PT sessions when remaining session credits are zero.",
+        "Do not allow clients to purchase a package before trainer approval.",
+        "Do not expose client personal information without explicit client consent.",
+        "Do not rely exclusively on frontend authorization.",
+        "Enforce authorization at the database/API level.",
+        "Maintain historical workout, session, payment and progress records.",
+        "Use feature flags for functionality that may be enabled later.",
+        "Design the database to support multiple gyms per trainer.",
+        "Design the database to support future online payments and WhatsApp notifications.",
+        "Prioritize mobile usability and workout experience."
+    ]
+}
