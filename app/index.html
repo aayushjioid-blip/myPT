@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FitTrainer | Personal Trainer Platform</title>
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- FitTrainer Design System Styles -->
+  <link rel="stylesheet" href="src/styles/variables.css">
+  <link rel="stylesheet" href="src/styles/base.css">
+  <link rel="stylesheet" href="src/styles/components.css">
+  <link rel="stylesheet" href="src/styles/layouts.css">
+  <link rel="stylesheet" href="src/views/views.css" onerror="this.remove()">
+  <link rel="stylesheet" href="src/styles/views.css">
+</head>
+<body>
+  <!-- App Outer Wrapper -->
+  <div class="app-wrapper">
+    <!-- Floating Role Switcher & Dev HUD -->
+    <div id="role-hud-root"></div>
+
+    <!-- Mobile Device Shell Frame -->
+    <div class="mobile-shell">
+      <!-- Top Branding & Navigation Header -->
+      <div id="header-root"></div>
+
+      <!-- Main Dynamic Content View -->
+      <main class="view-container" id="view-root"></main>
+
+      <!-- Bottom Navigation Scaffold -->
+      <div id="nav-root"></div>
+    </div>
+
+    <!-- Active Modal & Dialog Container -->
+    <div id="modal-root"></div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <!-- Application Bootstrap -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

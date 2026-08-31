@@ -1,0 +1,13 @@
+{
+  "name": "mypt-fitness-platform",
+  "version": "1.0.0",
+  "description": "FitTrainer / myPT - Trainer-First Fitness Management Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": ["fitness", "trainer", "workout", "gym", "supa-prototype"],
+  "author": "FitTrainer Team",
+  "license": "ISC"
+}

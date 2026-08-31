@@ -1,0 +1,85 @@
+/* FitTrainer Design Tokens & Theming */
+
+:root {
+  /* Brand Color Palette */
+  --color-primary: #10B981;          /* Emerald Green / Neon Lime Accent */
+  --color-primary-hover: #059669;
+  --color-primary-light: rgba(16, 185, 129, 0.15);
+  --color-primary-glow: rgba(16, 185, 129, 0.35);
+
+  --color-accent-blue: #3B82F6;       /* Electric Blue */
+  --color-accent-blue-light: rgba(59, 130, 246, 0.15);
+  
+  --color-accent-amber: #F59E0B;      /* Warning / Pending */
+  --color-accent-amber-light: rgba(245, 158, 11, 0.15);
+
+  --color-accent-rose: #EF4444;       /* Danger / Reject */
+  --color-accent-rose-light: rgba(239, 68, 68, 0.15);
+
+  --color-accent-purple: #8B5CF6;     /* Super Admin / Gym Role */
+  --color-accent-purple-light: rgba(139, 92, 246, 0.15);
+
+  /* Dark Theme (Default) */
+  --bg-app: #0A0E17;
+  --bg-surface: #111827;
+  --bg-surface-elevated: #1F2937;
+  --bg-surface-glass: rgba(17, 24, 39, 0.85);
+  --bg-input: #1A2234;
+  --bg-card-hover: #26334D;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-hover: rgba(255, 255, 255, 0.18);
+  --border-color-glow: rgba(16, 185, 129, 0.4);
+
+  --text-main: #F9FAFB;
+  --text-muted: #9CA3AF;
+  --text-subtle: #6B7280;
+  --text-inverse: #0A0E17;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* Elevation & Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px -3px var(--color-primary-glow);
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Light Theme Variables */
+[data-theme="light"] {
+  --bg-app: #F3F4F6;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #F9FAFB;
+  --bg-surface-glass: rgba(255, 255, 255, 0.9);
+  --bg-input: #F3F4F6;
+  --bg-card-hover: #E5E7EB;
+
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color-hover: rgba(0, 0, 0, 0.16);
+  --border-color-glow: rgba(16, 185, 129, 0.35);
+
+  --text-main: #111827;
+  --text-muted: #4B5563;
+  --text-subtle: #9CA3AF;
+  --text-inverse: #FFFFFF;
+
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 14px 0 rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 15px -3px rgba(16, 185, 129, 0.25);
+}
