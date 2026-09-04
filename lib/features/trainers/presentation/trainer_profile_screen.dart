@@ -99,7 +99,7 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Price: \$${package.price.toStringAsFixed(0)} • ${package.sessions} PT Sessions', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+              Text('Price: ₹${package.price.toStringAsFixed(0)} • ${package.sessions} PT Sessions', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -324,7 +324,7 @@ class _TrainerProfileScreenState extends State<TrainerProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(child: Text(pkg.name, style: AppTypography.heading3)),
-                        Text('\$${pkg.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        Text('₹${pkg.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ],
                     ),
                     const SizedBox(height: 4),

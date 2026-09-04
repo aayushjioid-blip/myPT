@@ -9,8 +9,8 @@ class Formatters {
   static String formatTime(DateTime date) => _timeFormat.format(date);
   static String formatShortDate(DateTime date) => _shortDateFormat.format(date);
 
-  static String formatCurrency(double amount) {
-    return NumberFormat.currency(symbol: '\$', decimalDigits: 0).format(amount);
+  static String formatCurrency(double amount, {String symbol = '₹'}) {
+    return NumberFormat.currency(symbol: symbol, decimalDigits: 0).format(amount);
   }
 
   static double calculateBmi(double weightKg, double heightCm) {

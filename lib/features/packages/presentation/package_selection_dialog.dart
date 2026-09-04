@@ -100,7 +100,7 @@ class _PackageSelectionDialogState extends State<PackageSelectionDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Price: \$${package.price.toStringAsFixed(0)} • ${package.sessions} PT Sessions',
+                'Price: ₹${package.price.toStringAsFixed(0)} • ${package.sessions} PT Sessions',
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               const SizedBox(height: 12),
@@ -397,7 +397,7 @@ class _PackageSelectionDialogState extends State<PackageSelectionDialog> {
                                         child: Text(pkg.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                                       ),
                                       Text(
-                                        '\$${pkg.price.toStringAsFixed(0)}',
+                                        '₹${pkg.price.toStringAsFixed(0)}',
                                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary),
                                       ),
                                     ],

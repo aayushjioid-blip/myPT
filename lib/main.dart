@@ -165,8 +165,8 @@ class MyPtProvider extends ChangeNotifier {
   bool isDevMode = !kReleaseMode;
 
   static const Map<String, CurrencyInfo> supportedCurrencies = {
-    'USD': CurrencyInfo(code: 'USD', symbol: '\$', name: 'United States Dollar', flag: '🇺🇸', rate: 1.0),
     'INR': CurrencyInfo(code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳', rate: 83.0),
+    'USD': CurrencyInfo(code: 'USD', symbol: '\$', name: 'United States Dollar', flag: '🇺🇸', rate: 1.0),
     'EUR': CurrencyInfo(code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺', rate: 0.92),
     'GBP': CurrencyInfo(code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧', rate: 0.79),
     'AED': CurrencyInfo(code: 'AED', symbol: 'AED ', name: 'UAE Dirham', flag: '🇦🇪', rate: 3.67),
@@ -182,6 +182,7 @@ class MyPtProvider extends ChangeNotifier {
       final locale = PlatformDispatcher.instance.locale;
       final country = locale.countryCode?.toUpperCase() ?? '';
       if (country == 'IN') return 'INR';
+      if (country == 'US') return 'USD';
       if (country == 'GB') return 'GBP';
       if (country == 'AE') return 'AED';
       if (country == 'CA') return 'CAD';
@@ -189,7 +190,7 @@ class MyPtProvider extends ChangeNotifier {
       if (country == 'SG') return 'SGD';
       if (['DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'PT', 'IE', 'FI', 'GR'].contains(country)) return 'EUR';
     } catch (_) {}
-    return 'USD';
+    return 'INR'; // Default to India / INR
   }
 
   void setCurrency(String code) {
@@ -200,7 +201,7 @@ class MyPtProvider extends ChangeNotifier {
   }
 
   CurrencyInfo get currentCurrencyInfo =>
-      supportedCurrencies[selectedCurrency] ?? supportedCurrencies['USD']!;
+      supportedCurrencies[selectedCurrency] ?? supportedCurrencies['INR']!;
 
   String formatPrice(double priceUsd) {
     final cur = currentCurrencyInfo;

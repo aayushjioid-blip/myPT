@@ -191,7 +191,7 @@ class _TrainerRequestsScreenState extends State<TrainerRequestsScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text('Offline Payment • $clientName', style: AppTypography.heading3),
-                            Text('\$${pay.amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            Text('₹${pay.amount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
                           ],
                         ),
                         const SizedBox(height: 6),

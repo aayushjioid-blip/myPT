@@ -140,7 +140,7 @@ class _TrainerPackagesScreenState extends State<TrainerPackagesScreen> {
                             Expanded(
                               child: Text(pkg.name, style: AppTypography.heading3),
                             ),
-                            Text('\$${pkg.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            Text('₹${pkg.price.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
                           ],
                         ),
                         if (pkg.description.isNotEmpty) ...[

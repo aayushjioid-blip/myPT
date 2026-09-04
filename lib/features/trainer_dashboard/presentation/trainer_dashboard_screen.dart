@@ -80,10 +80,10 @@ class TrainerDashboardScreen extends StatelessWidget {
             const Expanded(
               child: MetricTile(
                 label: 'Monthly Revenue',
-                value: '\$1,398',
+                value: '₹1,16,034',
                 subtitle: '+14% this month',
                 valueColor: AppColors.accentGreen,
-                icon: Icons.attach_money,
+                icon: Icons.currency_rupee,
               ),
             ),
             const SizedBox(width: 8),

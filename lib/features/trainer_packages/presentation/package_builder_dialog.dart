@@ -74,7 +74,7 @@ class _PackageBuilderDialogState extends State<PackageBuilderDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: CustomTextField(
-                    label: 'Price (\$)',
+                    label: 'Price (₹)',
                     controller: _priceCtrl,
                     keyboardType: TextInputType.number,
                   ),
