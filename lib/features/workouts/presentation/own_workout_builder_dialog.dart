@@ -6,6 +6,7 @@ import '../../../core/widgets/custom_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../domain/entities/exercise_entity.dart';
 import '../../../domain/entities/exercise_catalog.dart';
+import '../../../domain/entities/workout_entity.dart';
 import 'workout_view_model.dart';
 
 class OwnWorkoutBuilderDialog extends StatefulWidget {
