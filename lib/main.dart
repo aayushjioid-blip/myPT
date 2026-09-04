@@ -1522,6 +1522,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _clientHomeTab(MyPtProvider state) {
     final user = state.currentUser!;
+    final userSessions = state.sessions.where((s) => s.clientName == user.name).toList();
+    final bool hasNoCredits = user.ptCredits <= 0;
+    final bool hasNoScheduledSessions = userSessions.isEmpty;
+    final bool showStartJourney = hasNoCredits && hasNoScheduledSessions;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1555,52 +1560,116 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161B22),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Start Your Training Journey', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              const Text('Explore verified coaches and book a session.', style: TextStyle(color: Colors.white60, fontSize: 13)),
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                  onPressed: () => setState(() => _tabIndex = 1),
-                  child: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        if (showStartJourney) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Start Your Training Journey', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                const Text('Explore verified coaches and book a session.', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => setState(() => _tabIndex = 1),
+                    child: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
         const SizedBox(height: 16),
         const Text('Upcoming Confirmed Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        ...state.sessions.where((s) => s.clientName == user.name).map(
-          (s) => Card(
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFF2A150D),
-                child: Icon(Icons.event, color: Color(0xFFFF5722)),
-              ),
-              title: Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${DateFormat('EEE, dd MMM').format(s.date)} at ${s.timeSlot}\nTrainer: ${s.trainerName}'),
-              trailing: Chip(
-                label: Text(s.status.name.toUpperCase()),
-                backgroundColor: const Color(0xFF2A150D),
-                labelStyle: const TextStyle(fontSize: 10, color: Color(0xFFFF5722)),
+        if (userSessions.isNotEmpty) ...[
+          ...userSessions.map(
+            (s) => Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF2A150D),
+                  child: Icon(Icons.event, color: Color(0xFFFF5722)),
+                ),
+                title: Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${DateFormat('EEE, dd MMM').format(s.date)} at ${s.timeSlot}\nTrainer: ${s.trainerName}'),
+                trailing: Chip(
+                  label: Text(s.status.name.toUpperCase()),
+                  backgroundColor: const Color(0xFF2A150D),
+                  labelStyle: const TextStyle(fontSize: 10, color: Color(0xFFFF5722)),
+                ),
               ),
             ),
           ),
-        ),
+        ] else ...[
+          InkWell(
+            onTap: () => _openScheduleModal(context, state),
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.35), width: 1.2),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF5722).withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.calendar_month_outlined, color: Color(0xFFFF5722), size: 28),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No upcoming session',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'You currently have no sessions scheduled.',
+                    style: TextStyle(color: Colors.white60, fontSize: 12),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF5722),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add, size: 16, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text(
+                          'Click to schedule',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
