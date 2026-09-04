@@ -19,6 +19,11 @@ class UserModel {
   double startingWeight;
   int ptCredits;
   String goal;
+  String phone;
+  int age;
+  double heightCm;
+  String emergencyContact;
+  String medicalInfo;
   String? headCoachId; // If Coach: ID of Head Coach managing this coach
   String? trainerId;   // If Client: ID of Trainer training this client
   List<UserRole>? dualRoles; // Dual roles (e.g. Neeli: headCoach + gymMgr, Khushboo: coach + client)
@@ -32,6 +37,11 @@ class UserModel {
     this.startingWeight = 68.0,
     this.ptCredits = 0,
     this.goal = 'Fat Loss & Hypertrophy',
+    this.phone = '+1-555-0199',
+    this.age = 28,
+    this.heightCm = 168.0,
+    this.emergencyContact = '+1-555-0100 (Emergency Contact)',
+    this.medicalInfo = 'No known medical restrictions',
     this.headCoachId,
     this.trainerId,
     this.dualRoles,
@@ -735,6 +745,39 @@ class MyPtProvider extends ChangeNotifier {
 
   void switchUser(UserModel user) {
     currentUser = user;
+    notifyListeners();
+  }
+
+  void updateCurrentUserProfile({
+    required String name,
+    required String email,
+    required String goal,
+    required String phone,
+    required int age,
+    required double heightCm,
+    required double weightKg,
+    required String emergencyContact,
+    required String medicalInfo,
+  }) {
+    if (currentUser == null) return;
+    final oldEmail = currentUser!.email.toLowerCase();
+    currentUser!.name = name;
+    currentUser!.email = email;
+    currentUser!.goal = goal;
+    currentUser!.phone = phone;
+    currentUser!.age = age;
+    currentUser!.heightCm = heightCm;
+    currentUser!.currentWeight = weightKg;
+    currentUser!.emergencyContact = emergencyContact;
+    currentUser!.medicalInfo = medicalInfo;
+
+    // Keep demoAccounts synced
+    if (oldEmail != email.toLowerCase()) {
+      demoAccounts.remove(oldEmail);
+      demoAccounts[email.toLowerCase()] = currentUser!;
+    } else {
+      demoAccounts[oldEmail] = currentUser!;
+    }
     notifyListeners();
   }
 
@@ -3324,115 +3367,490 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void _openProfileModal(BuildContext context, MyPtProvider state) {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(radius: 22, backgroundColor: Color(0xFF21262D), child: Icon(Icons.face, color: Color(0xFFFF5722), size: 26)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(state.currentUser!.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      Text(state.currentUser!.email, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    ],
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101216),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Header Profile Banner
+              Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Color(0xFF21262D),
+                    child: Icon(Icons.face, color: Color(0xFFFF5722), size: 28),
                   ),
-                ),
-                Chip(
-                  label: Text(state.currentUser!.role.name.toUpperCase()),
-                  backgroundColor: const Color(0xFF2A150D),
-                  labelStyle: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 10),
-                ),
-              ],
-            ),
-            if (state.isMasterUser) ...[
-              const Divider(height: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          state.currentUser!.name,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          state.currentUser!.email,
+                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Chip(
+                    label: Text(state.currentUser!.role.name.toUpperCase()),
+                    backgroundColor: const Color(0xFF2A150D),
+                    labelStyle: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 10),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 2. Personal Details Summary Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFD700).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                  color: const Color(0xFF161B22),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'MASTER PRODUCTION ROLE TOGGLE',
+                        const Icon(Icons.badge_outlined, color: Color(0xFFFF5722), size: 16),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'PERSONAL DETAILS',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFFFFD700),
+                            color: Color(0xFFFF5722),
                             letterSpacing: 0.5,
+                          ),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            _openEditProfileSheet(context, state);
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, color: Color(0xFFFF5722), size: 13),
+                                SizedBox(width: 3),
+                                Text(
+                                  'Edit',
+                                  style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _masterRoleChip(ctx, state, UserRole.superAdmin, '👑 Super Admin'),
-                        _masterRoleChip(ctx, state, UserRole.headCoach, '🥇 Head Coach'),
-                        _masterRoleChip(ctx, state, UserRole.gymMgr, '🏢 Gym Mgr'),
-                        _masterRoleChip(ctx, state, UserRole.coach, '🏋️ Coach'),
-                        _masterRoleChip(ctx, state, UserRole.client, '👤 Client'),
-                      ],
+                    const Divider(height: 16, color: Colors.white12),
+                    _profileInfoRow(Icons.flag_outlined, 'Focus / Goal', state.currentUser!.goal),
+                    const SizedBox(height: 8),
+                    _profileInfoRow(
+                      Icons.monitor_weight_outlined,
+                      'Body Stats',
+                      '${state.currentUser!.currentWeight} kg  •  ${state.currentUser!.heightCm.toStringAsFixed(0)} cm  •  ${state.currentUser!.age} yrs',
                     ),
+                    const SizedBox(height: 8),
+                    _profileInfoRow(Icons.phone_outlined, 'Phone', state.currentUser!.phone),
+                    const SizedBox(height: 8),
+                    _profileInfoRow(Icons.contact_emergency_outlined, 'Emergency Contact', state.currentUser!.emergencyContact),
+                    const SizedBox(height: 8),
+                    _profileInfoRow(Icons.medical_information_outlined, 'Medical / Notes', state.currentUser!.medicalInfo),
                   ],
                 ),
               ),
-            ] else if (state.hasDualRole) ...[
-              const Divider(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.swap_horiz, color: Color(0xFF00E676)),
-                title: Text(
-                  state.currentUser!.role == UserRole.headCoach
-                      ? 'Switch to Gym Manager Mode'
-                      : state.currentUser!.role == UserRole.gymMgr
-                          ? 'Switch to Head Coach Mode'
-                          : state.currentUser!.role == UserRole.coach
-                              ? 'Switch to Client Mode'
-                              : 'Switch to Coach Mode',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00E676)),
+              const SizedBox(height: 12),
+
+              // 3. Edit Personal Details Action Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF21262D),
+                    foregroundColor: const Color(0xFFFF5722),
+                    side: const BorderSide(color: Color(0xFFFF5722), width: 1.2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.edit, size: 16, color: Color(0xFFFF5722)),
+                  label: const Text('Edit Personal Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _openEditProfileSheet(context, state);
+                  },
                 ),
-                subtitle: Text(
-                  'Dual-role account active (${state.currentUser!.email})',
-                  style: const TextStyle(fontSize: 11, color: Colors.white54),
+              ),
+
+              if (state.isMasterUser) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
+                          SizedBox(width: 6),
+                          Text(
+                            'MASTER PRODUCTION ROLE TOGGLE',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFFFD700),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _masterRoleChip(ctx, state, UserRole.superAdmin, '👑 Super Admin'),
+                          _masterRoleChip(ctx, state, UserRole.headCoach, '🥇 Head Coach'),
+                          _masterRoleChip(ctx, state, UserRole.gymMgr, '🏢 Gym Mgr'),
+                          _masterRoleChip(ctx, state, UserRole.coach, '🏋️ Coach'),
+                          _masterRoleChip(ctx, state, UserRole.client, '👤 Client'),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E676)),
-                onTap: () {
-                  state.toggleDualRole();
-                  Navigator.pop(ctx);
-                  setState(() => _tabIndex = 0);
-                },
+              ] else if (state.hasDualRole) ...[
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.swap_horiz, color: Color(0xFF00E676)),
+                  title: Text(
+                    state.currentUser!.role == UserRole.headCoach
+                        ? 'Switch to Gym Manager Mode'
+                        : state.currentUser!.role == UserRole.gymMgr
+                            ? 'Switch to Head Coach Mode'
+                            : state.currentUser!.role == UserRole.coach
+                                ? 'Switch to Client Mode'
+                                : 'Switch to Coach Mode',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00E676)),
+                  ),
+                  subtitle: Text(
+                    'Dual-role account active (${state.currentUser!.email})',
+                    style: const TextStyle(fontSize: 11, color: Colors.white54),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E676)),
+                  onTap: () {
+                    state.toggleDualRole();
+                    Navigator.pop(ctx);
+                    setState(() => _tabIndex = 0);
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Sign Out'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    state.logout();
+                  },
+                ),
               ),
             ],
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign Out'),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  state.logout();
-                },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _profileInfoRow(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFFFF5722)),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openEditProfileSheet(BuildContext context, MyPtProvider state) {
+    final user = state.currentUser;
+    if (user == null) return;
+
+    final nameCtrl = TextEditingController(text: user.name);
+    final emailCtrl = TextEditingController(text: user.email);
+    final phoneCtrl = TextEditingController(text: user.phone);
+    final goalCtrl = TextEditingController(text: user.goal);
+    final weightCtrl = TextEditingController(text: user.currentWeight.toString());
+    final heightCtrl = TextEditingController(text: user.heightCm.toString());
+    final ageCtrl = TextEditingController(text: user.age.toString());
+    final emergencyCtrl = TextEditingController(text: user.emergencyContact);
+    final medicalCtrl = TextEditingController(text: user.medicalInfo);
+    final formKey = GlobalKey<FormState>();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF101216),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5722).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.edit, color: Color(0xFFFF5722), size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Edit Personal Details',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: Icon(Icons.person_outline),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Name is required';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Email Address',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.trim().isEmpty) return 'Email is required';
+                      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegex.hasMatch(val.trim())) return 'Enter a valid email';
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: goalCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Fitness Focus / Goal',
+                      prefixIcon: Icon(Icons.flag_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: weightCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Weight (kg)',
+                            filled: true,
+                            fillColor: Color(0xFF161B22),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (val) {
+                            if (val == null || double.tryParse(val) == null) return 'Invalid';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: heightCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Height (cm)',
+                            filled: true,
+                            fillColor: Color(0xFF161B22),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (val) {
+                            if (val == null || double.tryParse(val) == null) return 'Invalid';
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          controller: ageCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Age (yrs)',
+                            filled: true,
+                            fillColor: Color(0xFF161B22),
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (val) {
+                            if (val == null || int.tryParse(val) == null) return 'Invalid';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: emergencyCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Emergency Contact',
+                      prefixIcon: Icon(Icons.contact_emergency_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: medicalCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Medical History / Injuries / Notes',
+                      prefixIcon: Icon(Icons.medical_information_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: () {
+                            if (!formKey.currentState!.validate()) return;
+                            state.updateCurrentUserProfile(
+                              name: nameCtrl.text.trim(),
+                              email: emailCtrl.text.trim(),
+                              goal: goalCtrl.text.trim(),
+                              phone: phoneCtrl.text.trim(),
+                              age: int.tryParse(ageCtrl.text.trim()) ?? 28,
+                              heightCm: double.tryParse(heightCtrl.text.trim()) ?? 168.0,
+                              weightKg: double.tryParse(weightCtrl.text.trim()) ?? 64.5,
+                              emergencyContact: emergencyCtrl.text.trim(),
+                              medicalInfo: medicalCtrl.text.trim(),
+                            );
+                            Navigator.pop(sheetCtx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Color(0xFF00E676),
+                                content: Text('✅ Personal details updated successfully!'),
+                              ),
+                            );
+                          },
+                          child: const Text('Save Changes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
