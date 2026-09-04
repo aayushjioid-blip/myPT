@@ -3372,220 +3372,227 @@ class _MainShellScreenState extends State<MainShellScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Header Profile Banner
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Color(0xFF21262D),
-                    child: Icon(Icons.face, color: Color(0xFFFF5722), size: 28),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          state.currentUser!.name,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        Text(
-                          state.currentUser!.email,
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Chip(
-                    label: Text(state.currentUser!.role.name.toUpperCase()),
-                    backgroundColor: const Color(0xFF2A150D),
-                    labelStyle: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 10),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+      builder: (ctx) {
+        final user = state.currentUser;
+        if (user == null) return const SizedBox.shrink();
 
-              // 2. Personal Details Summary Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161B22),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Header Profile Banner
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.badge_outlined, color: Color(0xFFFF5722), size: 16),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'PERSONAL DETAILS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFFF5722),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const Spacer(),
-                        InkWell(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            _openEditProfileSheet(context, state);
-                          },
-                          borderRadius: BorderRadius.circular(6),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, color: Color(0xFFFF5722), size: 13),
-                                SizedBox(width: 3),
-                                Text(
-                                  'Edit',
-                                  style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    const CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Color(0xFF21262D),
+                      child: Icon(Icons.face, color: Color(0xFFFF5722), size: 28),
                     ),
-                    const Divider(height: 16, color: Colors.white12),
-                    _profileInfoRow(Icons.flag_outlined, 'Focus / Goal', state.currentUser!.goal),
-                    const SizedBox(height: 8),
-                    _profileInfoRow(
-                      Icons.monitor_weight_outlined,
-                      'Body Stats',
-                      '${state.currentUser!.currentWeight} kg  •  ${state.currentUser!.heightCm.toStringAsFixed(0)} cm  •  ${state.currentUser!.age} yrs',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.name,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          Text(
+                            user.email,
+                            style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    _profileInfoRow(Icons.phone_outlined, 'Phone', state.currentUser!.phone),
-                    const SizedBox(height: 8),
-                    _profileInfoRow(Icons.contact_emergency_outlined, 'Emergency Contact', state.currentUser!.emergencyContact),
-                    const SizedBox(height: 8),
-                    _profileInfoRow(Icons.medical_information_outlined, 'Medical / Notes', state.currentUser!.medicalInfo),
+                    Chip(
+                      label: Text(user.role.name.toUpperCase()),
+                      backgroundColor: const Color(0xFF2A150D),
+                      labelStyle: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold, fontSize: 10),
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-              // 3. Edit Personal Details Action Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF21262D),
-                    foregroundColor: const Color(0xFFFF5722),
-                    side: const BorderSide(color: Color(0xFFFF5722), width: 1.2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  icon: const Icon(Icons.edit, size: 16, color: Color(0xFFFF5722)),
-                  label: const Text('Edit Personal Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _openEditProfileSheet(context, state);
-                  },
-                ),
-              ),
-
-              if (state.isMasterUser) ...[
-                const SizedBox(height: 12),
+                // 2. Personal Details Summary Card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                    color: const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
-                          SizedBox(width: 6),
-                          Text(
-                            'MASTER PRODUCTION ROLE TOGGLE',
+                          const Icon(Icons.badge_outlined, color: Color(0xFFFF5722), size: 16),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'PERSONAL DETAILS',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFFFFD700),
+                              color: Color(0xFFFF5722),
                               letterSpacing: 0.5,
+                            ),
+                          ),
+                          const Spacer(),
+                          InkWell(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              _openEditProfileSheet(context, state);
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, color: Color(0xFFFF5722), size: 13),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'Edit',
+                                    style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          _masterRoleChip(ctx, state, UserRole.superAdmin, '👑 Super Admin'),
-                          _masterRoleChip(ctx, state, UserRole.headCoach, '🥇 Head Coach'),
-                          _masterRoleChip(ctx, state, UserRole.gymMgr, '🏢 Gym Mgr'),
-                          _masterRoleChip(ctx, state, UserRole.coach, '🏋️ Coach'),
-                          _masterRoleChip(ctx, state, UserRole.client, '👤 Client'),
-                        ],
+                      const Divider(height: 16, color: Colors.white12),
+                      _profileInfoRow(Icons.flag_outlined, 'Focus / Goal', user.goal),
+                      const SizedBox(height: 8),
+                      _profileInfoRow(
+                        Icons.monitor_weight_outlined,
+                        'Body Stats',
+                        '${user.currentWeight} kg  •  ${user.heightCm.toStringAsFixed(0)} cm  •  ${user.age} yrs',
                       ),
+                      const SizedBox(height: 8),
+                      _profileInfoRow(Icons.phone_outlined, 'Phone', user.phone),
+                      const SizedBox(height: 8),
+                      _profileInfoRow(Icons.contact_emergency_outlined, 'Emergency Contact', user.emergencyContact),
+                      const SizedBox(height: 8),
+                      _profileInfoRow(Icons.medical_information_outlined, 'Medical / Notes', user.medicalInfo),
                     ],
                   ),
                 ),
-              ] else if (state.hasDualRole) ...[
                 const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.swap_horiz, color: Color(0xFF00E676)),
-                  title: Text(
-                    state.currentUser!.role == UserRole.headCoach
-                        ? 'Switch to Gym Manager Mode'
-                        : state.currentUser!.role == UserRole.gymMgr
-                            ? 'Switch to Head Coach Mode'
-                            : state.currentUser!.role == UserRole.coach
-                                ? 'Switch to Client Mode'
-                                : 'Switch to Coach Mode',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00E676)),
+
+                // 3. Edit Personal Details Action Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF21262D),
+                      foregroundColor: const Color(0xFFFF5722),
+                      side: const BorderSide(color: Color(0xFFFF5722), width: 1.2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.edit, size: 16, color: Color(0xFFFF5722)),
+                    label: const Text('Edit Personal Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _openEditProfileSheet(context, state);
+                    },
                   ),
-                  subtitle: Text(
-                    'Dual-role account active (${state.currentUser!.email})',
-                    style: const TextStyle(fontSize: 11, color: Colors.white54),
+                ),
+
+                if (state.isMasterUser) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFD700).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'MASTER PRODUCTION ROLE TOGGLE',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFFFFD700),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _masterRoleChip(ctx, state, UserRole.superAdmin, '👑 Super Admin'),
+                            _masterRoleChip(ctx, state, UserRole.headCoach, '🥇 Head Coach'),
+                            _masterRoleChip(ctx, state, UserRole.gymMgr, '🏢 Gym Mgr'),
+                            _masterRoleChip(ctx, state, UserRole.coach, '🏋️ Coach'),
+                            _masterRoleChip(ctx, state, UserRole.client, '👤 Client'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E676)),
-                  onTap: () {
-                    state.toggleDualRole();
-                    Navigator.pop(ctx);
-                    setState(() => _tabIndex = 0);
-                  },
+                ] else if (state.hasDualRole) ...[
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.swap_horiz, color: Color(0xFF00E676)),
+                    title: Text(
+                      user.role == UserRole.headCoach
+                          ? 'Switch to Gym Manager Mode'
+                          : user.role == UserRole.gymMgr
+                              ? 'Switch to Head Coach Mode'
+                              : user.role == UserRole.coach
+                                  ? 'Switch to Client Mode'
+                                  : 'Switch to Coach Mode',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00E676)),
+                    ),
+                    subtitle: Text(
+                      'Dual-role account active (${user.email})',
+                      style: const TextStyle(fontSize: 11, color: Colors.white54),
+                    ),
+                    trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E676)),
+                    onTap: () {
+                      state.toggleDualRole();
+                      Navigator.pop(ctx);
+                      setState(() => _tabIndex = 0);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign Out'),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        state.logout();
+                      });
+                    },
+                  ),
                 ),
               ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(foregroundColor: Colors.redAccent),
-                  icon: const Icon(Icons.logout),
-                  label: const Text('Sign Out'),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    state.logout();
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -3878,7 +3885,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _masterRoleChip(BuildContext ctx, MyPtProvider state, UserRole role, String label) {
-    final isCurrent = state.currentUser!.role == role;
+    final isCurrent = state.currentUser?.role == role;
     return InkWell(
       onTap: () {
         state.setMasterRole(role);
