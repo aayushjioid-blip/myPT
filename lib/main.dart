@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 // ============================================================================
 enum UserRole { client, coach, headCoach, gymMgr, superAdmin }
 enum RequestStatus { pending, confirmed, completed, cancelled }
+enum TrainerApprovalStatus { none, pending, approved, rejected }
 
 class UserModel {
   final String id;
@@ -26,6 +27,7 @@ class UserModel {
   String medicalInfo;
   String? headCoachId; // If Coach: ID of Head Coach managing this coach
   String? trainerId;   // If Client: ID of Trainer training this client
+  TrainerApprovalStatus trainerApprovalStatus;
   List<UserRole>? dualRoles; // Dual roles (e.g. Neeli: headCoach + gymMgr, Khushboo: coach + client)
 
   UserModel({
@@ -44,6 +46,7 @@ class UserModel {
     this.medicalInfo = 'No known medical restrictions',
     this.headCoachId,
     this.trainerId,
+    this.trainerApprovalStatus = TrainerApprovalStatus.none,
     this.dualRoles,
   });
 }
@@ -137,6 +140,8 @@ class ClientRequestItem {
   final String requestType;
   final String message;
   final DateTime date;
+  final String? trainerId;
+  final String? clientId;
   RequestStatus status;
 
   ClientRequestItem({
@@ -146,6 +151,8 @@ class ClientRequestItem {
     required this.requestType,
     required this.message,
     required this.date,
+    this.trainerId,
+    this.clientId,
     this.status = RequestStatus.pending,
   });
 }
@@ -266,6 +273,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 4,
       goal: 'Lean Muscle & Core',
       trainerId: 'usr_rincy',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     'rk@mypt.com': UserModel(
       id: 'usr_rk',
@@ -277,6 +285,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 6,
       goal: 'Hypertrophy & Mobility',
       trainerId: 'usr_kumar',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     'odin@mypt.com': UserModel(
       id: 'usr_odin',
@@ -288,6 +297,19 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 8,
       goal: 'Power & Strength',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
+    ),
+    'newclient@mypt.com': UserModel(
+      id: 'usr_new_client',
+      name: 'New Trainee',
+      email: 'newclient@mypt.com',
+      role: UserRole.client,
+      currentWeight: 70.0,
+      startingWeight: 74.0,
+      ptCredits: 0,
+      goal: 'General Fitness & Muscle Gain',
+      trainerId: null,
+      trainerApprovalStatus: TrainerApprovalStatus.none,
     ),
     'rincy@mypt.com': UserModel(
       id: 'usr_rincy',
@@ -333,6 +355,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 0,
       goal: 'Fat Loss & Hypertrophy',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     'alex@mypt.com': UserModel(
       id: 'trn_alex',
@@ -412,6 +435,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 4,
       goal: 'Lean Muscle & Core',
       trainerId: 'usr_rincy',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'usr_rk',
@@ -423,6 +447,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 6,
       goal: 'Hypertrophy & Mobility',
       trainerId: 'usr_kumar',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'usr_odin',
@@ -434,6 +459,19 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 8,
       goal: 'Power & Strength',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
+    ),
+    UserModel(
+      id: 'usr_new_client',
+      name: 'New Trainee',
+      email: 'newclient@mypt.com',
+      role: UserRole.client,
+      currentWeight: 70.0,
+      startingWeight: 74.0,
+      ptCredits: 0,
+      goal: 'General Fitness & Muscle Gain',
+      trainerId: null,
+      trainerApprovalStatus: TrainerApprovalStatus.none,
     ),
     UserModel(
       id: 'usr_sarah',
@@ -445,6 +483,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 0,
       goal: 'Fat Loss & Hypertrophy',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'c2',
@@ -455,6 +494,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 8,
       goal: 'Strength & Powerlifting',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'c3',
@@ -465,6 +505,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 2,
       goal: 'Endurance & Core',
       trainerId: 'usr_khushboo',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'c4',
@@ -475,6 +516,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 6,
       goal: 'Body Recomposition',
       trainerId: 'usr_khushboo',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
     UserModel(
       id: 'usr_khushboo_client',
@@ -486,6 +528,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: 5,
       goal: 'Athletic Conditioning & Hypertrophy',
       trainerId: 'trn_alex',
+      trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
   ];
 
@@ -834,8 +877,53 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void requestTrainerConsultation({
+    required UserModel coach,
+    required String message,
+    required String goal,
+  }) {
+    if (currentUser == null) return;
+
+    final req = ClientRequestItem(
+      id: 'req_${DateTime.now().millisecondsSinceEpoch}',
+      clientId: currentUser!.id,
+      clientName: currentUser!.name,
+      email: currentUser!.email,
+      trainerId: coach.id,
+      requestType: '1-on-1 Coaching Consultation ($goal)',
+      message: message,
+      date: DateTime.now(),
+      status: RequestStatus.pending,
+    );
+
+    trainerRequests.insert(0, req);
+    currentUser!.trainerId = coach.id;
+    currentUser!.trainerApprovalStatus = TrainerApprovalStatus.pending;
+    notifyListeners();
+  }
+
   void acceptRequest(ClientRequestItem req) {
     req.status = RequestStatus.confirmed;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.email.toLowerCase() == req.email.toLowerCase() || (req.clientId != null && c.id == req.clientId)) {
+        client = c;
+        break;
+      }
+    }
+    if (client == null && demoAccounts.containsKey(req.email.toLowerCase())) {
+      client = demoAccounts[req.email.toLowerCase()];
+    }
+
+    if (client != null) {
+      client.trainerId = currentUser?.id ?? req.trainerId ?? 'trn_alex';
+      client.trainerApprovalStatus = TrainerApprovalStatus.approved;
+      if (!rosterClients.any((c) => c.id == client!.id)) {
+        rosterClients.add(client);
+      }
+    }
+
     sessions.insert(
       0,
       SessionItem(
@@ -853,6 +941,23 @@ class MyPtProvider extends ChangeNotifier {
 
   void declineRequest(ClientRequestItem req) {
     req.status = RequestStatus.cancelled;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.email.toLowerCase() == req.email.toLowerCase() || (req.clientId != null && c.id == req.clientId)) {
+        client = c;
+        break;
+      }
+    }
+    if (client == null && demoAccounts.containsKey(req.email.toLowerCase())) {
+      client = demoAccounts[req.email.toLowerCase()];
+    }
+
+    if (client != null) {
+      client.trainerApprovalStatus = TrainerApprovalStatus.rejected;
+      client.trainerId = null;
+    }
+
     notifyListeners();
   }
 
@@ -1487,6 +1592,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         const SizedBox(width: 6),
                         _userChip('👤 Sourabh (Client)', 'sourabh@mypt.com', state),
                         const SizedBox(width: 6),
+                        _userChip('👤 New Trainee (No Coach)', 'newclient@mypt.com', state),
+                        const SizedBox(width: 6),
                         _userChip('👤 RK (Client)', 'rk@mypt.com', state),
                         const SizedBox(width: 6),
                         _userChip('👤 Odin (Client)', 'odin@mypt.com', state),
@@ -1609,7 +1716,168 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        if (showStartJourney) ...[
+        // --- 3-STEP CLIENT LIFECYCLE & ONBOARDING STATUS ---
+        if (user.trainerId == null || user.trainerApprovalStatus == TrainerApprovalStatus.none) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5722).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.person_search, color: Color(0xFFFF5722), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Step 1 of 3: Connect with a Coach', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text('Choose a certified trainer matching your fitness goals', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'To book training sessions, first submit a coaching consultation request to an available trainer.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.explore, size: 16, color: Colors.white),
+                    label: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    onPressed: () => setState(() => _tabIndex = 1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (user.trainerApprovalStatus == TrainerApprovalStatus.pending) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFF9800), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Step 2 of 3: Coach Approval Pending', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Request under review by Coach ${state.allTrainers.firstWhere((t) => t.id == user.trainerId, orElse: () => state.allTrainers.first).name}',
+                            style: const TextStyle(color: Color(0xFFFF9800), fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your trainer is reviewing your goals. Once approved and your session package is active, you can book dates and time slots.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ] else if (user.trainerApprovalStatus == TrainerApprovalStatus.approved && user.ptCredits <= 0) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E676).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.verified, color: Color(0xFF00E676), size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Step 3 of 3: Coach Approved! Activate Package', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Coach ${state.allTrainers.firstWhere((t) => t.id == user.trainerId, orElse: () => state.allTrainers.first).name} accepted your request',
+                            style: const TextStyle(color: Color(0xFF00E676), fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Activate a PT package to unlock calendar booking and schedule your 1-on-1 sessions.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.shopping_bag, size: 16, color: Colors.white),
+                    label: const Text('View PT Packages 💳', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                    onPressed: () => _openPackageListModal(context, state),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (showStartJourney) ...[
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -1859,6 +2127,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
         if (filteredTrainers.isNotEmpty) ...[
           ...filteredTrainers.map((t) {
             final isCurrentTrainer = user.trainerId == t.id;
+            final isApprovedTrainer = isCurrentTrainer && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
+            final isPendingTrainer = isCurrentTrainer && user.trainerApprovalStatus == TrainerApprovalStatus.pending;
             final specialties = _getTrainerSpecialties(t);
 
             return Card(
@@ -1867,8 +2137,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
-                  color: isCurrentTrainer ? const Color(0xFF00E676) : Colors.white10,
-                  width: isCurrentTrainer ? 1.5 : 1,
+                  color: isApprovedTrainer
+                      ? const Color(0xFF00E676)
+                      : isPendingTrainer
+                          ? const Color(0xFFFF9800)
+                          : Colors.white10,
+                  width: (isApprovedTrainer || isPendingTrainer) ? 1.5 : 1,
                 ),
               ),
               child: Padding(
@@ -1880,15 +2154,21 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: isCurrentTrainer
+                          backgroundColor: isApprovedTrainer
                               ? const Color(0xFF00E676).withOpacity(0.2)
-                              : const Color(0xFFFF5722).withOpacity(0.2),
+                              : isPendingTrainer
+                                  ? const Color(0xFFFF9800).withOpacity(0.2)
+                                  : const Color(0xFFFF5722).withOpacity(0.2),
                           child: Text(
                             t.name[0],
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isCurrentTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
+                              color: isApprovedTrainer
+                                  ? const Color(0xFF00E676)
+                                  : isPendingTrainer
+                                      ? const Color(0xFFFF9800)
+                                      : const Color(0xFFFF5722),
                             ),
                           ),
                         ),
@@ -1900,7 +2180,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               Row(
                                 children: [
                                   Text(t.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                  if (isCurrentTrainer) ...[
+                                  if (isApprovedTrainer) ...[
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1910,8 +2190,22 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                         border: Border.all(color: const Color(0xFF00E676), width: 0.8),
                                       ),
                                       child: const Text(
-                                        '✓ CURRENT',
+                                        '✓ APPROVED COACH',
                                         style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                      ),
+                                    ),
+                                  ] else if (isPendingTrainer) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF9800).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFFFF9800), width: 0.8),
+                                      ),
+                                      child: const Text(
+                                        '⏳ APPROVAL PENDING',
+                                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800)),
                                       ),
                                     ),
                                   ],
@@ -1946,29 +2240,46 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            onPressed: () => _openScheduleModal(context, state, targetTrainer: t),
-                            child: const Text('Book Consultation'),
+                            onPressed: () {
+                              if (isApprovedTrainer) {
+                                _openScheduleModal(context, state, targetTrainer: t);
+                              } else {
+                                _openCoachRequestModal(context, state, t);
+                              }
+                            },
+                            child: Text(isApprovedTrainer ? 'Book Session' : 'Book Consultation'),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isCurrentTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
+                              backgroundColor: isApprovedTrainer
+                                  ? const Color(0xFF00E676)
+                                  : isPendingTrainer
+                                      ? const Color(0xFFFF9800)
+                                      : const Color(0xFFFF5722),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () {
-                              state.selectTrainerForCurrentUser(t.id);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF00E676),
-                                  content: Text('🎉 Coach ${t.name} selected as your primary trainer!'),
-                                ),
-                              );
+                              if (isApprovedTrainer) {
+                                _openScheduleModal(context, state, targetTrainer: t);
+                              } else if (isPendingTrainer) {
+                                _openScheduleModal(context, state, targetTrainer: t);
+                              } else {
+                                _openCoachRequestModal(context, state, t);
+                              }
                             },
                             child: Text(
-                              isCurrentTrainer ? 'Selected Coach ✓' : 'Select Coach',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              isApprovedTrainer
+                                  ? 'Schedule Session 📅'
+                                  : isPendingTrainer
+                                      ? 'Approval Pending ⏳'
+                                      : 'Request Coach 🚀',
+                              style: TextStyle(
+                                color: isApprovedTrainer ? Colors.black : Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -3483,6 +3794,217 @@ class _MainShellScreenState extends State<MainShellScreen> {
     UserModel? targetTrainer,
     UserModel? targetClient,
   }) {
+    final isClient = state.currentUser?.role == UserRole.client;
+    final user = state.currentUser;
+
+    // --- CLIENT SCHEDULING GUARDS: ASSIGNED TRAINER -> TRAINER APPROVAL -> PAYMENT ACCEPTED ---
+    if (isClient && user != null) {
+      // 1. Guard: Check if client has no assigned coach
+      if (user.trainerId == null || user.trainerApprovalStatus == TrainerApprovalStatus.none) {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF161B22),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (ctx) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5722).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.person_search, size: 36, color: Color(0xFFFF5722)),
+                ),
+                const SizedBox(height: 16),
+                const Text('Step 1: Choose Your Coach First', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                const Text(
+                  'To schedule 1-on-1 personal training sessions, you must first connect with a certified coach. Browse our verified trainers and submit a coaching request.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      setState(() => _tabIndex = 1); // Switch to Discover tab
+                    },
+                    child: const Text('Find & Request a Coach 🚀', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+        return;
+      }
+
+      // 2. Guard: Check if coach approval is pending
+      if (user.trainerApprovalStatus == TrainerApprovalStatus.pending) {
+        final coach = state.allTrainers.firstWhere(
+          (t) => t.id == user.trainerId,
+          orElse: () => state.allTrainers.first,
+        );
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF161B22),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (ctx) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.hourglass_top_rounded, size: 36, color: Color(0xFFFF9800)),
+                ),
+                const SizedBox(height: 16),
+                const Text('Step 2: Coach Approval Pending', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                Text(
+                  'Your coaching request with Coach ${coach.name} is currently pending review. Once Coach ${coach.name} approves your request and your session package is active, you can book dates and time slots.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Close', style: TextStyle(color: Colors.white70)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF21262D),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _openPackageListModal(context, state);
+                        },
+                        child: const Text('View Packages 💳', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+        return;
+      }
+
+      // 3. Guard: Check if coach approved but session credits / payment needed
+      if (user.trainerApprovalStatus == TrainerApprovalStatus.approved && user.ptCredits <= 0) {
+        final coach = state.allTrainers.firstWhere(
+          (t) => t.id == user.trainerId,
+          orElse: () => state.allTrainers.first,
+        );
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: const Color(0xFF161B22),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (ctx) => Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.payment_rounded, size: 36, color: Color(0xFF00E676)),
+                ),
+                const SizedBox(height: 16),
+                const Text('Step 3: Payment & Package Required', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                Text(
+                  '🎉 Great news! Coach ${coach.name} has approved your coaching request. To unlock session scheduling, please purchase an active PT session package.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _openPackageListModal(context, state);
+                    },
+                    child: const Text('Activate PT Package 💳', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     String selectedTimeSlot = '10:00 AM';
     String selectedFocus = 'Hypertrophy & Form';
@@ -3523,8 +4045,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
       'Mobility & Flexibility',
       '1-on-1 Consultation',
     ];
-
-    final isClient = state.currentUser?.role == UserRole.client;
 
     showModalBottomSheet(
       context: context,
@@ -4000,6 +4520,251 @@ class _MainShellScreenState extends State<MainShellScreen> {
           },
         );
       },
+    );
+  }
+
+  void _openCoachRequestModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    final formKey = GlobalKey<FormState>();
+    final goalCtrl = TextEditingController(text: state.currentUser?.goal ?? 'Fat Loss & Hypertrophy');
+    final messageCtrl = TextEditingController(
+      text: "Hi Coach ${coach.name}, I'd like to book an initial consultation and start 1-on-1 personal training sessions with you.",
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          top: 20,
+          left: 20,
+          right: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                        child: Text(
+                          coach.name[0],
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Request Coach ${coach.name}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                          const Text('Certified Personal Trainer • Strength & Conditioning', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white60),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const Divider(height: 24, color: Colors.white12),
+              const Text('Your Fitness Goal', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70)),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: goalCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'e.g. Hypertrophy, Fat Loss, Powerlifting...',
+                  filled: true,
+                  fillColor: Color(0xFF0D1117),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) => val == null || val.trim().isEmpty ? 'Please specify your goal' : null,
+              ),
+              const SizedBox(height: 14),
+              const Text('Message for Coach', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70)),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: messageCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Share your fitness background, injuries, or weekly routine...',
+                  filled: true,
+                  fillColor: Color(0xFF0D1117),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (val) => val == null || val.trim().isEmpty ? 'Please enter a message' : null,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5722),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      state.requestTrainerConsultation(
+                        coach: coach,
+                        message: messageCtrl.text.trim(),
+                        goal: goalCtrl.text.trim(),
+                      );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF00E676),
+                          content: Text(
+                            '🎉 Request submitted to Coach ${coach.name}! Waiting for coach approval.',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                          ),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Send Coaching Request 🚀', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openPackageListModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Select PT Session Package', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Activate sessions to begin scheduling with your coach', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white60),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const Divider(height: 20, color: Colors.white12),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: state.packages.length,
+                itemBuilder: (context, idx) {
+                  final p = state.packages[idx];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: const Color(0xFF0D1117),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: idx == 1 ? const Color(0xFFFF5722) : Colors.white12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(p.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text(state.formatPrice(p.price), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text('${p.sessionsCount} 1-on-1 Sessions • ${p.durationWeeks} Weeks Valid', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: p.perks.map((perk) => Chip(
+                              label: Text(perk, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                              backgroundColor: const Color(0xFF161B22),
+                              visualDensity: VisualDensity.compact,
+                            )).toList(),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: idx == 1 ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              onPressed: () {
+                                state.buyPackage(p);
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    content: Text(
+                                      '💳 Payment accepted! ${p.sessionsCount} PT Credits added. You can now schedule sessions!',
+                                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                                    ),
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              },
+                              child: Text('Purchase Package & Activate (${state.formatPrice(p.price)})', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
