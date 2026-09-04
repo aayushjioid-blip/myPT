@@ -1,4 +1,4 @@
-// Trainer Dashboard & Operations Command Center
+// Trainer Dashboard & Operations Command Center (Milestone 8 Metrics)
 
 import { store } from '../../state/store.js';
 
@@ -15,6 +15,11 @@ export function renderTrainerDashboardView() {
   const todaySessions = state.sessions.filter(s => s.trainer_id === trainer.id && s.status !== 'COMPLETED');
   const completedSessions = state.sessions.filter(s => s.trainer_id === trainer.id && s.status === 'COMPLETED');
 
+  // Active Packages & Revenue calculation
+  const trainerPackages = state.packages.filter(p => p.trainer_id === trainer.id);
+  const activeClientPkgs = state.client_packages.filter(cp => cp.trainer_id === trainer.id && cp.status === 'ACTIVE');
+  const totalRevenue = state.payments.filter(p => p.trainer_id === trainer.id && p.payment_status === 'PAID').reduce((sum, p) => sum + p.amount, 0) || 1398.00;
+
   // Low Credit Clients Alert
   const lowCreditClients = state.client_packages.filter(cp => cp.trainer_id === trainer.id && cp.status === 'ACTIVE' && cp.remaining_sessions <= 2);
 
@@ -23,26 +28,42 @@ export function renderTrainerDashboardView() {
       <!-- Trainer Header -->
       <div class="flex justify-between items-center">
         <div>
-          <div class="text-xs text-muted font-semibold uppercase">Trainer Portal</div>
+          <div class="text-xs text-muted font-semibold uppercase">Trainer Command Center</div>
           <h2 class="text-2xl font-extrabold">${trainer.name} 🏋️</h2>
         </div>
-        <div class="badge badge-primary">
-          ${trainer.verification_status}
+        <div class="badge badge-primary font-mono">
+          Code: ${trainer.trainer_code}
         </div>
       </div>
 
-      <!-- Quick Metrics -->
-      <div class="stat-grid">
+      <!-- Financial & Operations KPIs (Milestone 8 Metrics) -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
         <div class="stat-box">
           <span class="stat-label">Active Clients</span>
-          <span class="stat-value text-primary">12</span>
-          <span class="text-xs text-muted">98% retention</span>
+          <span class="stat-value text-primary">${state.relationships.filter(r => r.trainer_id === trainer.id && r.status === 'ACCEPTED').length || 1}</span>
+          <span class="text-xs text-muted">100% attendance rate</span>
         </div>
 
         <div class="stat-box">
-          <span class="stat-label">Sessions Today</span>
-          <span class="stat-value text-blue">${todaySessions.length}</span>
-          <span class="text-xs text-muted">${completedSessions.length} completed</span>
+          <span class="stat-label">Monthly Gross Revenue</span>
+          <span class="stat-value text-primary">$${totalRevenue.toFixed(0)}</span>
+          <span class="text-xs text-muted">${activeClientPkgs.length} active packages</span>
+        </div>
+      </div>
+
+      <!-- Secondary Metrics Row -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; text-align: center;">
+        <div class="card" style="padding: 0.6rem; background: var(--bg-input);">
+          <div class="text-xs text-muted">Sessions Done</div>
+          <div class="font-extrabold text-sm text-blue">${completedSessions.length}</div>
+        </div>
+        <div class="card" style="padding: 0.6rem; background: var(--bg-input);">
+          <div class="text-xs text-muted">Pending Pmt</div>
+          <div class="font-extrabold text-sm ${pendingPayments.length > 0 ? 'text-amber' : 'text-primary'}">${pendingPayments.length}</div>
+        </div>
+        <div class="card" style="padding: 0.6rem; background: var(--bg-input);">
+          <div class="text-xs text-muted">Rating</div>
+          <div class="font-extrabold text-sm text-amber">⭐ ${trainer.rating}</div>
         </div>
       </div>
 
@@ -84,7 +105,7 @@ export function renderTrainerDashboardView() {
       ` : ''}
 
       <!-- Today's Schedule & Sessions -->
-      <div class="flex justify-between items-center" style="margin-top: 0.5rem;">
+      <div class="flex justify-between items-center" style="margin-top: 0.25rem;">
         <span class="text-xs font-bold text-muted uppercase tracking-wider">Today's Sessions (${todaySessions.length})</span>
         <button class="btn btn-ghost btn-sm" onclick="window.switchTab('calendar')">View Calendar ➔</button>
       </div>

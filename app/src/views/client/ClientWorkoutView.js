@@ -1,4 +1,4 @@
-// Client Workout Tracker & "Own Workout" Logger View
+// Client Workout Studio & Own Workout Tracker View (Milestone 1)
 
 import { store } from '../../state/store.js';
 
@@ -16,14 +16,14 @@ export function renderClientWorkoutView() {
       <div class="flex justify-between items-center">
         <div>
           <h2 class="text-2xl font-extrabold">Workout Studio</h2>
-          <p class="text-xs text-muted">Execute assigned routines or log your own workouts.</p>
+          <p class="text-xs text-muted">Execute assigned routines or log your independent workouts.</p>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="window.promptLogOwnWorkout()">
-          + Own Workout
+        <button class="btn btn-secondary btn-sm font-bold" onclick="window.openOwnWorkoutModal()">
+          + Own Workout 🏃
         </button>
       </div>
 
-      <!-- Own Workout Zero-Credit Guarantee Banner -->
+      <!-- Critical Rule: Own Workout Zero-Credit Guarantee Banner -->
       <div class="card" style="background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3); padding: 0.85rem;">
         <div class="flex items-center gap-2">
           <span style="font-size: 1.2rem;">🛡️</span>
@@ -68,10 +68,10 @@ export function renderClientWorkoutView() {
           <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">🎯</div>
           <div class="font-bold text-sm">No Assigned Workouts Pending</div>
           <p class="text-xs text-muted" style="margin: 0.35rem 0 1rem 0;">
-            You are all caught up! Feel free to log an independent workout.
+            You are all caught up! Create and log an independent workout session.
           </p>
-          <button class="btn btn-secondary btn-sm" onclick="window.promptLogOwnWorkout()">
-            Log "Own Workout" (0 Credits) 🏃
+          <button class="btn btn-secondary btn-sm" onclick="window.openOwnWorkoutModal()">
+            Build "Own Workout" (0 Credits) 🏃
           </button>
         </div>
       `}
@@ -89,10 +89,12 @@ export function renderClientWorkoutView() {
                 <div class="flex items-center gap-2">
                   <span class="font-bold text-sm">${w.name}</span>
                   <span class="badge ${w.workout_type === 'OWN_WORKOUT' ? 'badge-blue' : 'badge-primary'}" style="font-size: 0.65rem;">
-                    ${w.workout_type === 'OWN_WORKOUT' ? 'Own Workout (0 PT)' : 'PT Session'}
+                    ${w.workout_type === 'OWN_WORKOUT' ? 'Own Workout (0 PT Credits)' : 'PT Session'}
                   </span>
                 </div>
-                <div class="text-xs text-muted font-mono">${w.completed_at ? w.completed_at.split('T')[0] : 'Today'} • ${w.exercises ? w.exercises.length : 3} exercises logged</div>
+                <div class="text-xs text-muted font-mono" style="margin-top: 2px;">
+                  ${w.completed_at ? w.completed_at.split('T')[0] : 'Today'} • ${w.exercises ? w.exercises.length : 3} exercises completed
+                </div>
               </div>
               <span class="text-primary font-bold text-sm">✓ Done</span>
             </div>
