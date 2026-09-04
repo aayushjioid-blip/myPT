@@ -2236,18 +2236,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
+                          child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            onPressed: () {
-                              if (isApprovedTrainer) {
-                                _openScheduleModal(context, state, targetTrainer: t);
-                              } else {
-                                _openCoachRequestModal(context, state, t);
-                              }
-                            },
-                            child: Text(isApprovedTrainer ? 'Book Session' : 'Book Consultation'),
+                            icon: const Icon(Icons.person_outline, size: 16),
+                            label: const Text('View Profile'),
+                            onPressed: () => _openCoachProfileModal(context, state, t),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -2272,7 +2267,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             },
                             child: Text(
                               isApprovedTrainer
-                                  ? 'Schedule Session 📅'
+                                  ? 'Book Session 📅'
                                   : isPendingTrainer
                                       ? 'Approval Pending ⏳'
                                       : 'Request Coach 🚀',
@@ -4763,6 +4758,184 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _openCoachProfileModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    final user = state.currentUser;
+    final isCurrentTrainer = user?.trainerId == coach.id;
+    final isApproved = isCurrentTrainer && user?.trainerApprovalStatus == TrainerApprovalStatus.approved;
+    final isPending = isCurrentTrainer && user?.trainerApprovalStatus == TrainerApprovalStatus.pending;
+    final specialties = _getTrainerSpecialties(coach);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.88),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                    child: Text(
+                      coach.name[0],
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(coach.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                            const SizedBox(width: 6),
+                            if (isApproved)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E676).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF00E676), width: 0.8),
+                                ),
+                                child: const Text('✓ APPROVED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                              )
+                            else if (isPending)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF9800).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFFF9800), width: 0.8),
+                                ),
+                                child: const Text('⏳ PENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text('Certified Personal Trainer • Strength & Conditioning', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        const Row(
+                          children: [
+                            Icon(Icons.star, color: Colors.amber, size: 14),
+                            SizedBox(width: 4),
+                            Text('4.9 (24 Reviews)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                            SizedBox(width: 10),
+                            Icon(Icons.verified_user_outlined, color: Color(0xFF00E676), size: 14),
+                            SizedBox(width: 4),
+                            Text('Verified Coach', style: TextStyle(color: Color(0xFF00E676), fontSize: 11)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white60), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              const Divider(height: 24, color: Colors.white12),
+              const Text('About Coach', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 6),
+              Text(
+                'Coach ${coach.name} has over 8+ years of dedicated coaching experience helping clients achieve sustainable fat loss, clean hypertrophy, and injury-free strength progression. Specializing in progressive overload programming, movement biomechanics, and personalized nutrition guidance.',
+                style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              const Text('Specialties & Focus Areas', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: specialties.map((s) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF21262D),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Text(s, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500)),
+                )).toList(),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D1117),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('How Coaching Works', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                    SizedBox(height: 6),
+                    Text('1. Submit a Coaching Request with your target fitness goals', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    SizedBox(height: 3),
+                    Text('2. Coach reviews your profile and approves consultation', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    SizedBox(height: 3),
+                    Text('3. Activate a session package & book 1-on-1 time slots', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isApproved
+                        ? const Color(0xFF00E676)
+                        : isPending
+                            ? const Color(0xFFFF9800)
+                            : const Color(0xFFFF5722),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    if (isApproved) {
+                      _openScheduleModal(context, state, targetTrainer: coach);
+                    } else if (isPending) {
+                      _openScheduleModal(context, state, targetTrainer: coach);
+                    } else {
+                      _openCoachRequestModal(context, state, coach);
+                    }
+                  },
+                  child: Text(
+                    isApproved
+                        ? 'Book Session 📅'
+                        : isPending
+                            ? 'Approval Pending ⏳'
+                            : 'Request Coach 🚀',
+                    style: TextStyle(
+                      color: isApproved ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
