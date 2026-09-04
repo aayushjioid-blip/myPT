@@ -4002,7 +4002,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
 
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-    String selectedTimeSlot = '10:00 AM';
+    String selectedTimeSlot = '10:00 AM - 11:00 AM';
     String selectedFocus = 'Hypertrophy & Form';
 
     // Restrict available coaches:
@@ -4033,16 +4033,41 @@ class _MainShellScreenState extends State<MainShellScreen> {
             : (state.allClients.isNotEmpty ? state.allClients.first : state.currentUser));
 
     const List<String> timeSlots = [
-      '07:00 AM',
-      '08:00 AM',
-      '09:30 AM',
-      '10:00 AM',
-      '11:30 AM',
-      '02:00 PM',
-      '04:00 PM',
-      '05:30 PM',
-      '06:30 PM',
-      '07:30 PM',
+      '05:00 AM - 06:00 AM',
+      '05:30 AM - 06:30 AM',
+      '06:00 AM - 07:00 AM',
+      '06:30 AM - 07:30 AM',
+      '07:00 AM - 08:00 AM',
+      '07:30 AM - 08:30 AM',
+      '08:00 AM - 09:00 AM',
+      '08:30 AM - 09:30 AM',
+      '09:00 AM - 10:00 AM',
+      '09:30 AM - 10:30 AM',
+      '10:00 AM - 11:00 AM',
+      '10:30 AM - 11:30 AM',
+      '11:00 AM - 12:00 PM',
+      '11:30 AM - 12:30 PM',
+      '12:00 PM - 01:00 PM',
+      '12:30 PM - 01:30 PM',
+      '01:00 PM - 02:00 PM',
+      '01:30 PM - 02:30 PM',
+      '02:00 PM - 03:00 PM',
+      '02:30 PM - 03:30 PM',
+      '03:00 PM - 04:00 PM',
+      '03:30 PM - 04:30 PM',
+      '04:00 PM - 05:00 PM',
+      '04:30 PM - 05:30 PM',
+      '05:00 PM - 06:00 PM',
+      '05:30 PM - 06:30 PM',
+      '06:00 PM - 07:00 PM',
+      '06:30 PM - 07:30 PM',
+      '07:00 PM - 08:00 PM',
+      '07:30 PM - 08:30 PM',
+      '08:00 PM - 09:00 PM',
+      '08:30 PM - 09:30 PM',
+      '09:00 PM - 10:00 PM',
+      '09:30 PM - 10:30 PM',
+      '10:00 PM - 11:00 PM',
     ];
 
     const List<String> focusAreas = [
@@ -4382,38 +4407,71 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                     // Time Slot Section
                     const Text(
-                      'Available Time Slots',
+                      'Select Time Slot (1-Hour Session)',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: timeSlots.map((slot) {
-                        final isSelected = selectedTimeSlot == slot;
-                        return InkWell(
-                          onTap: () => setModalState(() => selectedTimeSlot = slot),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFFF5722) : const Color(0xFF0D1117),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D1117),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: timeSlots.contains(selectedTimeSlot) ? selectedTimeSlot : timeSlots[10],
+                          dropdownColor: const Color(0xFF161B22),
+                          menuMaxHeight: 320,
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF5722)),
+                          items: timeSlots.map((slot) {
+                            final isSelected = selectedTimeSlot == slot;
+                            return DropdownMenuItem<String>(
+                              value: slot,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.schedule,
+                                    size: 16,
+                                    color: isSelected ? const Color(0xFFFF5722) : Colors.white60,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    slot,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? const Color(0xFFFF5722) : Colors.white,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF5722).withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '1 hr',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFFF5722),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            child: Text(
-                              slot,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? Colors.white : Colors.white70,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                          onChanged: (newSlot) {
+                            if (newSlot != null) {
+                              setModalState(() => selectedTimeSlot = newSlot);
+                            }
+                          },
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
 
