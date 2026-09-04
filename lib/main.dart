@@ -191,10 +191,6 @@ class MyPtProvider extends ChangeNotifier {
     return '${cur.symbol}${NumberFormat('#,##0').format(converted.round())}';
   }
 
-  void toggleDevMode() {
-    isDevMode = !isDevMode;
-    notifyListeners();
-  }
 
   // Pre-configured demo passwords map for reference & validation
   final Map<String, String> demoPasswords = {
@@ -3289,19 +3285,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 },
               ),
             ],
-            const Divider(height: 24),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              activeColor: const Color(0xFFFF5722),
-              title: const Text('Dev / Tester Mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-              subtitle: const Text('Toggle demo role switchers & tester shortcuts', style: TextStyle(fontSize: 11, color: Colors.white54)),
-              value: state.isDevMode,
-              onChanged: (val) {
-                state.toggleDevMode();
-                Navigator.pop(ctx);
-              },
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
