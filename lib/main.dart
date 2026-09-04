@@ -21,6 +21,7 @@ class UserModel {
   String goal;
   String? headCoachId; // If Coach: ID of Head Coach managing this coach
   String? trainerId;   // If Client: ID of Trainer training this client
+  List<UserRole>? dualRoles; // Dual roles (e.g. Neeli: headCoach + gymMgr, Khushboo: coach + client)
 
   UserModel({
     required this.id,
@@ -33,6 +34,7 @@ class UserModel {
     this.goal = 'Fat Loss & Hypertrophy',
     this.headCoachId,
     this.trainerId,
+    this.dualRoles,
   });
 }
 
@@ -194,8 +196,106 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Pre-configured demo passwords map for reference & validation
+  final Map<String, String> demoPasswords = {
+    'aayush@mypt.com': 'admin123',
+    'himani@mypt.com': 'admin123',
+    'sourabh@mypt.com': 'client123',
+    'rk@mypt.com': 'client123',
+    'odin@mypt.com': 'client123',
+    'rincy@mypt.com': 'trainer123',
+    'kumar@mypt.com': 'trainer123',
+    'neeli@mypt.com': 'lead123',
+    'khushboo@mypt.com': 'coachclient123',
+    'sarah@mypt.com': 'client123',
+    'alex@mypt.com': 'coach123',
+    'marcus@mypt.com': 'head123',
+    'elena@mypt.com': 'manager123',
+    'admin@mypt.com': 'admin123',
+  };
+
   // Pre-configured demo accounts
   final Map<String, UserModel> demoAccounts = {
+    // --- NEW USERS ---
+    'aayush@mypt.com': UserModel(
+      id: 'usr_aayush',
+      name: 'Aayush',
+      email: 'aayush@mypt.com',
+      role: UserRole.superAdmin,
+    ),
+    'himani@mypt.com': UserModel(
+      id: 'usr_himani',
+      name: 'Himani',
+      email: 'himani@mypt.com',
+      role: UserRole.superAdmin,
+    ),
+    'sourabh@mypt.com': UserModel(
+      id: 'usr_sourabh',
+      name: 'Sourabh',
+      email: 'sourabh@mypt.com',
+      role: UserRole.client,
+      currentWeight: 72.0,
+      startingWeight: 75.0,
+      ptCredits: 4,
+      goal: 'Lean Muscle & Core',
+      trainerId: 'usr_rincy',
+    ),
+    'rk@mypt.com': UserModel(
+      id: 'usr_rk',
+      name: 'RK',
+      email: 'rk@mypt.com',
+      role: UserRole.client,
+      currentWeight: 78.5,
+      startingWeight: 82.0,
+      ptCredits: 6,
+      goal: 'Hypertrophy & Mobility',
+      trainerId: 'usr_kumar',
+    ),
+    'odin@mypt.com': UserModel(
+      id: 'usr_odin',
+      name: 'Odin',
+      email: 'odin@mypt.com',
+      role: UserRole.client,
+      currentWeight: 85.0,
+      startingWeight: 90.0,
+      ptCredits: 8,
+      goal: 'Power & Strength',
+      trainerId: 'trn_alex',
+    ),
+    'rincy@mypt.com': UserModel(
+      id: 'usr_rincy',
+      name: 'Rincy',
+      email: 'rincy@mypt.com',
+      role: UserRole.coach,
+      headCoachId: 'usr_neeli',
+    ),
+    'kumar@mypt.com': UserModel(
+      id: 'usr_kumar',
+      name: 'Kumar',
+      email: 'kumar@mypt.com',
+      role: UserRole.coach,
+      headCoachId: 'usr_neeli',
+    ),
+    'neeli@mypt.com': UserModel(
+      id: 'usr_neeli',
+      name: 'Neeli',
+      email: 'neeli@mypt.com',
+      role: UserRole.headCoach,
+      dualRoles: [UserRole.headCoach, UserRole.gymMgr],
+    ),
+    'khushboo@mypt.com': UserModel(
+      id: 'usr_khushboo',
+      name: 'Khushboo',
+      email: 'khushboo@mypt.com',
+      role: UserRole.coach,
+      currentWeight: 56.0,
+      startingWeight: 59.0,
+      ptCredits: 5,
+      goal: 'Athletic Conditioning & Hypertrophy',
+      headCoachId: 'usr_neeli',
+      dualRoles: [UserRole.coach, UserRole.client],
+    ),
+    // --- EXISTING SEED USERS ---
     'sarah@mypt.com': UserModel(
       id: 'usr_sarah',
       name: 'Sarah Jenkins',
@@ -203,7 +303,8 @@ class MyPtProvider extends ChangeNotifier {
       role: UserRole.client,
       currentWeight: 64.5,
       startingWeight: 68.0,
-      ptCredits: 4,
+      ptCredits: 0,
+      goal: 'Fat Loss & Hypertrophy',
       trainerId: 'trn_alex',
     ),
     'alex@mypt.com': UserModel(
@@ -211,7 +312,7 @@ class MyPtProvider extends ChangeNotifier {
       name: 'Alex Rivera',
       email: 'alex@mypt.com',
       role: UserRole.coach,
-      headCoachId: 'trn_marcus',
+      headCoachId: 'usr_neeli',
     ),
     'marcus@mypt.com': UserModel(
       id: 'trn_marcus',
@@ -236,11 +337,33 @@ class MyPtProvider extends ChangeNotifier {
 
   List<UserModel> allTrainers = [
     UserModel(
+      id: 'usr_rincy',
+      name: 'Rincy',
+      email: 'rincy@mypt.com',
+      role: UserRole.coach,
+      headCoachId: 'usr_neeli',
+    ),
+    UserModel(
+      id: 'usr_kumar',
+      name: 'Kumar',
+      email: 'kumar@mypt.com',
+      role: UserRole.coach,
+      headCoachId: 'usr_neeli',
+    ),
+    UserModel(
+      id: 'usr_khushboo',
+      name: 'Khushboo',
+      email: 'khushboo@mypt.com',
+      role: UserRole.coach,
+      headCoachId: 'usr_neeli',
+      dualRoles: [UserRole.coach, UserRole.client],
+    ),
+    UserModel(
       id: 'trn_alex',
       name: 'Alex Rivera',
       email: 'alex@mypt.com',
       role: UserRole.coach,
-      headCoachId: 'trn_marcus',
+      headCoachId: 'usr_neeli',
     ),
     UserModel(
       id: 'trn_elena',
@@ -253,13 +376,47 @@ class MyPtProvider extends ChangeNotifier {
 
   List<UserModel> rosterClients = [
     UserModel(
-      id: 'c1',
+      id: 'usr_sourabh',
+      name: 'Sourabh',
+      email: 'sourabh@mypt.com',
+      role: UserRole.client,
+      currentWeight: 72.0,
+      startingWeight: 75.0,
+      ptCredits: 4,
+      goal: 'Lean Muscle & Core',
+      trainerId: 'usr_rincy',
+    ),
+    UserModel(
+      id: 'usr_rk',
+      name: 'RK',
+      email: 'rk@mypt.com',
+      role: UserRole.client,
+      currentWeight: 78.5,
+      startingWeight: 82.0,
+      ptCredits: 6,
+      goal: 'Hypertrophy & Mobility',
+      trainerId: 'usr_kumar',
+    ),
+    UserModel(
+      id: 'usr_odin',
+      name: 'Odin',
+      email: 'odin@mypt.com',
+      role: UserRole.client,
+      currentWeight: 85.0,
+      startingWeight: 90.0,
+      ptCredits: 8,
+      goal: 'Power & Strength',
+      trainerId: 'trn_alex',
+    ),
+    UserModel(
+      id: 'usr_sarah',
       name: 'Sarah Jenkins',
-      email: 'sarah.j@mypt.com',
+      email: 'sarah@mypt.com',
       role: UserRole.client,
       currentWeight: 64.5,
-      ptCredits: 4,
-      goal: 'Hypertrophy & Fat Loss',
+      startingWeight: 68.0,
+      ptCredits: 0,
+      goal: 'Fat Loss & Hypertrophy',
       trainerId: 'trn_alex',
     ),
     UserModel(
@@ -280,7 +437,7 @@ class MyPtProvider extends ChangeNotifier {
       currentWeight: 58.2,
       ptCredits: 2,
       goal: 'Endurance & Core',
-      trainerId: 'trn_elena',
+      trainerId: 'usr_khushboo',
     ),
     UserModel(
       id: 'c4',
@@ -290,7 +447,18 @@ class MyPtProvider extends ChangeNotifier {
       currentWeight: 91.0,
       ptCredits: 6,
       goal: 'Body Recomposition',
-      trainerId: 'trn_elena',
+      trainerId: 'usr_khushboo',
+    ),
+    UserModel(
+      id: 'usr_khushboo_client',
+      name: 'Khushboo (Client Mode)',
+      email: 'khushboo.client@mypt.com',
+      role: UserRole.client,
+      currentWeight: 56.0,
+      startingWeight: 59.0,
+      ptCredits: 5,
+      goal: 'Athletic Conditioning & Hypertrophy',
+      trainerId: 'trn_alex',
     ),
   ];
 
@@ -506,13 +674,38 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void switchRole(UserRole role) {
-    if (role == UserRole.client) currentUser = demoAccounts['sarah@mypt.com'];
-    if (role == UserRole.coach) currentUser = demoAccounts['alex@mypt.com'];
-    if (role == UserRole.headCoach) currentUser = demoAccounts['marcus@mypt.com'];
-    if (role == UserRole.gymMgr) currentUser = demoAccounts['elena@mypt.com'];
-    if (role == UserRole.superAdmin) currentUser = demoAccounts['admin@mypt.com'];
+  bool get hasDualRole => currentUser?.dualRoles != null && (currentUser!.dualRoles?.length ?? 0) > 1;
+
+  void toggleDualRole() {
+    if (currentUser == null || !hasDualRole) return;
+    final current = currentUser!.role;
+    final roles = currentUser!.dualRoles!;
+    final nextIndex = (roles.indexOf(current) + 1) % roles.length;
+    currentUser!.role = roles[nextIndex];
     notifyListeners();
+  }
+
+  void switchRole(UserRole role) {
+    if (role == UserRole.client) currentUser = demoAccounts['sourabh@mypt.com'] ?? demoAccounts['sarah@mypt.com'];
+    if (role == UserRole.coach) currentUser = demoAccounts['rincy@mypt.com'] ?? demoAccounts['alex@mypt.com'];
+    if (role == UserRole.headCoach) {
+      currentUser = demoAccounts['neeli@mypt.com'] ?? demoAccounts['marcus@mypt.com'];
+      if (currentUser?.email == 'neeli@mypt.com') currentUser!.role = UserRole.headCoach;
+    }
+    if (role == UserRole.gymMgr) {
+      currentUser = demoAccounts['neeli@mypt.com'] ?? demoAccounts['elena@mypt.com'];
+      if (currentUser?.email == 'neeli@mypt.com') currentUser!.role = UserRole.gymMgr;
+    }
+    if (role == UserRole.superAdmin) currentUser = demoAccounts['aayush@mypt.com'] ?? demoAccounts['admin@mypt.com'];
+    notifyListeners();
+  }
+
+  void switchUserByEmail(String email) {
+    final clean = email.trim().toLowerCase();
+    if (demoAccounts.containsKey(clean)) {
+      currentUser = demoAccounts[clean];
+      notifyListeners();
+    }
   }
 
   void switchUser(UserModel user) {
@@ -727,15 +920,53 @@ class _AuthScreenState extends State<AuthScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
+                        const Text('👑 SUPER ADMINS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                        const SizedBox(height: 4),
                         Wrap(
                           spacing: 6,
                           runSpacing: 6,
                           children: [
-                            _demoButton('👤 Client (Sarah)', 'sarah@mypt.com', 'client123', state),
-                            _demoButton('🏋️ Coach (Alex)', 'alex@mypt.com', 'coach123', state),
-                            _demoButton('🥇 Head Coach', 'marcus@mypt.com', 'head123', state),
-                            _demoButton('🏢 Gym Mgr', 'elena@mypt.com', 'manager123', state),
-                            _demoButton('🛡️ Super Admin', 'admin@mypt.com', 'admin123', state),
+                            _demoButton('🛡️ Aayush', 'aayush@mypt.com', 'admin123', state),
+                            _demoButton('🛡️ Himani', 'himani@mypt.com', 'admin123', state),
+                            _demoButton('🛡️ Elena Admin', 'admin@mypt.com', 'admin123', state),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('🥇 HEAD COACH & GYM MANAGER (DUAL)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _demoButton('👑 Neeli (Head/Gym Mgr)', 'neeli@mypt.com', 'lead123', state),
+                            _demoButton('🥇 Marcus (Head Coach)', 'marcus@mypt.com', 'head123', state),
+                            _demoButton('🏢 Elena (Gym Manager)', 'elena@mypt.com', 'manager123', state),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('🏋️ TRAINERS / COACHES', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _demoButton('⚡ Rincy (Coach)', 'rincy@mypt.com', 'trainer123', state),
+                            _demoButton('🏋️ Kumar (Coach)', 'kumar@mypt.com', 'trainer123', state),
+                            _demoButton('🥊 Khushboo (Coach/Client)', 'khushboo@mypt.com', 'coachclient123', state),
+                            _demoButton('🏋️ Alex (Coach)', 'alex@mypt.com', 'coach123', state),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('👤 CLIENTS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _demoButton('👤 Sourabh (Client)', 'sourabh@mypt.com', 'client123', state),
+                            _demoButton('👤 RK (Client)', 'rk@mypt.com', 'client123', state),
+                            _demoButton('👤 Odin (Client)', 'odin@mypt.com', 'client123', state),
+                            _demoButton('👤 Sarah Jenkins', 'sarah@mypt.com', 'client123', state),
                           ],
                         ),
                       ],
@@ -990,6 +1221,48 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                       ),
                     ),
+                    if (state.hasDualRole) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          state.toggleDualRole();
+                          setState(() => _tabIndex = 0);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: const Color(0xFF00E676),
+                              content: Text('🔄 Switched persona to ${state.currentUser!.role.name.toUpperCase()} Mode'),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF00E676)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.swap_horiz, size: 14, color: Color(0xFF00E676)),
+                              const SizedBox(width: 4),
+                              Text(
+                                user.role == UserRole.headCoach
+                                    ? '⇄ Gym Mgr Mode'
+                                    : user.role == UserRole.gymMgr
+                                        ? '⇄ Head Coach Mode'
+                                        : user.role == UserRole.coach
+                                            ? '⇄ Client Mode'
+                                            : '⇄ Coach Mode',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     GestureDetector(
                       onTap: () => _openProfileModal(context, state),
@@ -1017,19 +1290,35 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         const Icon(Icons.bolt, color: Color(0xFFFF5722), size: 16),
                         const SizedBox(width: 4),
                         const Text(
-                          'ROLE: ',
+                          'PERSONA: ',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                         ),
                         const SizedBox(width: 6),
-                        _chip('Client (Sarah)', UserRole.client, state),
+                        _userChip('🛡️ Aayush', 'aayush@mypt.com', state),
                         const SizedBox(width: 6),
-                        _chip('Coach (Alex)', UserRole.coach, state),
+                        _userChip('🛡️ Himani', 'himani@mypt.com', state),
                         const SizedBox(width: 6),
-                        _chip('Head Coach', UserRole.headCoach, state),
+                        _userChip('👑 Neeli (Dual)', 'neeli@mypt.com', state),
                         const SizedBox(width: 6),
-                        _chip('Gym Mgr', UserRole.gymMgr, state),
+                        _userChip('🥊 Khushboo (Dual)', 'khushboo@mypt.com', state),
                         const SizedBox(width: 6),
-                        _chip('Super Admin', UserRole.superAdmin, state),
+                        _userChip('⚡ Rincy (Coach)', 'rincy@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('🏋️ Kumar (Coach)', 'kumar@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('👤 Sourabh (Client)', 'sourabh@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('👤 RK (Client)', 'rk@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('👤 Odin (Client)', 'odin@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('👤 Sarah (Client)', 'sarah@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('🏋️ Alex (Coach)', 'alex@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('🥇 Marcus (Head)', 'marcus@mypt.com', state),
+                        const SizedBox(width: 6),
+                        _userChip('🏢 Elena (Gym Mgr)', 'elena@mypt.com', state),
                       ],
                     ),
                   ),
@@ -1058,24 +1347,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  Widget _chip(String title, UserRole role, MyPtProvider state) {
-    final sel = state.currentUser?.role == role;
+
+  Widget _userChip(String title, String email, MyPtProvider state) {
+    final sel = state.currentUser?.email.toLowerCase() == email.toLowerCase();
     return GestureDetector(
       onTap: () {
-        state.switchRole(role);
+        state.switchUserByEmail(email);
         setState(() => _tabIndex = 0);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: sel ? const Color(0xFFFF5722) : const Color(0xFF21262D),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: sel ? const Color(0xFFFF5722) : Colors.white12),
         ),
         child: Text(
           title,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: sel ? FontWeight.bold : FontWeight.normal,
             color: sel ? Colors.white : Colors.white70,
           ),
@@ -2972,6 +3262,33 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               ],
             ),
+            if (state.hasDualRole) ...[
+              const Divider(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.swap_horiz, color: Color(0xFF00E676)),
+                title: Text(
+                  state.currentUser!.role == UserRole.headCoach
+                      ? 'Switch to Gym Manager Mode'
+                      : state.currentUser!.role == UserRole.gymMgr
+                          ? 'Switch to Head Coach Mode'
+                          : state.currentUser!.role == UserRole.coach
+                              ? 'Switch to Client Mode'
+                              : 'Switch to Coach Mode',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00E676)),
+                ),
+                subtitle: Text(
+                  'Dual-role account active (${state.currentUser!.email})',
+                  style: const TextStyle(fontSize: 11, color: Colors.white54),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Color(0xFF00E676)),
+                onTap: () {
+                  state.toggleDualRole();
+                  Navigator.pop(ctx);
+                  setState(() => _tabIndex = 0);
+                },
+              ),
+            ],
             const Divider(height: 24),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
