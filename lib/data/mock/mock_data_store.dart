@@ -72,6 +72,13 @@ class MockDataStore {
     // 1. Users for all 5 roles
     users.addAll([
       const UserEntity(
+        id: 'usr_master',
+        name: 'Master Admin',
+        email: 'master@mypt.com',
+        role: UserRole.superAdmin,
+        avatar: '⚡',
+      ),
+      const UserEntity(
         id: 'usr-admin-1',
         name: 'Super Admin',
         email: 'admin@test.local',

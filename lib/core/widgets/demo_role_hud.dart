@@ -31,6 +31,13 @@ class DemoRoleHUD extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             _buildRoleChip(
+              label: '⚡ Master (All Roles)',
+              userId: 'usr_master',
+              role: UserRole.superAdmin,
+              currentRole: currentRole,
+              onTap: () => authVM.switchDemoRole('usr_master'),
+            ),
+            _buildRoleChip(
               label: '🛡️ Aayush (Super Admin)',
               userId: 'usr_aayush',
               role: UserRole.superAdmin,

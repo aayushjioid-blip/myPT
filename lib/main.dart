@@ -194,6 +194,7 @@ class MyPtProvider extends ChangeNotifier {
 
   // Pre-configured demo passwords map for reference & validation
   final Map<String, String> demoPasswords = {
+    'master@mypt.com': 'master',
     'aayush@mypt.com': 'admin123',
     'himani@mypt.com': 'admin123',
     'sourabh@mypt.com': 'client123',
@@ -212,6 +213,26 @@ class MyPtProvider extends ChangeNotifier {
 
   // Pre-configured demo accounts
   final Map<String, UserModel> demoAccounts = {
+    // --- MASTER PRODUCTION SUPERUSER (ALL ROLES) ---
+    'master@mypt.com': UserModel(
+      id: 'usr_master',
+      name: 'Master Admin',
+      email: 'master@mypt.com',
+      role: UserRole.superAdmin,
+      currentWeight: 75.0,
+      startingWeight: 80.0,
+      ptCredits: 99,
+      goal: 'Master Control & Complete Testing',
+      headCoachId: 'usr_neeli',
+      trainerId: 'usr_rincy',
+      dualRoles: [
+        UserRole.superAdmin,
+        UserRole.headCoach,
+        UserRole.gymMgr,
+        UserRole.coach,
+        UserRole.client,
+      ],
+    ),
     // --- NEW USERS ---
     'aayush@mypt.com': UserModel(
       id: 'usr_aayush',
@@ -671,6 +692,14 @@ class MyPtProvider extends ChangeNotifier {
   }
 
   bool get hasDualRole => currentUser?.dualRoles != null && (currentUser!.dualRoles?.length ?? 0) > 1;
+  bool get isMasterUser => currentUser?.email.toLowerCase() == 'master@mypt.com';
+
+  void setMasterRole(UserRole role) {
+    if (currentUser != null && isMasterUser) {
+      currentUser!.role = role;
+      notifyListeners();
+    }
+  }
 
   void toggleDualRole() {
     if (currentUser == null || !hasDualRole) return;
@@ -916,6 +945,16 @@ class _AuthScreenState extends State<AuthScreen> {
                           ],
                         ),
                         const SizedBox(height: 10),
+                        const Text('⚡ MASTER ADMIN (ALL ROLES TOGGLE)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFFD700))),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            _demoButton('⚡ Master (All Roles)', 'master@mypt.com', 'master', state),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
                         const Text('👑 SUPER ADMINS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
                         const SizedBox(height: 4),
                         Wrap(
@@ -1217,7 +1256,57 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                       ),
                     ),
-                    if (state.hasDualRole) ...[
+                    if (state.isMasterUser) ...[
+                      const SizedBox(width: 8),
+                      PopupMenuButton<UserRole>(
+                        tooltip: 'Switch Master Role',
+                        color: const Color(0xFF161B22),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Color(0xFFFFD700), width: 1.2),
+                        ),
+                        onSelected: (newRole) {
+                          state.setMasterRole(newRole);
+                          setState(() => _tabIndex = 0);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 1),
+                              backgroundColor: const Color(0xFFFFD700),
+                              content: Text(
+                                '⚡ Master Role switched to ${newRole.name.toUpperCase()}',
+                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          );
+                        },
+                        itemBuilder: (ctx) => [
+                          _buildMasterRoleMenuItem(UserRole.superAdmin, '👑 Super Admin', user.role),
+                          _buildMasterRoleMenuItem(UserRole.headCoach, '🥇 Head Coach', user.role),
+                          _buildMasterRoleMenuItem(UserRole.gymMgr, '🏢 Gym Manager', user.role),
+                          _buildMasterRoleMenuItem(UserRole.coach, '🏋️ Coach / Trainer', user.role),
+                          _buildMasterRoleMenuItem(UserRole.client, '👤 Client', user.role),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFD700).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFD700), width: 1.2),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.bolt, size: 14, color: Color(0xFFFFD700)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '⚡ ${user.role.name.toUpperCase()} ▾',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFFD700)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ] else if (state.hasDualRole) ...[
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: () {
@@ -1289,6 +1378,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           'PERSONA: ',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                         ),
+                        const SizedBox(width: 6),
+                        _userChip('⚡ Master', 'master@mypt.com', state),
                         const SizedBox(width: 6),
                         _userChip('🛡️ Aayush', 'aayush@mypt.com', state),
                         const SizedBox(width: 6),
@@ -3258,7 +3349,50 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               ],
             ),
-            if (state.hasDualRole) ...[
+            if (state.isMasterUser) ...[
+              const Divider(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.bolt, color: Color(0xFFFFD700), size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'MASTER PRODUCTION ROLE TOGGLE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFFFD700),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _masterRoleChip(ctx, state, UserRole.superAdmin, '👑 Super Admin'),
+                        _masterRoleChip(ctx, state, UserRole.headCoach, '🥇 Head Coach'),
+                        _masterRoleChip(ctx, state, UserRole.gymMgr, '🏢 Gym Mgr'),
+                        _masterRoleChip(ctx, state, UserRole.coach, '🏋️ Coach'),
+                        _masterRoleChip(ctx, state, UserRole.client, '👤 Client'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (state.hasDualRole) ...[
               const Divider(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -3299,6 +3433,68 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<UserRole> _buildMasterRoleMenuItem(UserRole role, String label, UserRole currentRole) {
+    final isSelected = role == currentRole;
+    return PopupMenuItem<UserRole>(
+      value: role,
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? const Color(0xFFFFD700) : Colors.white,
+              fontSize: 13,
+            ),
+          ),
+          const Spacer(),
+          if (isSelected) const Icon(Icons.check, color: Color(0xFFFFD700), size: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _masterRoleChip(BuildContext ctx, MyPtProvider state, UserRole role, String label) {
+    final isCurrent = state.currentUser!.role == role;
+    return InkWell(
+      onTap: () {
+        state.setMasterRole(role);
+        Navigator.pop(ctx);
+        setState(() => _tabIndex = 0);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            duration: const Duration(seconds: 1),
+            backgroundColor: const Color(0xFFFFD700),
+            content: Text(
+              '⚡ Master persona switched to ${role.name.toUpperCase()}',
+              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isCurrent ? const Color(0xFFFFD700) : const Color(0xFF21262D),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isCurrent ? const Color(0xFFFFD700) : Colors.white24,
+            width: isCurrent ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+            color: isCurrent ? Colors.black : Colors.white,
+          ),
         ),
       ),
     );
