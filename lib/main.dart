@@ -157,6 +157,46 @@ class ClientRequestItem {
   });
 }
 
+class ChatMessageItem {
+  final String id;
+  final String senderName;
+  final String receiverName;
+  final String text;
+  final DateTime timestamp;
+  final bool isFromTrainer;
+
+  ChatMessageItem({
+    required this.id,
+    required this.senderName,
+    required this.receiverName,
+    required this.text,
+    required this.timestamp,
+    required this.isFromTrainer,
+  });
+}
+
+class AppNotificationItem {
+  final String id;
+  final String title;
+  final String message;
+  final DateTime timestamp;
+  final String type; // 'booking', 'approval', 'chat', 'payment', 'warning', 'system'
+  bool isRead;
+  final String? recipientName;
+  final UserRole? recipientRole;
+
+  AppNotificationItem({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.timestamp,
+    required this.type,
+    this.isRead = false,
+    this.recipientName,
+    this.recipientRole,
+  });
+}
+
 // ============================================================================
 // 2. STATE PROVIDER WITH AUTH, HIERARCHY & PERSISTED DATA
 // ============================================================================
@@ -582,6 +622,52 @@ class MyPtProvider extends ChangeNotifier {
     ),
   ];
 
+  List<ChatMessageItem> chatMessages = [
+    ChatMessageItem(
+      id: 'msg_1',
+      senderName: 'Sourabh',
+      receiverName: 'Rincy',
+      text: 'Hi Coach Rincy! Looking forward to starting the hypertrophy program.',
+      timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
+      isFromTrainer: false,
+    ),
+    ChatMessageItem(
+      id: 'msg_2',
+      senderName: 'Rincy',
+      receiverName: 'Sourabh',
+      text: 'Welcome Sourabh! Make sure you stay hydrated and bring lifting shoes for the form audit.',
+      timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
+      isFromTrainer: true,
+    ),
+    ChatMessageItem(
+      id: 'msg_3',
+      senderName: 'Sarah Jenkins',
+      receiverName: 'Alex Rivera',
+      text: 'Hey Alex, excited for our session tomorrow at 10 AM!',
+      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+      isFromTrainer: false,
+    ),
+  ];
+
+  List<AppNotificationItem> notifications = [
+    AppNotificationItem(
+      id: 'notif_1',
+      title: '🎉 Welcome to myPT Pro',
+      message: 'Your personal training command center is ready. Connect with coaches and track sessions.',
+      timestamp: DateTime.now().subtract(const Duration(days: 2)),
+      type: 'system',
+      isRead: true,
+    ),
+    AppNotificationItem(
+      id: 'notif_2',
+      title: '💳 Package Activated',
+      message: '12-Week Transformation Package active (+12 PT credits).',
+      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+      type: 'payment',
+      isRead: false,
+    ),
+  ];
+
   List<TrainingPackage> packages = [
     TrainingPackage(
       id: 'pkg_starter',
@@ -847,6 +933,88 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- CHAT & MESSAGING METHODS ---
+  List<ChatMessageItem> getMessagesBetween(String userA, String userB) {
+    final a = userA.toLowerCase().trim();
+    final b = userB.toLowerCase().trim();
+    return chatMessages.where((m) {
+      final s = m.senderName.toLowerCase().trim();
+      final r = m.receiverName.toLowerCase().trim();
+      return (s == a && r == b) || (s == b && r == a);
+    }).toList();
+  }
+
+  void sendChatMessage({
+    required String senderName,
+    required String receiverName,
+    required String text,
+    required bool isFromTrainer,
+  }) {
+    final newMsg = ChatMessageItem(
+      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+      senderName: senderName,
+      receiverName: receiverName,
+      text: text,
+      timestamp: DateTime.now(),
+      isFromTrainer: isFromTrainer,
+    );
+    chatMessages.add(newMsg);
+
+    addNotification(
+      title: '💬 New message from $senderName',
+      message: text,
+      type: 'chat',
+      recipientName: receiverName,
+    );
+
+    notifyListeners();
+  }
+
+  // --- NOTIFICATIONS METHODS ---
+  List<AppNotificationItem> get currentNotifications {
+    final user = currentUser;
+    if (user == null) return [];
+    return notifications.where((n) {
+      if (n.recipientName != null && n.recipientName!.toLowerCase() == user.name.toLowerCase()) return true;
+      if (n.recipientRole != null && n.recipientRole == user.role) return true;
+      if (n.recipientName == null && n.recipientRole == null) return true;
+      return false;
+    }).toList();
+  }
+
+  int get unreadNotificationCount => currentNotifications.where((n) => !n.isRead).length;
+
+  void addNotification({
+    required String title,
+    required String message,
+    required String type,
+    String? recipientName,
+    UserRole? recipientRole,
+  }) {
+    notifications.insert(
+      0,
+      AppNotificationItem(
+        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+        title: title,
+        message: message,
+        timestamp: DateTime.now(),
+        type: type,
+        isRead: false,
+        recipientName: recipientName,
+        recipientRole: recipientRole,
+      ),
+    );
+    notifyListeners();
+  }
+
+  void markAllNotificationsRead() {
+    for (final n in currentNotifications) {
+      n.isRead = true;
+    }
+    notifyListeners();
+  }
+
+  // --- SESSION SCHEDULING & APPROVAL WORKFLOW ---
   void scheduleSession({
     required String clientName,
     required DateTime date,
@@ -859,22 +1027,112 @@ class MyPtProvider extends ChangeNotifier {
             ? allTrainers.firstWhere((t) => t.id == currentUser!.trainerId, orElse: () => allTrainers.first).name
             : 'Alex Rivera');
 
+    final isClientScheduling = currentUser?.role == UserRole.client;
+
     if (currentUser != null && currentUser!.role == UserRole.client && currentUser!.ptCredits > 0) {
       currentUser!.ptCredits -= 1;
     }
 
-    sessions.insert(
-      0,
-      SessionItem(
-        id: 'sess_${DateTime.now().millisecondsSinceEpoch}',
-        clientName: clientName,
-        trainerName: effectiveTrainer,
-        date: date,
-        timeSlot: timeSlot,
-        focusArea: focus,
-        status: RequestStatus.confirmed,
-      ),
+    final newSession = SessionItem(
+      id: 'sess_${DateTime.now().millisecondsSinceEpoch}',
+      clientName: clientName,
+      trainerName: effectiveTrainer,
+      date: date,
+      timeSlot: timeSlot,
+      focusArea: focus,
+      status: isClientScheduling ? RequestStatus.pending : RequestStatus.confirmed,
     );
+
+    sessions.insert(0, newSession);
+
+    if (isClientScheduling) {
+      // Add booking request to trainer queue
+      final req = ClientRequestItem(
+        id: 'req_sess_${DateTime.now().millisecondsSinceEpoch}',
+        clientId: currentUser?.id,
+        clientName: clientName,
+        email: currentUser?.email ?? '$clientName@mypt.com',
+        trainerId: currentUser?.trainerId,
+        requestType: 'Session Booking: $focus',
+        message: 'Requested 1-hour PT slot on ${DateFormat('EEE, dd MMM yyyy').format(date)} at $timeSlot.',
+        date: date,
+        status: RequestStatus.pending,
+      );
+      trainerRequests.insert(0, req);
+
+      // Real-time In-App Notification to Trainer
+      addNotification(
+        title: '📅 New Session Request from $clientName',
+        message: '$clientName requested a 1-hour session on ${DateFormat('EEE, dd MMM').format(date)} at $timeSlot for "$focus". Please approve or reject.',
+        recipientName: effectiveTrainer,
+        recipientRole: UserRole.coach,
+        type: 'booking',
+      );
+    }
+
+    notifyListeners();
+  }
+
+  void approveSession(SessionItem session) {
+    session.status = RequestStatus.confirmed;
+
+    for (final r in trainerRequests) {
+      if (r.clientName == session.clientName && (r.requestType.contains(session.focusArea) || r.requestType.contains('Session Booking'))) {
+        r.status = RequestStatus.confirmed;
+      }
+    }
+
+    addNotification(
+      title: '🎉 Session Confirmed by Coach ${session.trainerName}',
+      message: 'Your 1-hour session for ${DateFormat('EEE, dd MMM').format(session.date)} at ${session.timeSlot} (${session.focusArea}) is approved!',
+      recipientName: session.clientName,
+      recipientRole: UserRole.client,
+      type: 'approval',
+    );
+
+    notifyListeners();
+  }
+
+  void rejectSession(SessionItem session, {String? reason}) {
+    session.status = RequestStatus.cancelled;
+
+    // Refund 1 credit to client
+    UserModel? targetClient;
+    for (final c in rosterClients) {
+      if (c.name.toLowerCase() == session.clientName.toLowerCase()) {
+        targetClient = c;
+        break;
+      }
+    }
+    if (targetClient == null) {
+      for (final a in demoAccounts.values) {
+        if (a.name.toLowerCase() == session.clientName.toLowerCase()) {
+          targetClient = a;
+          break;
+        }
+      }
+    }
+
+    if (targetClient != null) {
+      targetClient.ptCredits += 1;
+    } else if (currentUser != null && currentUser!.name.toLowerCase() == session.clientName.toLowerCase()) {
+      currentUser!.ptCredits += 1;
+    }
+
+    for (final r in trainerRequests) {
+      if (r.clientName == session.clientName && (r.requestType.contains(session.focusArea) || r.requestType.contains('Session Booking'))) {
+        r.status = RequestStatus.cancelled;
+      }
+    }
+
+    addNotification(
+      title: '❌ Session Declined by Coach ${session.trainerName}',
+      message: 'Coach ${session.trainerName} was unable to take the slot for ${DateFormat('EEE, dd MMM').format(session.date)} at ${session.timeSlot}. 1 PT Session Credit has been refunded.',
+      recipientName: session.clientName,
+      recipientRole: UserRole.client,
+      type: 'warning',
+    );
+
     notifyListeners();
   }
 
@@ -900,6 +1158,15 @@ class MyPtProvider extends ChangeNotifier {
     trainerRequests.insert(0, req);
     currentUser!.trainerId = coach.id;
     currentUser!.trainerApprovalStatus = TrainerApprovalStatus.pending;
+
+    addNotification(
+      title: '🚀 New Coaching Request from ${currentUser!.name}',
+      message: '${currentUser!.name} requested 1-on-1 coaching ($goal): "$message"',
+      recipientName: coach.name,
+      recipientRole: UserRole.coach,
+      type: 'booking',
+    );
+
     notifyListeners();
   }
 
@@ -932,11 +1199,20 @@ class MyPtProvider extends ChangeNotifier {
         clientName: req.clientName,
         trainerName: currentUser?.name ?? 'Alex Rivera',
         date: DateTime.now().add(const Duration(days: 1)),
-        timeSlot: '11:00 AM',
+        timeSlot: '11:00 AM - 12:00 PM',
         focusArea: req.requestType,
         status: RequestStatus.confirmed,
       ),
     );
+
+    addNotification(
+      title: '🎉 Coach ${currentUser?.name ?? 'Alex'} Accepted Your Request',
+      message: 'Great news! Coach ${currentUser?.name ?? 'Alex'} accepted your coaching consultation. You can now activate a package & schedule slots.',
+      recipientName: req.clientName,
+      recipientRole: UserRole.client,
+      type: 'approval',
+    );
+
     notifyListeners();
   }
 
@@ -958,6 +1234,14 @@ class MyPtProvider extends ChangeNotifier {
       client.trainerApprovalStatus = TrainerApprovalStatus.rejected;
       client.trainerId = null;
     }
+
+    addNotification(
+      title: '❌ Coaching Request Declined',
+      message: 'Coach ${currentUser?.name ?? 'Trainer'} was unable to accept your coaching request at this time.',
+      recipientName: req.clientName,
+      recipientRole: UserRole.client,
+      type: 'warning',
+    );
 
     notifyListeners();
   }
@@ -1547,6 +1831,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ),
                     ],
                     const Spacer(),
+                    IconButton(
+                      icon: Badge(
+                        isLabelVisible: state.unreadNotificationCount > 0,
+                        label: Text(
+                          '${state.unreadNotificationCount}',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                        backgroundColor: const Color(0xFFFF5722),
+                        child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 22),
+                      ),
+                      tooltip: 'Notifications',
+                      onPressed: () => _openNotificationModal(context, state),
+                    ),
+                    const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => _openProfileModal(context, state),
                       child: Container(
@@ -1911,26 +2209,139 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         ],
         const SizedBox(height: 16),
-        const Text('Upcoming Confirmed Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Your Training Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
+              label: const Text('Book New', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+              onPressed: () => _openScheduleModal(context, state),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         if (userSessions.isNotEmpty) ...[
           ...userSessions.map(
-            (s) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFF2A150D),
-                  child: Icon(Icons.event, color: Color(0xFFFF5722)),
+            (s) {
+              final isPending = s.status == RequestStatus.pending;
+              final isConfirmed = s.status == RequestStatus.confirmed;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isPending
+                        ? const Color(0xFFFF9800).withOpacity(0.5)
+                        : isConfirmed
+                            ? const Color(0xFF00E676).withOpacity(0.3)
+                            : Colors.white10,
+                  ),
                 ),
-                title: Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${DateFormat('EEE, dd MMM').format(s.date)} at ${s.timeSlot}\nTrainer: ${s.trainerName}'),
-                trailing: Chip(
-                  label: Text(s.status.name.toUpperCase()),
-                  backgroundColor: const Color(0xFF2A150D),
-                  labelStyle: const TextStyle(fontSize: 10, color: Color(0xFFFF5722)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : const Color(0xFFFF5722).withOpacity(0.15),
+                            child: Icon(
+                              isPending ? Icons.hourglass_top_rounded : Icons.event,
+                              color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text(
+                                  '${DateFormat('EEE, dd MMM').format(s.date)} • ${s.timeSlot}',
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? const Color(0xFFFF9800).withOpacity(0.15)
+                                  : isConfirmed
+                                      ? const Color(0xFF00E676).withOpacity(0.15)
+                                      : const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white24,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              isPending
+                                  ? '⏳ PENDING APPROVAL'
+                                  : isConfirmed
+                                      ? '✓ CONFIRMED'
+                                      : s.status.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Trainer: Coach ${s.trainerName}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                          InkWell(
+                            onTap: () => _openChatModal(context, state, peerName: s.trainerName),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF21262D),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline, size: 12, color: Color(0xFFFF5722)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Message Coach',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ] else ...[
           InkWell(
@@ -2418,6 +2829,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _clientScheduleTab(MyPtProvider state) {
+    final user = state.currentUser!;
+    final userSessions = state.sessions.where((s) => s.clientName == user.name).toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -2436,23 +2850,143 @@ class _MainShellScreenState extends State<MainShellScreen> {
         const SizedBox(height: 12),
         const Text('Your Booked Sessions Calendar', style: TextStyle(color: Colors.white60, fontSize: 13)),
         const SizedBox(height: 14),
-        ...state.sessions.map(
-          (s) => Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFF2A150D),
-                child: Icon(Icons.calendar_today, color: Color(0xFFFF5722)),
-              ),
-              title: Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${DateFormat('EEEE, dd MMM yyyy').format(s.date)}\nTime Slot: ${s.timeSlot}\nCoach: ${s.trainerName}'),
-              trailing: Chip(
-                label: Text(s.status.name.toUpperCase()),
-                backgroundColor: const Color(0xFF00E676).withOpacity(0.2),
-              ),
+        if (userSessions.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
             ),
+            child: const Center(
+              child: Text('No booked sessions found. Tap "Book Session" to schedule.', style: TextStyle(color: Colors.white54)),
+            ),
+          )
+        else
+          ...userSessions.map(
+            (s) {
+              final isPending = s.status == RequestStatus.pending;
+              final isConfirmed = s.status == RequestStatus.confirmed;
+              final isCancelled = s.status == RequestStatus.cancelled;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isPending
+                        ? const Color(0xFFFF9800).withOpacity(0.5)
+                        : isConfirmed
+                            ? const Color(0xFF00E676).withOpacity(0.3)
+                            : Colors.white10,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : const Color(0xFFFF5722).withOpacity(0.15),
+                            child: Icon(
+                              isPending ? Icons.hourglass_top_rounded : Icons.event,
+                              color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text(
+                                  '${DateFormat('EEEE, dd MMM yyyy').format(s.date)} • ${s.timeSlot}',
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? const Color(0xFFFF9800).withOpacity(0.15)
+                                  : isConfirmed
+                                      ? const Color(0xFF00E676).withOpacity(0.15)
+                                      : const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white24,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              isPending
+                                  ? '⏳ PENDING APPROVAL'
+                                  : isConfirmed
+                                      ? '✓ CONFIRMED'
+                                      : isCancelled
+                                          ? '❌ CANCELLED'
+                                          : s.status.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Trainer: Coach ${s.trainerName}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                          InkWell(
+                            onTap: () => _openChatModal(context, state, peerName: s.trainerName),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF21262D),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline, size: 12, color: Color(0xFFFF5722)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Message Coach',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-        ),
       ],
     );
   }
@@ -2536,6 +3070,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget _coachDashboardTab(MyPtProvider state) {
     final coach = state.currentUser!;
     final myClients = state.getClientsForTrainer(coach.id);
+    final mySessions = state.sessions.where((s) => s.trainerName == coach.name || s.trainerName == 'Coach ${coach.name}' || coach.name.contains(s.trainerName)).toList();
+    final pendingCount = mySessions.where((s) => s.status == RequestStatus.pending).length;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -2549,7 +3085,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             const SizedBox(width: 8),
             Expanded(child: _statCard('MONTHLY REV', state.formatPrice(1398), '+14% growth', const Color(0xFF00E676))),
             const SizedBox(width: 8),
-            Expanded(child: _statCard('ACTIVE PACKS', '${state.packages.length}', 'Manage tiers', const Color(0xFF29B6F6))),
+            Expanded(child: _statCard('PENDING SESSIONS', '$pendingCount', pendingCount > 0 ? 'Needs action' : 'All clear', const Color(0xFFFF9800))),
           ],
         ),
         const SizedBox(height: 16),
@@ -2563,22 +3099,180 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        ...state.sessions.map(
-          (s) => Card(
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFF2A150D),
-                child: Icon(Icons.event, color: Color(0xFFFF5722)),
-              ),
-              title: Text(s.clientName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${DateFormat('dd MMM').format(s.date)} at ${s.timeSlot}\nFocus: ${s.focusArea}'),
-              trailing: Chip(
-                label: Text(s.status.name.toUpperCase()),
-                backgroundColor: const Color(0xFF2A150D),
-              ),
+        if (mySessions.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
             ),
+            child: const Center(
+              child: Text('No sessions scheduled for your clients yet.', style: TextStyle(color: Colors.white54)),
+            ),
+          )
+        else
+          ...mySessions.map(
+            (s) {
+              final isPending = s.status == RequestStatus.pending;
+              final isConfirmed = s.status == RequestStatus.confirmed;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isPending
+                        ? const Color(0xFFFF9800).withOpacity(0.5)
+                        : isConfirmed
+                            ? const Color(0xFF00E676).withOpacity(0.3)
+                            : Colors.white12,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: isPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : const Color(0xFFFF5722).withOpacity(0.15),
+                            child: Icon(
+                              isPending ? Icons.hourglass_top_rounded : Icons.event,
+                              color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s.clientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text(
+                                  '${DateFormat('EEE, dd MMM yyyy').format(s.date)} • ${s.timeSlot}',
+                                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                ),
+                                Text('Focus: ${s.focusArea}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? const Color(0xFFFF9800).withOpacity(0.15)
+                                  : isConfirmed
+                                      ? const Color(0xFF00E676).withOpacity(0.15)
+                                      : const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white24,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              isPending
+                                  ? '⏳ PENDING'
+                                  : isConfirmed
+                                      ? '✓ CONFIRMED'
+                                      : s.status.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (isPending) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.redAccent,
+                                  side: const BorderSide(color: Colors.redAccent),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.close, size: 14),
+                                label: const Text('Reject', style: TextStyle(fontSize: 12)),
+                                onPressed: () {
+                                  state.rejectSession(s);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: Colors.redAccent,
+                                      content: Text('Session with ${s.clientName} rejected. 1 PT Credit refunded to client.'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.check, size: 14, color: Colors.black),
+                                label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                onPressed: () {
+                                  state.approveSession(s);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: const Color(0xFF00E676),
+                                      content: Text('🎉 Session with ${s.clientName} confirmed for ${s.timeSlot}!'),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.outlined(
+                              icon: const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFFFF5722)),
+                              tooltip: 'Message Client',
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFFF5722)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              onPressed: () => _openChatModal(context, state, peerName: s.clientName),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.chat_bubble_outline, size: 14, color: Color(0xFFFF5722)),
+                              label: const Text('Message Client', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+                              onPressed: () => _openChatModal(context, state, peerName: s.clientName),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-        ),
       ],
     );
   }
@@ -2618,9 +3312,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     const SizedBox(height: 6),
                     Text('"${req.message}"', style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic)),
                     const SizedBox(height: 12),
-                    if (req.status == RequestStatus.pending)
-                      Row(
-                        children: [
+                    Row(
+                      children: [
+                        if (req.status == RequestStatus.pending) ...[
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => state.declineRequest(req),
@@ -2635,8 +3329,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               child: const Text('Accept & Book', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                             ),
                           ),
+                          const SizedBox(width: 8),
                         ],
-                      ),
+                        IconButton.outlined(
+                          icon: const Icon(Icons.chat_bubble_outline, size: 16, color: Color(0xFFFF5722)),
+                          tooltip: 'Message ${req.clientName}',
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFFF5722)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () => _openChatModal(context, state, peerName: req.clientName),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -2647,6 +3352,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _coachScheduleTab(MyPtProvider state) {
+    final coach = state.currentUser!;
+    final mySessions = state.sessions.where((s) => s.trainerName == coach.name || s.trainerName == 'Coach ${coach.name}' || coach.name.contains(s.trainerName)).toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -2663,17 +3371,173 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...state.sessions.map(
-          (s) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: const Icon(Icons.calendar_month, color: Color(0xFFFF5722)),
-              title: Text('${s.clientName} (${s.focusArea})', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${DateFormat('EEEE, dd MMM').format(s.date)} • ${s.timeSlot}'),
-              trailing: Chip(label: Text(s.status.name.toUpperCase()), backgroundColor: const Color(0xFF00E676).withOpacity(0.2)),
+        if (mySessions.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
             ),
+            child: const Center(
+              child: Text('No booked calendar sessions yet.', style: TextStyle(color: Colors.white54)),
+            ),
+          )
+        else
+          ...mySessions.map(
+            (s) {
+              final isPending = s.status == RequestStatus.pending;
+              final isConfirmed = s.status == RequestStatus.confirmed;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isPending
+                        ? const Color(0xFFFF9800).withOpacity(0.5)
+                        : isConfirmed
+                            ? const Color(0xFF00E676).withOpacity(0.3)
+                            : Colors.white10,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : const Color(0xFFFF5722).withOpacity(0.15),
+                            child: Icon(
+                              isPending ? Icons.hourglass_top_rounded : Icons.event,
+                              color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${s.clientName} (${s.focusArea})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text('${DateFormat('EEEE, dd MMM').format(s.date)} • ${s.timeSlot}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? const Color(0xFFFF9800).withOpacity(0.15)
+                                  : isConfirmed
+                                      ? const Color(0xFF00E676).withOpacity(0.15)
+                                      : const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white24,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              isPending
+                                  ? '⏳ PENDING'
+                                  : isConfirmed
+                                      ? '✓ CONFIRMED'
+                                      : s.status.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (isPending) ...[
+                            TextButton.icon(
+                              style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                              icon: const Icon(Icons.close, size: 14),
+                              label: const Text('Reject', style: TextStyle(fontSize: 12)),
+                              onPressed: () {
+                                state.rejectSession(s);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: Colors.redAccent,
+                                    content: Text('Session with ${s.clientName} rejected and refunded.'),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00E676),
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                minimumSize: Size.zero,
+                              ),
+                              icon: const Icon(Icons.check, size: 14, color: Colors.black),
+                              label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                state.approveSession(s);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    content: Text('Session with ${s.clientName} approved!'),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          InkWell(
+                            onTap: () => _openChatModal(context, state, peerName: s.clientName),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF21262D),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline, size: 12, color: Color(0xFFFF5722)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Message',
+                                    style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
-        ),
       ],
     );
   }
@@ -4589,7 +5453,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 SnackBar(
                                   backgroundColor: const Color(0xFF00E676),
                                   content: Text(
-                                    '🎉 Session booked with Coach $coachName for ${DateFormat('EEE, d MMM').format(selectedDate)} at $selectedTimeSlot!',
+                                    '🎉 Session requested with Coach $coachName for ${DateFormat('EEE, d MMM').format(selectedDate)} at $selectedTimeSlot! Coach has been notified to review.',
                                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                                   ),
                                 ),
@@ -5812,6 +6676,456 @@ class _MainShellScreenState extends State<MainShellScreen> {
             color: isCurrent ? Colors.black : Colors.white,
           ),
         ),
+      ),
+    );
+  }
+
+  void _openNotificationModal(BuildContext context, MyPtProvider state) {
+    final notifications = state.currentNotifications;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final unreadCount = state.unreadNotificationCount;
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.notifications, color: Color(0xFFFF5722), size: 22),
+                          const SizedBox(width: 8),
+                          const Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                          if (unreadCount > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF5722),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$unreadCount New',
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (notifications.isNotEmpty)
+                        TextButton(
+                          onPressed: () {
+                            state.markAllNotificationsRead();
+                            setModalState(() {});
+                          },
+                          child: const Text('Mark all read', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+                        ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: Colors.white12),
+                if (notifications.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF21262D),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.notifications_none, size: 36, color: Colors.white38),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('No Notifications', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white70)),
+                        const SizedBox(height: 4),
+                        const Text('You are all caught up!', style: TextStyle(fontSize: 12, color: Colors.white38)),
+                      ],
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: notifications.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      itemBuilder: (context, idx) {
+                        final notif = notifications[idx];
+                        final isUnread = !notif.isRead;
+                        final icon = notif.type == 'session'
+                            ? Icons.event_available
+                            : notif.type == 'chat'
+                                ? Icons.chat_bubble
+                                : notif.type == 'approval'
+                                    ? Icons.verified
+                                    : Icons.notifications;
+
+                        final color = notif.type == 'session'
+                            ? const Color(0xFFFF5722)
+                            : notif.type == 'approval'
+                                ? const Color(0xFF00E676)
+                                : const Color(0xFF29B6F6);
+
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isUnread ? const Color(0xFF21262D) : const Color(0xFF0D1117),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isUnread ? color.withOpacity(0.4) : Colors.white12,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: color.withOpacity(0.15),
+                                child: Icon(icon, color: color, size: 18),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            notif.title,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isUnread)
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFFF5722),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      notif.message,
+                                      style: const TextStyle(fontSize: 12, color: Colors.white70, height: 1.3),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      DateFormat('EEE, d MMM • hh:mm a').format(notif.timestamp),
+                                      style: const TextStyle(fontSize: 10, color: Colors.white38),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openChatModal(
+    BuildContext context,
+    MyPtProvider state, {
+    required String peerName,
+    String? prefilledText,
+  }) {
+    final textCtrl = TextEditingController(text: prefilledText ?? '');
+    final scrollCtrl = ScrollController();
+    final currentUser = state.currentUser;
+    final currentUserName = currentUser?.name ?? 'User';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final messages = state.getMessagesBetween(currentUserName, peerName);
+
+          void sendMessage([String? customText]) {
+            final t = customText ?? textCtrl.text.trim();
+            if (t.isEmpty) return;
+
+            final isTrainer = currentUser?.role == UserRole.coach || currentUser?.role == UserRole.headCoach;
+
+            state.sendChatMessage(
+              senderName: currentUserName,
+              receiverName: peerName,
+              text: t,
+              isFromTrainer: isTrainer,
+            );
+
+            if (customText == null) {
+              textCtrl.clear();
+            }
+
+            setModalState(() {});
+
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (scrollCtrl.hasClients) {
+                scrollCtrl.animateTo(
+                  scrollCtrl.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                );
+              }
+            });
+          }
+
+          const quickPills = [
+            'Confirming our session slot 📅',
+            'Can we reschedule by 30 mins?',
+            'What should I eat before training?',
+            'Focus on compound lifts today 💪',
+          ];
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.90,
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                        child: Text(
+                          peerName.isNotEmpty ? peerName[0] : '?',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(peerName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                            const Row(
+                              children: [
+                                Icon(Icons.circle, color: Color(0xFF00E676), size: 8),
+                                SizedBox(width: 4),
+                                Text('Online • 1-on-1 Chat', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1, color: Colors.white12),
+
+                // Message bubbles list
+                Expanded(
+                  child: messages.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF0D1117),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.chat_bubble_outline, size: 36, color: Colors.white38),
+                              ),
+                              const SizedBox(height: 12),
+                              Text('Start a conversation with $peerName', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                              const SizedBox(height: 4),
+                              const Text('Discuss workout plans, time slots, or form check', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollCtrl,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: messages.length,
+                          itemBuilder: (context, idx) {
+                            final msg = messages[idx];
+                            final isMe = msg.senderName.toLowerCase() == currentUserName.toLowerCase();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (!isMe) ...[
+                                    CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                                      child: Text(
+                                        msg.senderName.isNotEmpty ? msg.senderName[0] : '?',
+                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      decoration: BoxDecoration(
+                                        color: isMe ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(14),
+                                          topRight: const Radius.circular(14),
+                                          bottomLeft: Radius.circular(isMe ? 14 : 2),
+                                          bottomRight: Radius.circular(isMe ? 2 : 14),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            msg.text,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: isMe ? Colors.white : Colors.white.withOpacity(0.9),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            DateFormat('hh:mm a').format(msg.timestamp),
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: isMe ? Colors.white70 : Colors.white38,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+
+                // Quick Preset Message Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Row(
+                    children: quickPills.map((pill) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ActionChip(
+                          label: Text(pill, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                          backgroundColor: const Color(0xFF0D1117),
+                          side: const BorderSide(color: Colors.white12),
+                          onPressed: () => sendMessage(pill),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                // Input bar
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: textCtrl,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: 'Type a message to $peerName...',
+                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                            filled: true,
+                            fillColor: const Color(0xFF0D1117),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(color: Colors.white12),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(color: Colors.white12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(color: Color(0xFFFF5722)),
+                            ),
+                          ),
+                          onSubmitted: (_) => sendMessage(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: const Color(0xFFFF5722),
+                        child: IconButton(
+                          icon: const Icon(Icons.send, size: 18, color: Colors.white),
+                          onPressed: () => sendMessage(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
