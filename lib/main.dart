@@ -1212,6 +1212,43 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _tabIndex = 0;
+  final TextEditingController _coachSearchCtrl = TextEditingController();
+  String _coachSearchQuery = '';
+  String _selectedCoachSpecialty = 'All';
+  final List<String> _specialtyFilters = const [
+    'All',
+    'Hypertrophy',
+    'Strength',
+    'Fat Loss',
+    'Biomechanics',
+    'Mobility',
+    'Conditioning',
+    'Powerlifting',
+  ];
+
+  @override
+  void dispose() {
+    _coachSearchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> _getTrainerSpecialties(UserModel trainer) {
+    final lower = trainer.name.toLowerCase();
+    if (lower.contains('rincy')) {
+      return const ['Strength & Conditioning', 'Biomechanics', 'Hypertrophy'];
+    } else if (lower.contains('kumar')) {
+      return const ['Powerlifting', 'Hypertrophy', 'Strength'];
+    } else if (lower.contains('khushboo')) {
+      return const ['Athletic Conditioning', 'Fat Loss', 'Mobility'];
+    } else if (lower.contains('alex')) {
+      return const ['NASM-CPT Elite', 'Hypertrophy', 'Fat Loss', 'Biomechanics'];
+    } else if (lower.contains('elena')) {
+      return const ['Functional Training', 'Mobility', 'Conditioning'];
+    } else if (lower.contains('marcus') || lower.contains('neeli')) {
+      return const ['Head Coach Oversight', 'Olympic Lifting', 'Biomechanics'];
+    }
+    return const ['Personal Training', 'Fitness Coaching', 'Strength'];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1675,6 +1712,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _clientDiscoverTab(MyPtProvider state) {
+    final user = state.currentUser!;
+    final query = _coachSearchQuery.trim().toLowerCase();
+
+    final filteredTrainers = state.allTrainers.where((t) {
+      final specialties = _getTrainerSpecialties(t);
+
+      // 1. Specialty chip filter
+      if (_selectedCoachSpecialty != 'All') {
+        final matchesChip = specialties.any((s) => s.toLowerCase().contains(_selectedCoachSpecialty.toLowerCase()));
+        if (!matchesChip) return false;
+      }
+
+      // 2. Search query filter
+      if (query.isNotEmpty) {
+        final nameMatches = t.name.toLowerCase().contains(query);
+        final emailMatches = t.email.toLowerCase().contains(query);
+        final goalMatches = t.goal.toLowerCase().contains(query);
+        final specMatches = specialties.any((s) => s.toLowerCase().contains(query));
+        if (!nameMatches && !emailMatches && !goalMatches && !specMatches) return false;
+      }
+
+      return true;
+    }).toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1682,67 +1743,284 @@ class _MainShellScreenState extends State<MainShellScreen> {
         const SizedBox(height: 4),
         const Text('Browse certified coaches tailored to your fitness goals.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 14),
-        ...state.allTrainers.map(
-          (t) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                        child: Text(t.name[0], style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(t.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            const Text('Certified Personal Trainer • Strength & Conditioning', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                      const Chip(label: Text('⭐ 4.9'), backgroundColor: Color(0xFF21262D)),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  const Text('Specialties: Hypertrophy, Biomechanics, Fat Loss, Powerlifting', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => _openScheduleModal(context, state),
-                          child: const Text('Book Consultation'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                          onPressed: () {
-                            state.selectTrainerForCurrentUser(t.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: const Color(0xFF00E676),
-                                content: Text('🎉 Coach ${t.name} selected as your primary trainer!'),
-                              ),
-                            );
-                          },
-                          child: const Text('Select Coach', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+
+        // Always-On Search Bar
+        TextField(
+          controller: _coachSearchCtrl,
+          decoration: InputDecoration(
+            hintText: 'Search by coach name, specialty (e.g. Hypertrophy, Fat Loss)...',
+            hintStyle: const TextStyle(fontSize: 13, color: Colors.white38),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFFFF5722), size: 20),
+            suffixIcon: _coachSearchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
+                    onPressed: () {
+                      _coachSearchCtrl.clear();
+                      setState(() => _coachSearchQuery = '');
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: const Color(0xFF161B22),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white12),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFFF5722), width: 1.5),
             ),
           ),
+          onChanged: (val) => setState(() => _coachSearchQuery = val.trim()),
         ),
+        const SizedBox(height: 12),
+
+        // Specialty Filter Chips (Horizontal Scroll)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _specialtyFilters.map((filter) {
+              final isSelected = _selectedCoachSpecialty == filter;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text(filter),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFFFF5722),
+                  backgroundColor: const Color(0xFF161B22),
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.white : Colors.white70,
+                  ),
+                  side: BorderSide(
+                    color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+                  ),
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedCoachSpecialty = selected ? filter : 'All';
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Search summary / result counter
+        Row(
+          children: [
+            Text(
+              '${filteredTrainers.length} coach${filteredTrainers.length == 1 ? '' : 'es'} available',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white54),
+            ),
+            if (_coachSearchQuery.isNotEmpty || _selectedCoachSpecialty != 'All') ...[
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  _coachSearchCtrl.clear();
+                  setState(() {
+                    _coachSearchQuery = '';
+                    _selectedCoachSpecialty = 'All';
+                  });
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'Reset filters',
+                    style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // List of Coaches or Empty State
+        if (filteredTrainers.isNotEmpty) ...[
+          ...filteredTrainers.map((t) {
+            final isCurrentTrainer = user.trainerId == t.id;
+            final specialties = _getTrainerSpecialties(t);
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isCurrentTrainer ? const Color(0xFF00E676) : Colors.white10,
+                  width: isCurrentTrainer ? 1.5 : 1,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: isCurrentTrainer
+                              ? const Color(0xFF00E676).withOpacity(0.2)
+                              : const Color(0xFFFF5722).withOpacity(0.2),
+                          child: Text(
+                            t.name[0],
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isCurrentTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(t.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                  if (isCurrentTrainer) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00E676).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFF00E676), width: 0.8),
+                                      ),
+                                      child: const Text(
+                                        '✓ CURRENT',
+                                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const Text('Certified Personal Trainer • Strength & Conditioning', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        const Chip(label: Text('⭐ 4.9'), backgroundColor: Color(0xFF21262D)),
+                      ],
+                    ),
+                    const Divider(height: 20, color: Colors.white12),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: specialties.map((s) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF21262D),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Text(s, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () => _openScheduleModal(context, state),
+                            child: const Text('Book Consultation'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isCurrentTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: () {
+                              state.selectTrainerForCurrentUser(t.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  content: Text('🎉 Coach ${t.name} selected as your primary trainer!'),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              isCurrentTrainer ? 'Selected Coach ✓' : 'Select Coach',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ] else ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5722).withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.search_off, size: 36, color: Color(0xFFFF5722)),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'No Coaches Found',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _coachSearchQuery.isNotEmpty
+                      ? 'No verified coach matched "$_coachSearchQuery" in this category.'
+                      : 'No coaches match the selected specialty filter.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF21262D),
+                    foregroundColor: const Color(0xFFFF5722),
+                    side: const BorderSide(color: Color(0xFFFF5722)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Clear Filters & View All'),
+                  onPressed: () {
+                    _coachSearchCtrl.clear();
+                    setState(() {
+                      _coachSearchQuery = '';
+                      _selectedCoachSpecialty = 'All';
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
