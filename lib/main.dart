@@ -591,6 +591,8 @@ class MyPtProvider extends ChangeNotifier {
   };
 
   // --- HIERARCHY METHODS (Head Coach -> Trainer -> Client) ---
+  List<UserModel> get allClients => rosterClients;
+
   List<UserModel> getTrainersForHeadCoach(String headCoachId) {
     return allTrainers.where((t) => t.headCoachId == headCoachId).toList();
   }
@@ -806,13 +808,23 @@ class MyPtProvider extends ChangeNotifier {
     required DateTime date,
     required String timeSlot,
     required String focus,
+    String? trainerName,
   }) {
+    final effectiveTrainer = trainerName ??
+        (currentUser?.trainerId != null
+            ? allTrainers.firstWhere((t) => t.id == currentUser!.trainerId, orElse: () => allTrainers.first).name
+            : 'Alex Rivera');
+
+    if (currentUser != null && currentUser!.role == UserRole.client && currentUser!.ptCredits > 0) {
+      currentUser!.ptCredits -= 1;
+    }
+
     sessions.insert(
       0,
       SessionItem(
         id: 'sess_${DateTime.now().millisecondsSinceEpoch}',
         clientName: clientName,
-        trainerName: 'Alex Rivera',
+        trainerName: effectiveTrainer,
         date: date,
         timeSlot: timeSlot,
         focusArea: focus,
@@ -1934,7 +1946,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            onPressed: () => _openScheduleModal(context, state),
+                            onPressed: () => _openScheduleModal(context, state, targetTrainer: t),
                             child: const Text('Book Consultation'),
                           ),
                         ),
@@ -2456,7 +2468,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                            onPressed: () => _openScheduleModal(context, state),
+                            onPressed: () => _openScheduleModal(context, state, targetClient: client),
                             child: const Text('Book Session', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
@@ -3465,30 +3477,529 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  void _openScheduleModal(BuildContext context, MyPtProvider state) {
-    DateTime dt = DateTime.now().add(const Duration(days: 1));
-    showDialog(
+  void _openScheduleModal(
+    BuildContext context,
+    MyPtProvider state, {
+    UserModel? targetTrainer,
+    UserModel? targetClient,
+  }) {
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    String selectedTimeSlot = '10:00 AM';
+    String selectedFocus = 'Hypertrophy & Form';
+
+    // Determine initial coach
+    UserModel? selectedCoach = targetTrainer ??
+        (state.currentUser?.trainerId != null
+            ? state.allTrainers.firstWhere(
+                (t) => t.id == state.currentUser!.trainerId,
+                orElse: () => state.allTrainers.first,
+              )
+            : (state.allTrainers.isNotEmpty ? state.allTrainers.first : null));
+
+    // Determine initial client
+    UserModel? selectedClient = targetClient ??
+        (state.currentUser?.role == UserRole.client
+            ? state.currentUser
+            : (state.allClients.isNotEmpty ? state.allClients.first : state.currentUser));
+
+    const List<String> timeSlots = [
+      '07:00 AM',
+      '08:00 AM',
+      '09:30 AM',
+      '10:00 AM',
+      '11:30 AM',
+      '02:00 PM',
+      '04:00 PM',
+      '05:30 PM',
+      '06:30 PM',
+      '07:30 PM',
+    ];
+
+    const List<String> focusAreas = [
+      'Hypertrophy & Form',
+      'Strength & Conditioning',
+      'Fat Loss & HIIT',
+      'Biomechanics & Posture',
+      'Mobility & Flexibility',
+      '1-on-1 Consultation',
+    ];
+
+    final isClient = state.currentUser?.role == UserRole.client;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Book Session'),
-        content: const Text('Book a 1-on-1 session with Coach Alex Rivera for tomorrow at 10:00 AM?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-            onPressed: () {
-              state.scheduleSession(
-                clientName: state.currentUser!.name,
-                date: dt,
-                timeSlot: '10:00 AM',
-                focus: 'Hypertrophy & Form',
-              );
-              Navigator.pop(ctx);
-            },
-            child: const Text('Confirm', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final formattedDate = DateFormat('EEEE, dd MMM yyyy').format(selectedDate);
+            final remainingCredits = state.currentUser?.ptCredits ?? 0;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.90,
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top drag pill
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF5722).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.event_available, color: Color(0xFFFF5722), size: 22),
+                            ),
+                            const SizedBox(width: 10),
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Schedule Session',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                Text(
+                                  'Select your date, time slot & workout focus',
+                                  style: TextStyle(fontSize: 11, color: Colors.white60),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white60),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Coach Selection Section
+                    if (state.allTrainers.isNotEmpty) ...[
+                      const Text(
+                        'Assigned Coach',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                              child: Text(
+                                selectedCoach != null && selectedCoach!.name.isNotEmpty ? selectedCoach!.name[0] : 'C',
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    selectedCoach?.name ?? 'Alex Rivera',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  Text(
+                                    selectedCoach?.email ?? 'Certified Personal Trainer',
+                                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (state.allTrainers.length > 1)
+                              DropdownButtonHideUnderline(
+                                child: DropdownButton<UserModel>(
+                                  value: selectedCoach,
+                                  dropdownColor: const Color(0xFF161B22),
+                                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF5722)),
+                                  items: state.allTrainers.map((t) {
+                                    return DropdownMenuItem<UserModel>(
+                                      value: t,
+                                      child: Text(
+                                        t.name,
+                                        style: const TextStyle(fontSize: 13, color: Colors.white),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newCoach) {
+                                    if (newCoach != null) {
+                                      setModalState(() => selectedCoach = newCoach);
+                                    }
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Client Selection (if coach is scheduling for client)
+                    if (!isClient && state.allClients.isNotEmpty) ...[
+                      const Text(
+                        'Select Client',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<UserModel>(
+                            isExpanded: true,
+                            value: selectedClient,
+                            dropdownColor: const Color(0xFF161B22),
+                            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF5722)),
+                            items: state.allClients.map((c) {
+                              return DropdownMenuItem<UserModel>(
+                                value: c,
+                                child: Row(
+                                  children: [
+                                    Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                                    const SizedBox(width: 8),
+                                    Text('(${c.ptCredits} credits)', style: const TextStyle(fontSize: 11, color: Color(0xFF00E676))),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (newClient) {
+                              if (newClient != null) {
+                                setModalState(() => selectedClient = newClient);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Date Selection Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Select Date',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                        ),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.calendar_month, size: 16, color: Color(0xFFFF5722)),
+                          label: const Text('Pick Date', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 90)),
+                              builder: (pickerCtx, child) {
+                                return Theme(
+                                  data: ThemeData.dark().copyWith(
+                                    colorScheme: const ColorScheme.dark(
+                                      primary: Color(0xFFFF5722),
+                                      onPrimary: Colors.white,
+                                      surface: Color(0xFF161B22),
+                                      onSurface: Colors.white,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              setModalState(() => selectedDate = picked);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Quick Date Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (int i = 0; i < 5; i++) ...[
+                            () {
+                              final d = DateTime.now().add(Duration(days: i));
+                              final isSameDay = selectedDate.year == d.year &&
+                                  selectedDate.month == d.month &&
+                                  selectedDate.day == d.day;
+                              final label = i == 0
+                                  ? 'Today'
+                                  : i == 1
+                                      ? 'Tomorrow'
+                                      : DateFormat('EEE, d MMM').format(d);
+
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ChoiceChip(
+                                  label: Text(label),
+                                  selected: isSameDay,
+                                  selectedColor: const Color(0xFFFF5722),
+                                  backgroundColor: const Color(0xFF0D1117),
+                                  labelStyle: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: isSameDay ? FontWeight.bold : FontWeight.normal,
+                                    color: isSameDay ? Colors.white : Colors.white70,
+                                  ),
+                                  side: BorderSide(
+                                    color: isSameDay ? const Color(0xFFFF5722) : Colors.white12,
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setModalState(() => selectedDate = d);
+                                    }
+                                  },
+                                ),
+                              );
+                            }(),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Formatted Selected Date Display Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D1117),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.event, color: Color(0xFFFF5722), size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            formattedDate,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Time Slot Section
+                    const Text(
+                      'Available Time Slots',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: timeSlots.map((slot) {
+                        final isSelected = selectedTimeSlot == slot;
+                        return InkWell(
+                          onTap: () => setModalState(() => selectedTimeSlot = slot),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFFFF5722) : const Color(0xFF0D1117),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+                              ),
+                            ),
+                            child: Text(
+                              slot,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                color: isSelected ? Colors.white : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Focus Area Section
+                    const Text(
+                      'Workout Focus',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: focusAreas.map((focus) {
+                        final isSelected = selectedFocus == focus;
+                        return ChoiceChip(
+                          label: Text(focus),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFFFF5722).withOpacity(0.2),
+                          backgroundColor: const Color(0xFF0D1117),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? const Color(0xFFFF5722) : Colors.white70,
+                          ),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+                          ),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setModalState(() => selectedFocus = focus);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Credits Info Banner
+                    if (isClient) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: remainingCredits > 0
+                              ? const Color(0xFF00E676).withOpacity(0.1)
+                              : const Color(0xFFFF9800).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: remainingCredits > 0
+                                ? const Color(0xFF00E676).withOpacity(0.3)
+                                : const Color(0xFFFF9800).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              remainingCredits > 0 ? Icons.check_circle_outline : Icons.info_outline,
+                              size: 16,
+                              color: remainingCredits > 0 ? const Color(0xFF00E676) : const Color(0xFFFF9800),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                remainingCredits > 0
+                                    ? '1 PT Credit will be used for this booking ($remainingCredits remaining)'
+                                    : 'You currently have 0 sessions left. You can still schedule or purchase a package.',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: remainingCredits > 0 ? const Color(0xFF00E676) : const Color(0xFFFF9800),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF5722),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              final coachName = selectedCoach?.name ?? 'Alex Rivera';
+                              final clientName = selectedClient?.name ?? state.currentUser?.name ?? 'Client';
+
+                              state.scheduleSession(
+                                clientName: clientName,
+                                trainerName: coachName,
+                                date: selectedDate,
+                                timeSlot: selectedTimeSlot,
+                                focus: selectedFocus,
+                              );
+
+                              Navigator.pop(ctx);
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  content: Text(
+                                    '🎉 Session booked with Coach $coachName for ${DateFormat('EEE, d MMM').format(selectedDate)} at $selectedTimeSlot!',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Confirm Schedule',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
