@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -67,6 +68,22 @@ class TrainingPackage {
   });
 }
 
+class CurrencyInfo {
+  final String code;
+  final String symbol;
+  final String name;
+  final String flag;
+  final double rate; // Rate relative to USD
+
+  const CurrencyInfo({
+    required this.code,
+    required this.symbol,
+    required this.name,
+    required this.flag,
+    required this.rate,
+  });
+}
+
 class MovementItem {
   final String name;
   final String category;
@@ -85,6 +102,50 @@ class MovementItem {
 class MyPtProvider extends ChangeNotifier {
   UserModel? currentUser; // Null when logged out
   bool isDevMode = !kReleaseMode;
+
+  static const Map<String, CurrencyInfo> supportedCurrencies = {
+    'USD': CurrencyInfo(code: 'USD', symbol: '\$', name: 'United States Dollar', flag: '🇺🇸', rate: 1.0),
+    'INR': CurrencyInfo(code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳', rate: 83.0),
+    'EUR': CurrencyInfo(code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺', rate: 0.92),
+    'GBP': CurrencyInfo(code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧', rate: 0.79),
+    'AED': CurrencyInfo(code: 'AED', symbol: 'AED ', name: 'UAE Dirham', flag: '🇦🇪', rate: 3.67),
+    'CAD': CurrencyInfo(code: 'CAD', symbol: 'CA\$', name: 'Canadian Dollar', flag: '🇨🇦', rate: 1.36),
+    'AUD': CurrencyInfo(code: 'AUD', symbol: 'A\$', name: 'Australian Dollar', flag: '🇦🇺', rate: 1.52),
+    'SGD': CurrencyInfo(code: 'SGD', symbol: 'S\$', name: 'Singapore Dollar', flag: '🇸🇬', rate: 1.35),
+  };
+
+  late String selectedCurrency = _autoDetectCurrency();
+
+  static String _autoDetectCurrency() {
+    try {
+      final locale = PlatformDispatcher.instance.locale;
+      final country = locale.countryCode?.toUpperCase() ?? '';
+      if (country == 'IN') return 'INR';
+      if (country == 'GB') return 'GBP';
+      if (country == 'AE') return 'AED';
+      if (country == 'CA') return 'CAD';
+      if (country == 'AU') return 'AUD';
+      if (country == 'SG') return 'SGD';
+      if (['DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'PT', 'IE', 'FI', 'GR'].contains(country)) return 'EUR';
+    } catch (_) {}
+    return 'USD';
+  }
+
+  void setCurrency(String code) {
+    if (supportedCurrencies.containsKey(code)) {
+      selectedCurrency = code;
+      notifyListeners();
+    }
+  }
+
+  CurrencyInfo get currentCurrencyInfo =>
+      supportedCurrencies[selectedCurrency] ?? supportedCurrencies['USD']!;
+
+  String formatPrice(double priceUsd) {
+    final cur = currentCurrencyInfo;
+    final converted = priceUsd * cur.rate;
+    return '${cur.symbol}${NumberFormat('#,##0').format(converted.round())}';
+  }
 
   void toggleDevMode() {
     isDevMode = !isDevMode;
@@ -208,6 +269,20 @@ class MyPtProvider extends ChangeNotifier {
         'Weekly Bodyfat Analysis',
         '24/7 Coach Chat Support',
         'Custom Supplement Protocol',
+      ],
+    ),
+    TrainingPackage(
+      id: 'pkg_3',
+      title: 'Elite Athlete Mastery',
+      price: 899.0,
+      sessionsCount: 24,
+      durationWeeks: 16,
+      perks: [
+        '24 1-on-1 Sessions',
+        'Direct Head Coach Hotline',
+        'Full Biomechanics & Bloodwork Review',
+        'Custom Periodized Training Blocks',
+        'Unlimited App Workout Tracking',
       ],
     ),
   ];
@@ -931,7 +1006,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _statCard('MONTHLY REV', '\$1,398', '+14% growth', const Color(0xFF00E676)),
+              child: _statCard('MONTHLY REV', state.formatPrice(1398), '+14% growth', const Color(0xFF00E676)),
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -1220,7 +1295,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           children: [
             Expanded(child: _statCard('FLOOR CAPACITY', '38 / 100', 'Safe Load (38%)', const Color(0xFFFF5722))),
             const SizedBox(width: 8),
-            Expanded(child: _statCard('MONTHLY SALES', '\$14,820', '+18% vs Target', const Color(0xFF00E676))),
+            Expanded(child: _statCard('MONTHLY SALES', state.formatPrice(14820), '+18% vs Target', const Color(0xFF00E676))),
             const SizedBox(width: 8),
             Expanded(child: _statCard('EQUIPMENT STATUS', '100% OK', 'All Racks Ready', const Color(0xFF29B6F6))),
           ],
@@ -1434,52 +1509,314 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _packagesList(MyPtProvider state) {
+    final cur = state.currentCurrencyInfo;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Available Packages', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        // Currency & Location Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on, color: Color(0xFFFF5722), size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('PRICING REGION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                    Text('${cur.flag} ${cur.name} (${cur.code})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                ),
+                icon: const Icon(Icons.currency_exchange, size: 14, color: Color(0xFFFF5722)),
+                label: const Text('Change', style: TextStyle(fontSize: 11)),
+                onPressed: () => _openCurrencySelector(context, state),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Available Packages', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5722).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Balance: ${state.currentUser?.ptCredits ?? 0} Credits',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 12),
         ...state.packages.map(
           (p) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(p.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(
-                        '\$${p.price.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF00E676),
+            margin: const EdgeInsets.only(bottom: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(
+                color: p.sessionsCount > 6 ? const Color(0xFFFF5722).withOpacity(0.5) : Colors.white12,
+              ),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openPackageCheckoutModal(context, state, p),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (p.sessionsCount == 12)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5722),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text('🔥 MOST POPULAR', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(p.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                              const SizedBox(height: 2),
+                              Text('${p.sessionsCount} 1-on-1 Sessions • ${p.durationWeeks} Weeks', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              state.formatPrice(p.price),
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF00E676),
+                              ),
+                            ),
+                            Text(
+                              '${state.formatPrice(p.price / p.sessionsCount)}/session',
+                              style: const TextStyle(color: Colors.white38, fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 20),
+                    ...p.perks.map(
+                      (perk) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle_rounded, color: Color(0xFF00E676), size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(perk, style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                  Text(
-                    '${p.sessionsCount} Sessions • ${p.durationWeeks} Weeks',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF5722),
-                      foregroundColor: Colors.white,
                     ),
-                    onPressed: () => state.buyPackage(p),
-                    child: Text('Purchase Package (+${p.sessionsCount} Credits)', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF5722),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _openPackageCheckoutModal(context, state, p),
+                        child: Text(
+                          'Purchase Package (${state.formatPrice(p.price)})',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  void _openPackageCheckoutModal(BuildContext context, MyPtProvider state, TrainingPackage p) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Confirm Package Purchase', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const Divider(),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Text('+${p.sessionsCount} PT Sessions • ${p.durationWeeks} Weeks Access', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                    ],
+                  ),
+                  Text(
+                    state.formatPrice(p.price),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF00E676)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Payment Method', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF21262D),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFF5722)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.credit_card, color: Color(0xFFFF5722)),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('Instant Card Payment (•••• 4242)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
+                  Icon(Icons.check_circle, color: Color(0xFFFF5722), size: 18),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF5722),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  state.buyPackage(p);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: const Color(0xFF00E676),
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.black),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '🎉 Purchased ${p.title}! +${p.sessionsCount} Credits added (Total: ${state.currentUser?.ptCredits ?? 0}).',
+                              style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                },
+                child: Text(
+                  'Pay ${state.formatPrice(p.price)} & Add +${p.sessionsCount} Credits',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openCurrencySelector(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Select Your Currency Region', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('Prices will automatically adapt to your selected country currency.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 12),
+            ...MyPtProvider.supportedCurrencies.values.map(
+              (cur) {
+                final isSelected = state.selectedCurrency == cur.code;
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  leading: Text(cur.flag, style: const TextStyle(fontSize: 24)),
+                  title: Text('${cur.name} (${cur.code})', style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? const Color(0xFFFF5722) : Colors.white)),
+                  trailing: Text(cur.symbol, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isSelected ? const Color(0xFFFF5722) : Colors.white60)),
+                  tileColor: isSelected ? const Color(0xFF21262D) : null,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  onTap: () {
+                    state.setCurrency(cur.code);
+                    Navigator.pop(ctx);
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
