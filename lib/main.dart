@@ -4004,13 +4004,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
     String selectedTimeSlot = '10:00 AM';
     String selectedFocus = 'Hypertrophy & Form';
 
+    // Restrict available coaches:
+    // If client has an assigned trainer, only that coach is available.
+    // If targetTrainer is explicitly provided, use it.
+    // Otherwise fallback to allTrainers.
+    final List<UserModel> availableCoaches = targetTrainer != null
+        ? [targetTrainer]
+        : (isClient && user?.trainerId != null
+            ? state.allTrainers.where((t) => t.id == user!.trainerId).toList()
+            : state.allTrainers);
+
     // Determine initial coach
     UserModel? selectedCoach = targetTrainer ??
-        (state.currentUser?.trainerId != null
-            ? state.allTrainers.firstWhere(
-                (t) => t.id == state.currentUser!.trainerId,
-                orElse: () => state.allTrainers.first,
-              )
+        (availableCoaches.isNotEmpty
+            ? (user?.trainerId != null
+                ? availableCoaches.firstWhere(
+                    (t) => t.id == user!.trainerId,
+                    orElse: () => availableCoaches.first,
+                  )
+                : availableCoaches.first)
             : (state.allTrainers.isNotEmpty ? state.allTrainers.first : null));
 
     // Determine initial client
@@ -4121,7 +4133,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     const SizedBox(height: 16),
 
                     // Coach Selection Section
-                    if (state.allTrainers.isNotEmpty) ...[
+                    if (availableCoaches.isNotEmpty) ...[
                       const Text(
                         'Assigned Coach',
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70),
@@ -4160,13 +4172,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 ],
                               ),
                             ),
-                            if (state.allTrainers.length > 1)
+                            if (availableCoaches.length > 1)
                               DropdownButtonHideUnderline(
                                 child: DropdownButton<UserModel>(
                                   value: selectedCoach,
                                   dropdownColor: const Color(0xFF161B22),
                                   icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFFF5722)),
-                                  items: state.allTrainers.map((t) {
+                                  items: availableCoaches.map((t) {
                                     return DropdownMenuItem<UserModel>(
                                       value: t,
                                       child: Text(
@@ -4180,6 +4192,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                       setModalState(() => selectedCoach = newCoach);
                                     }
                                   },
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E676).withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified, size: 13, color: Color(0xFF00E676)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Assigned',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF00E676),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
