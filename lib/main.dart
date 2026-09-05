@@ -6811,7 +6811,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('${pkg.sessionsCount} 1-on-1 Sessions • ${pkg.durationWeeks} Weeks Duration', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text('${pkg.sessionsCount} 1-on-1 Sessions • Expiry in ${pkg.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -9309,10 +9309,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _openCreateTrainerPackageModal(BuildContext context, MyPtProvider state, {TrainingPackage? existingPackage}) {
-    final titleCtrl = TextEditingController(text: existingPackage?.title ?? '8-Week Biomechanics Masterclass');
-    final priceCtrl = TextEditingController(text: existingPackage?.priceInr.toStringAsFixed(0) ?? '7999');
-    final sessionsCtrl = TextEditingController(text: existingPackage?.sessionsCount.toString() ?? '8');
-    final weeksCtrl = TextEditingController(text: existingPackage?.durationWeeks.toString() ?? '8');
+    final titleCtrl = TextEditingController(text: existingPackage?.title ?? '');
+    final priceCtrl = TextEditingController(text: existingPackage != null ? existingPackage.priceInr.toStringAsFixed(0) : '');
+    final sessionsCtrl = TextEditingController(text: existingPackage != null ? existingPackage.sessionsCount.toString() : '');
+    final weeksCtrl = TextEditingController(text: existingPackage != null ? existingPackage.durationWeeks.toString() : '');
 
     showModalBottomSheet(
       context: context,
@@ -9342,45 +9342,95 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Package Title', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Package Title',
+                hintText: 'e.g., 8-Week Biomechanics Masterclass',
+                hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(child: TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price in INR (₹)', border: OutlineInputBorder()))),
+                Expanded(
+                  child: TextField(
+                    controller: priceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Price in INR (₹)',
+                      hintText: 'e.g., 7999',
+                      hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: TextField(controller: sessionsCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'PT Credits (Sessions)', border: OutlineInputBorder()))),
+                Expanded(
+                  child: TextField(
+                    controller: sessionsCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'PT Credits (Sessions)',
+                      hintText: 'e.g., 8',
+                      hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: TextField(controller: weeksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Weeks', border: OutlineInputBorder()))),
+                Expanded(
+                  child: TextField(
+                    controller: weeksCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Expiry in weeks',
+                      hintText: 'e.g., 8',
+                      hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              height: 46,
+              height: 48,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF5722),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 onPressed: () {
                   final coach = state.currentUser!;
-                  final pInr = double.tryParse(priceCtrl.text) ?? 4999.0;
-                  final count = int.tryParse(sessionsCtrl.text) ?? 8;
-                  final wks = int.tryParse(weeksCtrl.text) ?? 8;
+                  final title = titleCtrl.text.trim();
+                  if (title.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a package title')));
+                    return;
+                  }
+
+                  final pInr = double.tryParse(priceCtrl.text.trim()) ?? 4999.0;
+                  final count = int.tryParse(sessionsCtrl.text.trim()) ?? 8;
+                  final wks = int.tryParse(weeksCtrl.text.trim()) ?? 8;
 
                   state.addOrUpdateTrainerPackage(
                     TrainingPackage(
                       id: existingPackage?.id ?? 'pkg_${DateTime.now().millisecondsSinceEpoch}',
                       trainerId: coach.id,
                       trainerName: coach.name,
-                      title: titleCtrl.text.trim(),
+                      title: title,
                       priceInr: pInr,
                       sessionsCount: count,
                       durationWeeks: wks,
-                      perks: ['$count 1-on-1 Sessions', 'Direct Coach Support', 'Weekly Form Audits'],
+                      perks: ['$count 1-on-1 Sessions', 'Direct Coach Support', 'Weekly Form Audits', 'Valid for $wks weeks'],
                     ),
                   );
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎉 Package saved to your coach profile!')));
                 },
-                child: const Text('Save Package 💾', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('Save Package 💾', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               ),
             ),
           ],
