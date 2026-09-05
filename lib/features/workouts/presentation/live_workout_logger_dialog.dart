@@ -304,14 +304,14 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
 
   double _getExerciseItemVolume(WorkoutExerciseItem ex) {
     if (ex.setDetails != null && ex.setDetails!.isNotEmpty) {
-      return ex.setDetails!.fold<double>(0.0, (sum, s) => sum + (s.weightKg * s.reps));
+      return ex.setDetails!.where((s) => s.isCompleted).fold<double>(0.0, (sum, s) => sum + (s.weightKg * s.reps));
     }
     return ex.sets * ex.repetitions * ex.weightKg;
   }
 
   int _getExerciseItemReps(WorkoutExerciseItem ex) {
     if (ex.setDetails != null && ex.setDetails!.isNotEmpty) {
-      return ex.setDetails!.fold<int>(0, (sum, s) => sum + s.reps);
+      return ex.setDetails!.where((s) => s.isCompleted).fold<int>(0, (sum, s) => sum + s.reps);
     }
     return ex.sets * ex.repetitions;
   }
@@ -1101,7 +1101,20 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
                                       Expanded(
                                         child: Text('${setDetail.reps} reps', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
                                       ),
-                                      const Icon(Icons.check_circle, size: 15, color: AppColors.primary),
+                                      InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            final currentDetails = List<WorkoutSetDetail>.from(details);
+                                            currentDetails[sIdx] = setDetail.copyWith(isCompleted: !setDetail.isCompleted);
+                                            _exercises[idx] = ex.copyWith(setDetails: currentDetails);
+                                          });
+                                        },
+                                        child: Icon(
+                                          setDetail.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                                          size: 16,
+                                          color: setDetail.isCompleted ? AppColors.primary : AppColors.darkTextMuted,
+                                        ),
+                                      ),
                                       const SizedBox(width: 6),
                                       InkWell(
                                         onTap: details.length > 1 ? () => _removeSetFromLoggedExercise(idx, sIdx) : null,

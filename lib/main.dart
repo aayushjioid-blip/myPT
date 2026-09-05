@@ -226,7 +226,7 @@ class WorkoutExercise {
 
   double get sumProductKg {
     if (setDetails != null && setDetails!.isNotEmpty) {
-      return setDetails!.fold(0.0, (acc, s) => acc + s.volumeKg);
+      return setDetails!.where((s) => s.isCompleted).fold(0.0, (acc, s) => acc + s.volumeKg);
     }
     final s = double.tryParse(sets) ?? 1.0;
     final repsMatch = RegExp(r'(\d+)').firstMatch(reps);
