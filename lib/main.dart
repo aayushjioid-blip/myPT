@@ -3888,71 +3888,44 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     ],
                   ),
                   const Divider(height: 16, color: Colors.white12),
-                  ...routine.exercises.map((ex) {
+                  ...routine.exercises.asMap().entries.map((entry) {
+                    final exIdx = entry.key;
+                    final ex = entry.value;
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          IconButton(
-                            icon: Icon(
-                              ex.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                              color: ex.isCompleted ? const Color(0xFF00E676) : Colors.white38,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                            onPressed: () {
-                              setState(() => ex.isCompleted = !ex.isCompleted);
-                              if (ex.isCompleted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: const Color(0xFF00E676),
-                                    content: Text('✓ Completed ${ex.name} (${ex.sets}x${ex.reps} @ ${ex.weight}) • Sum Product: ${ex.formattedSumProduct}'),
-                                    duration: const Duration(seconds: 2),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '${exIdx + 1}. ${ex.name}',
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
-                                );
-                              }
-                            },
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0D1117),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
+                                ),
+                                child: Text(
+                                  '⚡ Sum Product: ${ex.formattedSumProduct}',
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        ex.name,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          decoration: ex.isCompleted ? TextDecoration.lineThrough : null,
-                                          color: ex.isCompleted ? Colors.white54 : Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF0D1117),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
-                                      ),
-                                      child: Text(
-                                        '⚡ Sum Product: ${ex.formattedSumProduct}',
-                                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${ex.sets} Sets x ${ex.reps} Reps • Target: ${ex.weight} • Rest: ${ex.restSeconds}',
-                                  style: const TextStyle(color: Colors.white60, fontSize: 11),
-                                ),
-                              ],
-                            ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${ex.sets} Sets x ${ex.reps} Reps • Target: ${ex.weight} • Rest: ${ex.restSeconds}',
+                            style: const TextStyle(color: Colors.white60, fontSize: 11),
                           ),
                         ],
                       ),
