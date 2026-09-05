@@ -1776,16 +1776,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                     const SizedBox(width: 10),
                     const Text('myPT', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF21262D),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.5)),
-                      ),
-                      child: const Text('PRO INDIA 🇮🇳', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -4867,6 +4857,77 @@ class _MainShellScreenState extends State<MainShellScreen> {
     };
   }
 
+  String _formatFlagTitle(String key) {
+    return switch (key) {
+      'ai_fitness_copilot' => 'AI Fitness Copilot',
+      'bento_analytics_grid' => 'Bento Analytics Dashboard',
+      'strict_headcoach_hierarchy' => 'Strict Head Coach Hierarchy',
+      'dynamic_currency_converter' => 'Dynamic Currency Converter',
+      'instant_package_checkout' => 'Instant Package Checkout',
+      _ => key.replaceAll('_', ' ').split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
+    };
+  }
+
+  String _formatFlagSubtitle(String key) {
+    return switch (key) {
+      'ai_fitness_copilot' => 'Intelligent workout recommendations, exercise insights, and form analysis.',
+      'bento_analytics_grid' => 'Modular progress cards visualizing nutrition targets, weekly splits, and body recomposition.',
+      'strict_headcoach_hierarchy' => 'Enforce multi-tier coach supervision, approval gates, and facility squad management.',
+      'dynamic_currency_converter' => 'Real-time localized price conversion across INR (₹), USD (\$), EUR (€), GBP (£), and AED.',
+      'instant_package_checkout' => 'Direct online payment and instant PT credit deposit for personalized training packages.',
+      _ => 'Runtime dynamic platform feature toggle.',
+    };
+  }
+
+  void _showResetFlagsConfirmationDialog(BuildContext context, MyPtProvider state) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.restart_alt, color: Color(0xFFFF5722), size: 22),
+            SizedBox(width: 8),
+            Text('Reset Feature Flags?'),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to restore all runtime feature flags to their default enabled states?',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF5722),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              state.globalFlags.forEach((key, _) => state.toggleFlag(key, true));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Color(0xFF00E676),
+                  content: Text('✓ All feature flags have been successfully reset to defaults!'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            },
+            child: const Text('Confirm Reset', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _adminFlagsTab(MyPtProvider state) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -4875,15 +4936,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Super Admin Governance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Color(0xFFFF5722)),
-              tooltip: 'Reset Flags',
-              onPressed: () {
-                state.globalFlags.forEach((key, _) => state.toggleFlag(key, true));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✓ Feature flags reset to defaults.')),
-                );
-              },
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFFF5722),
+                side: const BorderSide(color: Color(0xFFFF5722)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.restart_alt, size: 16, color: Color(0xFFFF5722)),
+              label: const Text('Reset', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              onPressed: () => _showResetFlagsConfirmationDialog(context, state),
             ),
           ],
         ),
@@ -4896,19 +4958,22 @@ class _MainShellScreenState extends State<MainShellScreen> {
           child: Column(
             children: state.globalFlags.entries.map((e) {
               final isLast = state.globalFlags.keys.last == e.key;
+              final flagTitle = _formatFlagTitle(e.key);
+              final flagSubtitle = _formatFlagSubtitle(e.key);
+
               return Column(
                 children: [
                   SwitchListTile(
-                    title: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      e.key.contains('chat')
-                          ? 'Real-time client-coach direct messaging system'
-                          : e.key.contains('calendar')
-                              ? 'Interactive session booking and scheduling module'
-                              : e.key.contains('telemetry')
-                                  ? 'Background event audit and system analytics'
-                                  : 'Global platform feature toggle',
-                      style: const TextStyle(fontSize: 11, color: Colors.white54),
+                    title: Text(
+                      flagTitle,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        flagSubtitle,
+                        style: const TextStyle(fontSize: 11.5, color: Colors.white60, height: 1.3),
+                      ),
                     ),
                     value: e.value,
                     activeColor: const Color(0xFFFF5722),
