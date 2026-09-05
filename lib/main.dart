@@ -189,6 +189,22 @@ class MovementItem {
         trackingType = trackingType ?? 'Weight + Reps';
 }
 
+class SetDetail {
+  int setNumber;
+  double weightKg;
+  int reps;
+  bool isCompleted;
+
+  SetDetail({
+    required this.setNumber,
+    required this.weightKg,
+    required this.reps,
+    this.isCompleted = false,
+  });
+
+  double get volumeKg => weightKg * reps;
+}
+
 class WorkoutExercise {
   String name;
   String sets;
@@ -196,6 +212,7 @@ class WorkoutExercise {
   String weight;
   String restSeconds;
   bool isCompleted;
+  List<SetDetail>? setDetails;
 
   WorkoutExercise({
     required this.name,
@@ -204,7 +221,34 @@ class WorkoutExercise {
     required this.weight,
     this.restSeconds = '90s',
     this.isCompleted = false,
+    this.setDetails,
   });
+
+  double get sumProductKg {
+    if (setDetails != null && setDetails!.isNotEmpty) {
+      return setDetails!.fold(0.0, (acc, s) => acc + s.volumeKg);
+    }
+    final s = double.tryParse(sets) ?? 1.0;
+    final repsMatch = RegExp(r'(\d+)').firstMatch(reps);
+    final r = repsMatch != null ? double.tryParse(repsMatch.group(1)!) ?? 10.0 : 10.0;
+    final weightMatch = RegExp(r'(\d+)').firstMatch(weight);
+    final w = weightMatch != null
+        ? double.tryParse(weightMatch.group(1)!) ?? 0.0
+        : (weight.toLowerCase().contains('bodyweight') ? 70.0 : 0.0);
+    return s * r * w;
+  }
+
+  String get formattedSumProduct {
+    final val = sumProductKg;
+    if (val >= 1000) {
+      final formatted = val.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+      return '$formatted kg';
+    }
+    return '${val.toStringAsFixed(0)} kg';
+  }
 }
 
 class CustomWorkoutRoutine {
@@ -224,6 +268,42 @@ class CustomWorkoutRoutine {
     required this.exercises,
     this.createdBy = 'You',
     this.isCustom = true,
+  });
+
+  double get totalVolumeKg => exercises.fold(0.0, (acc, ex) => acc + ex.sumProductKg);
+
+  String get formattedTotalVolume {
+    final val = totalVolumeKg;
+    if (val >= 1000) {
+      final formatted = val.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+      return '$formatted kg';
+    }
+    return '${val.toStringAsFixed(0)} kg';
+  }
+}
+
+class WorkoutSessionLog {
+  final String id;
+  final String routineName;
+  final String focusArea;
+  final DateTime completedAt;
+  final int durationMinutes;
+  final double totalVolumeKg;
+  final String loggedBy;
+  final List<WorkoutExercise> exercises;
+
+  WorkoutSessionLog({
+    required this.id,
+    required this.routineName,
+    required this.focusArea,
+    required this.completedAt,
+    this.durationMinutes = 45,
+    required this.totalVolumeKg,
+    this.loggedBy = 'You',
+    required this.exercises,
   });
 }
 
@@ -331,8 +411,7 @@ class MyPtProvider extends ChangeNotifier {
   bool isDevMode = !kReleaseMode;
 
   // Localization and currency (Default to India and INR)
-  String userLocation = 'Bengaluru, Karnataka, India';
-  String selectedCity = 'Bengaluru';
+  String userLocation = 'India';
   String selectedCountry = 'India';
 
   static const Map<String, CurrencyInfo> supportedCurrencies = {
@@ -355,10 +434,12 @@ class MyPtProvider extends ChangeNotifier {
     }
   }
 
-  void setUserLocation(String city, String country) {
-    selectedCity = city;
+  void setUserLocation(String country, {String? currencyCode}) {
     selectedCountry = country;
-    userLocation = '$city, $country';
+    userLocation = country;
+    if (currencyCode != null && supportedCurrencies.containsKey(currencyCode)) {
+      selectedCurrency = currencyCode;
+    }
     notifyListeners();
   }
 
@@ -928,7 +1009,7 @@ class MyPtProvider extends ChangeNotifier {
     AppNotificationItem(
       id: 'notif_1',
       title: '🇮🇳 Region Set to India (INR ₹)',
-      message: 'Default pricing is localized to Indian Rupees (₹). Location set to Bengaluru.',
+      message: 'Default pricing is localized to Indian Rupees (₹). Location set to India.',
       timestamp: DateTime.now().subtract(const Duration(hours: 1)),
       type: 'system',
       isRead: true,
@@ -1238,8 +1319,25 @@ class MyPtProvider extends ChangeNotifier {
   }
 
   // --- WORKOUTS ---
+  List<WorkoutSessionLog> workoutHistory = [];
+
   void addCustomWorkout(CustomWorkoutRoutine routine) {
     customWorkouts.insert(0, routine);
+    notifyListeners();
+  }
+
+  void saveCompletedWorkoutSession(WorkoutSessionLog session) {
+    workoutHistory.insert(0, session);
+    notifications.insert(
+      0,
+      AppNotificationItem(
+        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+        title: '🔥 Workout Session Saved & Logged!',
+        message: 'Great job completing "${session.routineName}"! Total Volume: ${session.totalVolumeKg.toStringAsFixed(0)} kg logged.',
+        timestamp: DateTime.now(),
+        type: 'system',
+      ),
+    );
     notifyListeners();
   }
 
@@ -2491,7 +2589,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             const Icon(Icons.location_on, size: 12, color: Color(0xFFFF5722)),
                             const SizedBox(width: 4),
                             Text(
-                              state.selectedCity,
+                              state.selectedCountry,
                               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                           ],
@@ -3738,7 +3836,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         const Text('Prescribed routines & custom workouts tailored for you.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 14),
 
-        // Create Custom Workout Button
+        // Create / Start Workout Session Button
         SizedBox(
           width: double.infinity,
           height: 44,
@@ -3770,15 +3868,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       Expanded(
                         child: Text(routine.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
                       ),
-                      Chip(
-                        label: Text(routine.focusArea.split(',').first.trim(), style: const TextStyle(fontSize: 10)),
-                        backgroundColor: const Color(0xFF21262D),
-                        visualDensity: VisualDensity.compact,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5722).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4), width: 0.8),
+                        ),
+                        child: Text('⚡ Vol: ${routine.formattedTotalVolume}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                       ),
                     ],
                   ),
-                  Text('Prescribed by: ${routine.createdBy}', style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11)),
-                  const Divider(height: 18, color: Colors.white12),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Prescribed by: ${routine.createdBy}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                      Text(routine.focusArea.split(',').first.trim(), style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                    ],
+                  ),
+                  const Divider(height: 16, color: Colors.white12),
                   ...routine.exercises.map((ex) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -3788,46 +3897,56 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             icon: Icon(
                               ex.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
                               color: ex.isCompleted ? const Color(0xFF00E676) : Colors.white38,
-                              size: 22,
+                              size: 20,
                             ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                             onPressed: () {
                               setState(() => ex.isCompleted = !ex.isCompleted);
                               if (ex.isCompleted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     backgroundColor: const Color(0xFF00E676),
-                                    content: Text('✓ Completed ${ex.name} (${ex.sets}x${ex.reps} @ ${ex.weight})'),
+                                    content: Text('✓ Completed ${ex.name} (${ex.sets}x${ex.reps} @ ${ex.weight}) • Sum Product: ${ex.formattedSumProduct}'),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
                               }
                             },
                           ),
+                          const SizedBox(width: 6),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
-                                    Text(
-                                      ex.name,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        decoration: ex.isCompleted ? TextDecoration.lineThrough : null,
-                                        color: ex.isCompleted ? Colors.white54 : Colors.white,
+                                    Expanded(
+                                      child: Text(
+                                        ex.name,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: ex.isCompleted ? TextDecoration.lineThrough : null,
+                                          color: ex.isCompleted ? Colors.white54 : Colors.white,
+                                        ),
                                       ),
                                     ),
-                                    if (ex.isCompleted) ...[
-                                      const SizedBox(width: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                        decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-                                        child: const Text('✓ Completed', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0D1117),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
                                       ),
-                                    ],
+                                      child: Text(
+                                        '⚡ Sum Product: ${ex.formattedSumProduct}',
+                                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                      ),
+                                    ),
                                   ],
                                 ),
+                                const SizedBox(height: 2),
                                 Text(
                                   '${ex.sets} Sets x ${ex.reps} Reps • Target: ${ex.weight} • Rest: ${ex.restSeconds}',
                                   style: const TextStyle(color: Colors.white60, fontSize: 11),
@@ -3839,11 +3958,53 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ),
                     );
                   }),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 36,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFFF5722),
+                        side: const BorderSide(color: Color(0xFFFF5722)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                      label: const Text('▶ Start Live Workout Session', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      onPressed: () => _openLiveWorkoutSessionModal(context, state, routine),
+                    ),
+                  ),
                 ],
               ),
             ),
           );
         }),
+
+        if (state.workoutHistory.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Text('Completed Workout Sessions History', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...state.workoutHistory.map((sess) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF0D1117),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0xFF00E676), width: 0.8)),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xFF00E676),
+                  foregroundColor: Colors.black,
+                  child: Icon(Icons.check, size: 20),
+                ),
+                title: Text(sess.routineName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text('Logged by ${sess.loggedBy} • ${sess.completedAt.day}/${sess.completedAt.month}/${sess.completedAt.year} • ${sess.exercises.length} Exercises', style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                trailing: Text(
+                  '${sess.totalVolumeKg.toStringAsFixed(0)} kg\nTotal Vol',
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF00E676)),
+                ),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
@@ -7786,7 +7947,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
   // ============================================================================
 
   void _openLocationPromptModal(BuildContext context, MyPtProvider state) {
-    final indianCities = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad', 'Chandigarh'];
+    final supportedCountries = [
+      ('India', '🇮🇳', 'INR'),
+      ('United States', '🇺🇸', 'USD'),
+      ('United Kingdom', '🇬🇧', 'GBP'),
+      ('Canada', '🇨🇦', 'CAD'),
+      ('United Arab Emirates', '🇦🇪', 'AED'),
+      ('Australia', '🇦🇺', 'AUD'),
+      ('Singapore', '🇸🇬', 'SGD'),
+      ('Germany', '🇩🇪', 'EUR'),
+    ];
+
     showModalBottomSheet(
       context: context,
       isDismissible: true,
@@ -7808,7 +7979,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   children: [
                     Icon(Icons.location_on, color: Color(0xFFFF5722)),
                     SizedBox(width: 8),
-                    Text('Select Your Location in India 🇮🇳', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Select Your Country 🌍', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
                 IconButton(
@@ -7820,22 +7991,23 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ],
             ),
             const SizedBox(height: 4),
-            const Text('Default pricing & certified trainer matching is localized to India.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+            const Text('Default pricing & certified trainer matching is localized to your country.', style: TextStyle(color: Colors.white60, fontSize: 12)),
             const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: indianCities.map((city) {
-                final isSelected = state.selectedCity == city;
+              children: supportedCountries.map((item) {
+                final (country, flag, cur) = item;
+                final isSelected = state.selectedCountry == country;
                 return ChoiceChip(
-                  label: Text(city),
+                  label: Text('$flag $country'),
                   selected: isSelected,
                   selectedColor: const Color(0xFFFF5722),
                   backgroundColor: const Color(0xFF0D1117),
                   labelStyle: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.white70),
                   onSelected: (sel) {
                     if (sel) {
-                      state.setUserLocation(city, 'India');
+                      state.setUserLocation(country, currencyCode: cur);
                       Navigator.pop(ctx);
                     }
                   },
@@ -8892,6 +9064,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          final totalVolume = exercises.fold(0.0, (acc, ex) => acc + ex.sumProductKg);
+
           return Container(
             constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
             padding: const EdgeInsets.all(20),
@@ -8903,7 +9077,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Create Custom Workout Routine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Build Custom Workout Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.white70, size: 20),
                       onPressed: () => Navigator.pop(ctx),
@@ -8915,13 +9089,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 const SizedBox(height: 12),
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Routine Name', border: OutlineInputBorder())),
                 const SizedBox(height: 8),
-                TextField(controller: focusCtrl, decoration: const InputDecoration(labelText: 'Focus Area', border: OutlineInputBorder())),
+                TextField(controller: focusCtrl, decoration: const InputDecoration(labelText: 'Focus Area (e.g., Quads, Chest)', border: OutlineInputBorder())),
                 const SizedBox(height: 14),
 
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Exercises', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Exercises & Sets', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                        Text('Total Calculated Volume: ${totalVolume.toStringAsFixed(0)} kg', style: const TextStyle(fontSize: 11, color: Color(0xFF00E676), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                     TextButton.icon(
                       icon: const Icon(Icons.add, size: 16),
                       label: const Text('Add Exercise'),
@@ -8941,12 +9121,58 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
                         color: const Color(0xFF0D1117),
-                        child: ListTile(
-                          title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          subtitle: Text('${ex.sets} sets x ${ex.reps} reps • ${ex.weight}'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
-                            onPressed: () => setModalState(() => exercises.removeAt(idx)),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(child: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                    child: Text('⚡ Sum Product: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () => setModalState(() => exercises.removeAt(idx)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: ex.sets,
+                                      decoration: const InputDecoration(labelText: 'Sets', isDense: true, border: OutlineInputBorder()),
+                                      keyboardType: TextInputType.number,
+                                      onChanged: (v) => setModalState(() => ex.sets = v),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: ex.reps,
+                                      decoration: const InputDecoration(labelText: 'Reps', isDense: true, border: OutlineInputBorder()),
+                                      onChanged: (v) => setModalState(() => ex.reps = v),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: TextFormField(
+                                      initialValue: ex.weight,
+                                      decoration: const InputDecoration(labelText: 'Weight', isDense: true, border: OutlineInputBorder()),
+                                      onChanged: (v) => setModalState(() => ex.weight = v),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -8959,18 +9185,454 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
                     onPressed: () {
-                      state.addCustomWorkout(
-                        CustomWorkoutRoutine(
-                          id: 'w_${DateTime.now().millisecondsSinceEpoch}',
-                          name: nameCtrl.text.trim(),
-                          focusArea: focusCtrl.text.trim(),
-                          exercises: exercises,
+                      final newRoutine = CustomWorkoutRoutine(
+                        id: 'w_${DateTime.now().millisecondsSinceEpoch}',
+                        name: nameCtrl.text.trim().isNotEmpty ? nameCtrl.text.trim() : 'Custom Workout Session',
+                        focusArea: focusCtrl.text.trim().isNotEmpty ? focusCtrl.text.trim() : 'Full Body',
+                        exercises: exercises,
+                      );
+                      state.addCustomWorkout(newRoutine);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎉 Custom workout session saved!')));
+                    },
+                    child: const Text('Save Workout Routine 💾', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- INTERACTIVE LIVE WORKOUT SESSION LOGGER WITH SUM PRODUCT & 3-OPTION EXIT FLOW ---
+  void _openLiveWorkoutSessionModal(BuildContext context, MyPtProvider state, CustomWorkoutRoutine routine) {
+    // Build set tracking items for each exercise
+    final activeExercises = routine.exercises.map((ex) {
+      final sCount = int.tryParse(ex.sets) ?? 3;
+      final rCount = int.tryParse(RegExp(r'(\d+)').firstMatch(ex.reps)?.group(1) ?? '10') ?? 10;
+      final wVal = double.tryParse(RegExp(r'(\d+)').firstMatch(ex.weight)?.group(1) ?? '60') ?? 60.0;
+
+      final setList = List.generate(sCount, (sIdx) {
+        return SetDetail(
+          setNumber: sIdx + 1,
+          weightKg: wVal,
+          reps: rCount,
+          isCompleted: false,
+        );
+      });
+
+      return WorkoutExercise(
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        restSeconds: ex.restSeconds,
+        isCompleted: false,
+        setDetails: setList,
+      );
+    }).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSessionState) {
+          final totalVolumeKg = activeExercises.fold(0.0, (acc, ex) => acc + ex.sumProductKg);
+          final totalCompletedSets = activeExercises.fold(0, (acc, ex) => acc + (ex.setDetails?.where((s) => s.isCompleted).length ?? 0));
+          final totalSetsCount = activeExercises.fold(0, (acc, ex) => acc + (ex.setDetails?.length ?? 0));
+
+          void showEndConfirmation() {
+            showDialog(
+              context: context,
+              builder: (dialogCtx) => AlertDialog(
+                backgroundColor: const Color(0xFF161B22),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: Colors.white12)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.flag_rounded, color: Color(0xFFFF5722)),
+                    SizedBox(width: 8),
+                    Text('End Workout Session', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'You logged $totalCompletedSets of $totalSetsCount sets with a Total Sum Product Volume of ${totalVolumeKg.toStringAsFixed(0)} kg.',
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text('Select an option to proceed:', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  ],
+                ),
+                actionsAlignment: MainAxisAlignment.spaceBetween,
+                actions: [
+                  // Option 1: Cancel (Neutral - remains in session)
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                    ),
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: const Text('Cancel'),
+                  ),
+                  // Option 2: Exit Without Saving (Destructive)
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF5252)),
+                    onPressed: () {
+                      Navigator.pop(dialogCtx);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Colors.white24,
+                          content: Text('Workout session exited without saving.'),
                         ),
                       );
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎉 Custom workout routine saved!')));
                     },
-                    child: const Text('Save Workout Routine', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Exit Without Saving', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  // Option 3: Save Workout (Primary)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00E676),
+                      foregroundColor: Colors.black,
+                    ),
+                    onPressed: () {
+                      final sessionLog = WorkoutSessionLog(
+                        id: 'sess_${DateTime.now().millisecondsSinceEpoch}',
+                        routineName: routine.name,
+                        focusArea: routine.focusArea,
+                        completedAt: DateTime.now(),
+                        totalVolumeKg: totalVolumeKg,
+                        loggedBy: state.currentUser?.name ?? 'You',
+                        exercises: activeExercises,
+                      );
+                      state.saveCompletedWorkoutSession(sessionLog);
+                      Navigator.pop(dialogCtx);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF00E676),
+                          content: Text('🎉 "${routine.name}" completed! Total Volume: ${totalVolumeKg.toStringAsFixed(0)} kg saved to history.'),
+                        ),
+                      );
+                    },
+                    child: const Text('Save Workout 💾', style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.92),
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 12),
+
+                // Top Header Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(child: Text(routine.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white))),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: const Color(0xFFFF5722).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                child: const Text('LIVE SESSION', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                              ),
+                            ],
+                          ),
+                          Text('Prescribed by: ${routine.createdBy} • ${routine.focusArea}', style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 22),
+                      onPressed: showEndConfirmation,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Live Session Volume & Progress Metrics Card
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D1117),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          const Text('Total Volume (Sum Product)', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '⚡ ${totalVolumeKg.toStringAsFixed(0)} kg',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF00E676)),
+                          ),
+                        ],
+                      ),
+                      Container(width: 1, height: 28, color: Colors.white12),
+                      Column(
+                        children: [
+                          const Text('Sets Completed', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$totalCompletedSets / $totalSetsCount',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      Container(width: 1, height: 28, color: Colors.white12),
+                      Column(
+                        children: [
+                          const Text('Exercises', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${activeExercises.length}',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Exercises & Sets List
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: activeExercises.length,
+                    itemBuilder: (context, exIdx) {
+                      final ex = activeExercises[exIdx];
+                      final sets = ex.setDetails ?? [];
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: const Color(0xFF0D1117),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: sets.every((s) => s.isCompleted) && sets.isNotEmpty
+                                ? const Color(0xFF00E676).withOpacity(0.5)
+                                : Colors.white12,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${exIdx + 1}. ${ex.name}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+                                    ),
+                                    child: Text(
+                                      '⚡ Sum Product: ${ex.formattedSumProduct}',
+                                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                              const Divider(height: 14, color: Colors.white12),
+
+                              // Set Table Header
+                              const Row(
+                                children: [
+                                  SizedBox(width: 32, child: Text('SET', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  Expanded(flex: 3, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 8),
+                                  Expanded(flex: 3, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 8),
+                                  Expanded(flex: 3, child: Text('SUM PRODUCT', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 38, child: Text('DONE', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+
+                              // Set Rows
+                              ...sets.asMap().entries.map((entry) {
+                                final setItem = entry.value;
+
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 6),
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                                  decoration: BoxDecoration(
+                                    color: setItem.isCompleted ? const Color(0xFF00E676).withOpacity(0.08) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 32,
+                                        child: Text(
+                                          '#${setItem.setNumber}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 3,
+                                        child: SizedBox(
+                                          height: 32,
+                                          child: TextFormField(
+                                            initialValue: setItem.weightKg % 1 == 0 ? setItem.weightKg.toInt().toString() : setItem.weightKg.toString(),
+                                            textAlign: TextAlign.center,
+                                            keyboardType: TextInputType.number,
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                            decoration: const InputDecoration(
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                              border: OutlineInputBorder(),
+                                              isDense: true,
+                                            ),
+                                            onChanged: (v) {
+                                              final parsed = double.tryParse(v) ?? setItem.weightKg;
+                                              setSessionState(() => setItem.weightKg = parsed);
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 3,
+                                        child: SizedBox(
+                                          height: 32,
+                                          child: TextFormField(
+                                            initialValue: setItem.reps.toString(),
+                                            textAlign: TextAlign.center,
+                                            keyboardType: TextInputType.number,
+                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                            decoration: const InputDecoration(
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                              border: OutlineInputBorder(),
+                                              isDense: true,
+                                            ),
+                                            onChanged: (v) {
+                                              final parsed = int.tryParse(v) ?? setItem.reps;
+                                              setSessionState(() => setItem.reps = parsed);
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Text(
+                                          '${setItem.volumeKg.toStringAsFixed(0)} kg',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 38,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            setItem.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white38,
+                                            size: 20,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () {
+                                            setSessionState(() => setItem.isCompleted = !setItem.isCompleted);
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+
+                              // Add / Remove Set Row Buttons
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.add, size: 14),
+                                    label: const Text('Add Set', style: TextStyle(fontSize: 11)),
+                                    onPressed: () {
+                                      setSessionState(() {
+                                        final last = sets.isNotEmpty ? sets.last : null;
+                                        sets.add(
+                                          SetDetail(
+                                            setNumber: sets.length + 1,
+                                            weightKg: last?.weightKg ?? 60.0,
+                                            reps: last?.reps ?? 10,
+                                          ),
+                                        );
+                                      });
+                                    },
+                                  ),
+                                  if (sets.length > 1)
+                                    TextButton(
+                                      onPressed: () {
+                                        setSessionState(() => sets.removeLast());
+                                      },
+                                      child: const Text('Remove Set', style: TextStyle(fontSize: 11, color: Colors.redAccent)),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // Bottom Actions: End Workout Session Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.flag_rounded, size: 20),
+                    label: const Text('End Workout Session 🏁', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    onPressed: showEndConfirmation,
                   ),
                 ),
               ],
