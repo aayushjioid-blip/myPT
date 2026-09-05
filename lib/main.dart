@@ -1434,6 +1434,15 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _obscurePassword = true;
   bool _submitted = false; // Prevents premature error display on initial load
 
+  // Touch flags to prevent premature errors before user interaction
+  bool _emailTouched = false;
+  bool _passTouched = false;
+  bool _nameTouched = false;
+
+  final _emailFocus = FocusNode();
+  final _passFocus = FocusNode();
+  final _nameFocus = FocusNode();
+
   late final TextEditingController emailCtrl;
   late final TextEditingController passCtrl;
   final nameCtrl = TextEditingController();
@@ -1444,10 +1453,29 @@ class _AuthScreenState extends State<AuthScreen> {
     super.initState();
     emailCtrl = TextEditingController(text: kReleaseMode ? '' : 'sarah@mypt.com');
     passCtrl = TextEditingController(text: kReleaseMode ? '' : 'client123');
+
+    _emailFocus.addListener(() {
+      if (!_emailFocus.hasFocus && emailCtrl.text.isNotEmpty) {
+        setState(() => _emailTouched = true);
+      }
+    });
+    _passFocus.addListener(() {
+      if (!_passFocus.hasFocus && passCtrl.text.isNotEmpty) {
+        setState(() => _passTouched = true);
+      }
+    });
+    _nameFocus.addListener(() {
+      if (!_nameFocus.hasFocus && nameCtrl.text.isNotEmpty) {
+        setState(() => _nameTouched = true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _emailFocus.dispose();
+    _passFocus.dispose();
+    _nameFocus.dispose();
     nameCtrl.dispose();
     emailCtrl.dispose();
     passCtrl.dispose();
@@ -1541,6 +1569,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 if (isSignUp) ...[
                   TextFormField(
                     controller: nameCtrl,
+                    focusNode: _nameFocus,
                     decoration: const InputDecoration(
                       labelText: 'Full Name',
                       hintText: 'e.g. Rahul Sharma',
@@ -1549,7 +1578,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       fillColor: Color(0xFF161B22),
                       border: OutlineInputBorder(),
                     ),
+                    onChanged: (val) {
+                      if (!_nameTouched && val.isNotEmpty) setState(() => _nameTouched = true);
+                    },
                     validator: (val) {
+                      if (!_submitted && !_nameTouched) return null;
                       if (val == null || val.trim().isEmpty) return 'Full name is required';
                       if (val.trim().length < 2) return 'Full name must be at least 2 characters';
                       return null;
@@ -1578,6 +1611,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                 TextFormField(
                   controller: emailCtrl,
+                  focusNode: _emailFocus,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email Address',
@@ -1587,7 +1621,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     fillColor: Color(0xFF161B22),
                     border: OutlineInputBorder(),
                   ),
+                  onChanged: (val) {
+                    if (!_emailTouched && val.isNotEmpty) setState(() => _emailTouched = true);
+                  },
                   validator: (val) {
+                    if (!_submitted && !_emailTouched) return null;
                     if (val == null || val.trim().isEmpty) return 'Email address is required';
                     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
                     if (!emailRegex.hasMatch(val.trim())) return 'Please enter a valid email address';
@@ -1598,6 +1636,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                 TextFormField(
                   controller: passCtrl,
+                  focusNode: _passFocus,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Password',
@@ -1610,7 +1649,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     fillColor: const Color(0xFF161B22),
                     border: const OutlineInputBorder(),
                   ),
+                  onChanged: (val) {
+                    if (!_passTouched && val.isNotEmpty) setState(() => _passTouched = true);
+                  },
                   validator: (val) {
+                    if (!_submitted && !_passTouched) return null;
                     if (val == null || val.isEmpty) return 'Password is required';
                     if (val.length < 6) return 'Password must be at least 6 characters';
                     return null;
@@ -1655,6 +1698,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       setState(() {
                         isSignUp = !isSignUp;
                         _submitted = false;
+                        _emailTouched = false;
+                        _passTouched = false;
+                        _nameTouched = false;
                       });
                     },
                     child: Text(
@@ -1680,8 +1726,13 @@ class _AuthScreenState extends State<AuthScreen> {
         textStyle: const TextStyle(fontSize: 11),
       ),
       onPressed: () {
-        emailCtrl.text = email;
-        passCtrl.text = pass;
+        setState(() {
+          emailCtrl.text = email;
+          passCtrl.text = pass;
+          _emailTouched = false;
+          _passTouched = false;
+          _submitted = false;
+        });
         state.login(email, pass);
       },
       child: Text(title),
@@ -2072,10 +2123,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final hasCoach = assignedTrainer != null && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
     final isPendingCoach = user.trainerApprovalStatus == TrainerApprovalStatus.pending;
 
+    // Accurate dynamic weight delta calculations
+    final double weightDiff = user.startingWeight - user.currentWeight;
+    final String weightSubtitle;
+    final Color deltaColor;
+    if (weightDiff > 0.05) {
+      weightSubtitle = '↓ ${weightDiff.toStringAsFixed(1)} kg lost (Start: ${user.startingWeight} kg)';
+      deltaColor = const Color(0xFF00E676);
+    } else if (weightDiff < -0.05) {
+      weightSubtitle = '↑ ${(-weightDiff).toStringAsFixed(1)} kg gained (Start: ${user.startingWeight} kg)';
+      deltaColor = const Color(0xFFFF9800);
+    } else {
+      weightSubtitle = 'Maintaining baseline (${user.startingWeight} kg)';
+      deltaColor = Colors.white70;
+    }
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
-        // 1. Who am I?
+        // 1. Who am I? (Header)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -2106,27 +2172,66 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         const SizedBox(height: 16),
 
-        // 2. What is my current status? (2 Balanced KPI cards)
+        // 2. What is my current status? (Prominent Weight & PT Credits Bento)
         Row(
           children: [
             Expanded(
               child: GestureDetector(
                 onTap: () => _openWeightLogDialog(context, state),
-                child: _statCard(
-                  'CURRENT WEIGHT',
-                  '${user.currentWeight} kg',
-                  '↓ ${(user.startingWeight - user.currentWeight).toStringAsFixed(1)} kg lost',
-                  const Color(0xFF29B6F6),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF29B6F6).withOpacity(0.35)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('CURRENT WEIGHT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                          Icon(Icons.edit_note, size: 14, color: Color(0xFF29B6F6)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('${user.currentWeight} kg', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
+                      const SizedBox(height: 4),
+                      Text(weightSubtitle, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: deltaColor)),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _statCard(
-                'PT CREDITS',
-                '${user.ptCredits}',
-                user.ptCredits > 0 ? 'Active & Ready' : 'Top up credits',
-                const Color(0xFFFF5722),
+              child: GestureDetector(
+                onTap: () => setState(() => _tabIndex = 6),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.35)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('PT CREDITS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                          Icon(Icons.token_outlined, size: 14, color: Color(0xFFFF5722)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text('${user.ptCredits}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFFF5722))),
+                      const SizedBox(height: 4),
+                      Text(user.ptCredits > 0 ? 'Active & Ready • Top up' : 'Top up credits >', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -2357,23 +2462,21 @@ class _MainShellScreenState extends State<MainShellScreen> {
           }(),
         ],
 
-        const SizedBox(height: 20),
-
-        // Upcoming Sessions List
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('All Scheduled Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton.icon(
-              icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
-              label: const Text('Book New', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
-              onPressed: () => _openScheduleModal(context, state),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
+        // 4. Scheduled Sessions List (Shown only when sessions exist, eliminating redundant empty boxes)
         if (userSessions.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('All Scheduled Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextButton.icon(
+                icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
+                label: const Text('Book New', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
+                onPressed: () => _openScheduleModal(context, state),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           ...userSessions.map((s) {
             final isPending = s.status == RequestStatus.pending;
             final isConfirmed = s.status == RequestStatus.confirmed;
@@ -2452,22 +2555,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             );
           }),
-        ] else ...[
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: const Center(
-              child: Text(
-                'No upcoming sessions yet. Book a session with your trainer to get started.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
         ],
       ],
     );
@@ -4263,22 +4350,56 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 Text('With: ${session.clientName} & Coach ${session.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
                 const Divider(height: 20, color: Colors.white12),
 
-                const Text('Select New Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                // Date Selection with 21-day horizontal scroll + Calendar Picker Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Select New Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 90)),
+                        );
+                        if (picked != null) {
+                          setModalState(() => selectedDate = picked);
+                        }
+                      },
+                      child: const Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 12, color: Color(0xFFFF5722)),
+                          SizedBox(width: 4),
+                          Text('Pick Calendar Date 📅', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: List.generate(14, (i) {
-                      final d = DateTime.now().add(Duration(days: i + 1));
-                      final isSel = selectedDate.day == d.day && selectedDate.month == d.month;
+                    children: List.generate(21, (i) {
+                      final now = DateTime.now();
+                      final d = DateTime(now.year, now.month, now.day).add(Duration(days: i));
+                      final isSel = selectedDate.year == d.year && selectedDate.month == d.month && selectedDate.day == d.day;
+                      final isToday = i == 0;
+                      final labelText = isToday ? 'Today, ${DateFormat('dd MMM').format(d)}' : DateFormat('EEE, dd MMM').format(d);
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
-                          label: Text(DateFormat('EEE, dd MMM').format(d)),
+                          label: Text(labelText),
                           selected: isSel,
                           selectedColor: const Color(0xFFFF5722),
                           backgroundColor: const Color(0xFF0D1117),
-                          labelStyle: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : Colors.white70),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            color: isSel ? Colors.white : Colors.white70,
+                          ),
                           onSelected: (sel) => setModalState(() => selectedDate = d),
                         ),
                       );
@@ -4449,17 +4570,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: List.generate(14, (i) {
-                      final d = DateTime.now().add(Duration(days: i + 1));
-                      final isSel = selectedDate.day == d.day && selectedDate.month == d.month && selectedDate.year == d.year;
+                    children: List.generate(21, (i) {
+                      final now = DateTime.now();
+                      final d = DateTime(now.year, now.month, now.day).add(Duration(days: i));
+                      final isSel = selectedDate.year == d.year && selectedDate.month == d.month && selectedDate.day == d.day;
+                      final isToday = i == 0;
+                      final labelText = isToday ? 'Today, ${DateFormat('dd MMM').format(d)}' : DateFormat('EEE, dd MMM').format(d);
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: ChoiceChip(
-                          label: Text(DateFormat('EEE, dd MMM').format(d)),
+                          label: Text(labelText),
                           selected: isSel,
                           selectedColor: const Color(0xFFFF5722),
                           backgroundColor: const Color(0xFF0D1117),
-                          labelStyle: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : Colors.white70),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            color: isSel ? Colors.white : Colors.white70,
+                          ),
                           onSelected: (sel) => setModalState(() => selectedDate = d),
                         ),
                       );
@@ -5145,100 +5274,357 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final user = state.currentUser;
     if (user == null) return;
 
+    bool isMaximized = false;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF161B22),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final media = MediaQuery.of(context);
+          final modalHeight = isMaximized ? media.size.height * 0.94 : media.size.height * 0.72;
+
+          // Find assigned trainer if any
+          UserModel? assignedTrainer;
+          if (user.trainerId != null) {
+            for (final t in state.allTrainers) {
+              if (t.id == user.trainerId) {
+                assignedTrainer = t;
+                break;
+              }
+            }
+          }
+
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            height: modalHeight,
+            decoration: const BoxDecoration(
+              color: Color(0xFF161B22),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: Colors.white12)),
+            ),
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: const Color(0xFFFF5722),
-                  child: Text(user.name.isNotEmpty ? user.name[0] : '?', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                // Top Action Bar
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: 38,
+                            height: 4,
+                            decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(isMaximized ? Icons.fullscreen_exit : Icons.fullscreen, color: const Color(0xFFFF5722), size: 22),
+                        tooltip: isMaximized ? 'Restore View' : 'Maximize to Fullscreen',
+                        onPressed: () => setModalState(() => isMaximized = !isMaximized),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text('${user.email} • ${user.role.name.toUpperCase()}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
+                const Divider(height: 1, color: Colors.white12),
+
+                // Scrollable Body
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                      // User Identity Card
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: const Color(0xFFFF5722),
+                            child: Text(
+                              user.name.isNotEmpty ? user.name[0] : '?',
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(user.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 2),
+                                Text(user.email, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF5722).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(user.role.name.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00E676).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text('${user.ptCredits} PT CREDITS', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Health & Body Profile Grid
+                      const Text('FITNESS & HEALTH ATTRIBUTES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Primary Fitness Goal', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text(user.goal, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                              ],
+                            ),
+                            const Divider(height: 16, color: Colors.white10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Current Weight', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text('${user.currentWeight} kg (Start: ${user.startingWeight} kg)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF29B6F6))),
+                              ],
+                            ),
+                            const Divider(height: 16, color: Colors.white10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Age & Height', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text('${user.age} yrs • ${user.heightCm.toInt()} cm', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                              ],
+                            ),
+                            const Divider(height: 16, color: Colors.white10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Emergency Contact', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                Text(user.emergencyContact, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Coach & Credits Section
+                      if (user.role == UserRole.client) ...[
+                        const Text('PRIMARY COACH & SESSIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D1117),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: const Color(0xFF00E676).withOpacity(0.2),
+                                    child: Text(assignedTrainer != null ? assignedTrainer.name[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          assignedTrainer != null ? 'Coach ${assignedTrainer.name}' : 'No Trainer Assigned',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        ),
+                                        Text(
+                                          assignedTrainer != null ? '1-on-1 Certified Personal Trainer' : 'Select a coach in the Discover tab',
+                                          style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      setState(() => _tabIndex = 1);
+                                    },
+                                    child: Text(
+                                      assignedTrainer != null ? 'Change' : 'Discover',
+                                      style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                      ],
+
+                      // Regional Preferences
+                      const Text('REGIONAL & APP PREFERENCES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.location_on, color: Color(0xFFFF5722)),
+                              title: const Text('Location', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              subtitle: Text(state.userLocation, style: const TextStyle(fontSize: 12, color: Colors.white60)),
+                              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _openLocationPromptModal(context, state);
+                              },
+                            ),
+                            const Divider(height: 1, color: Colors.white10),
+                            ListTile(
+                              leading: const Icon(Icons.currency_exchange, color: Color(0xFF00E676)),
+                              title: const Text('Currency & Regional Pricing', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              subtitle: Text('${state.currentCurrencyInfo.name} (${state.selectedCurrency})', style: const TextStyle(fontSize: 12, color: Colors.white60)),
+                              trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                _openCurrencySelector(context, state);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+
+                      // Sign Out Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF21262D),
+                            foregroundColor: Colors.redAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+                            ),
+                          ),
+                          icon: const Icon(Icons.logout, size: 18),
+                          label: const Text('Sign Out of myPT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            state.logout();
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
                 ),
               ],
             ),
-            const Divider(height: 24, color: Colors.white12),
-
-            ListTile(
-              leading: const Icon(Icons.location_on, color: Color(0xFFFF5722)),
-              title: const Text('Location'),
-              subtitle: Text(state.userLocation),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openLocationPromptModal(context, state);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.currency_exchange, color: Color(0xFF00E676)),
-              title: const Text('Currency & Region'),
-              subtitle: Text('${state.currentCurrencyInfo.name} (${state.selectedCurrency})'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-              onTap: () {
-                Navigator.pop(ctx);
-                _openCurrencySelector(context, state);
-              },
-            ),
-            const SizedBox(height: 12),
-
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF21262D), foregroundColor: Colors.redAccent),
-                icon: const Icon(Icons.logout, size: 16),
-                label: const Text('Sign Out'),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  state.logout();
-                },
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   void _openWeightLogDialog(BuildContext context, MyPtProvider state) {
-    final ctrl = TextEditingController(text: state.currentUser?.currentWeight.toString() ?? '64.5');
+    final user = state.currentUser;
+    final currentW = user?.currentWeight ?? 64.5;
+    final startW = user?.startingWeight ?? 68.0;
+    final ctrl = TextEditingController(text: currentW.toStringAsFixed(1));
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF161B22),
-        title: const Text('Log Weight (kg)'),
-        content: TextField(
-          controller: ctrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Weight (kg)', border: OutlineInputBorder()),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: Colors.white12)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: const Color(0xFF29B6F6).withOpacity(0.15), shape: BoxShape.circle),
+              child: const Icon(Icons.scale, color: Color(0xFF29B6F6), size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text('Log Today\'s Weight', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Baseline Start Weight: $startW kg', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Current Weight (kg)',
+                hintText: 'e.g. 64.0',
+                suffixText: 'kg',
+                filled: true,
+                fillColor: Color(0xFF0D1117),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white60))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722), foregroundColor: Colors.white),
             onPressed: () {
-              final w = double.tryParse(ctrl.text);
-              if (w != null) {
+              final w = double.tryParse(ctrl.text.trim());
+              if (w != null && w > 20 && w < 300) {
                 state.logTodayWeight(w);
                 Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF00E676),
+                    content: Text('✓ Weight updated to $w kg! Progress updated.'),
+                  ),
+                );
               }
             },
-            child: const Text('Save'),
+            child: const Text('Save Check-in', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
