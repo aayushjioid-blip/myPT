@@ -3719,13 +3719,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  if (hasCoach && trainerPackages.isNotEmpty) {
-                    _openPurchaseOptionsModal(context, state, trainerPackages.first);
-                  } else {
-                    setState(() => _tabIndex = 1);
-                  }
-                },
+                onTap: () => _openTopUpCreditsModal(context, state, assignedTrainer),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -3736,17 +3730,35 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('PT CREDITS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
-                          Icon(Icons.token_outlined, size: 14, color: Color(0xFFFF5722)),
+                          const Text('PT CREDITS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF5722).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.add, size: 10, color: Color(0xFFFF5722)),
+                                SizedBox(width: 2),
+                                Text('TOP UP', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
                       Text('${user.ptCredits}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFFFF5722))),
                       const SizedBox(height: 4),
-                      Text(user.ptCredits > 0 ? 'Active & Ready • Top up' : 'Top up credits >', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70)),
+                      Text(
+                        hasCoach ? '+ Add credits from Coach >' : 'Top up credits >',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+                      ),
                     ],
                   ),
                 ),
@@ -3817,13 +3829,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  if (hasCoach && trainerPackages.isNotEmpty) {
-                    _openPurchaseOptionsModal(context, state, trainerPackages.first);
-                  } else {
-                    setState(() => _tabIndex = 1);
-                  }
-                },
+                onTap: () => _openTopUpCreditsModal(context, state, assignedTrainer),
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -9293,6 +9299,269 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 }),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- POPUP MODAL: TOP UP PT CREDITS FROM PRIMARY TRAINER ---
+  void _openTopUpCreditsModal(BuildContext context, MyPtProvider state, UserModel? assignedTrainer) {
+    final user = state.currentUser;
+    final hasCoach = assignedTrainer != null && user?.trainerApprovalStatus == TrainerApprovalStatus.approved;
+    final trainerPackages = hasCoach ? state.getPackagesForTrainer(assignedTrainer.id) : <TrainingPackage>[];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.88),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF5722).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.token_outlined, color: Color(0xFFFF5722), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          hasCoach ? 'Packages by Coach ${assignedTrainer.name}' : 'Top Up PT Credits',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          hasCoach
+                              ? 'Select a package to add 1-on-1 PT credits'
+                              : 'Select a primary coach to view custom packages',
+                          style: const TextStyle(color: Colors.white60, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Current Balance & Guarantee Banner
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B22),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.verified, size: 16, color: Color(0xFF00E676)),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        '1 PT Credit = 1 Private 1-on-1 Session with Coach',
+                        style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5722).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${user?.ptCredits ?? 0} Credits Left',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              if (hasCoach) ...[
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: trainerPackages.length,
+                    itemBuilder: (context, idx) {
+                      final pkg = trainerPackages[idx];
+                      final isPopular = pkg.sessionsCount == 12;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161B22),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isPopular ? const Color(0xFFFF5722) : Colors.white12,
+                            width: isPopular ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (isPopular) ...[
+                                          Container(
+                                            margin: const EdgeInsets.only(bottom: 6),
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFF5722),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'MOST POPULAR ⭐',
+                                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+                                            ),
+                                          ),
+                                        ],
+                                        Text(pkg.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '+${pkg.sessionsCount} Sessions • ${pkg.durationWeeks} Weeks Access',
+                                          style: const TextStyle(color: Color(0xFF00E676), fontSize: 12, fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    state.formatPrice(pkg.priceInr),
+                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(pkg.description, style: const TextStyle(color: Colors.white60, fontSize: 11.5)),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: pkg.perks.map((perk) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0D1117),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.white10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle_outline, size: 11, color: Color(0xFF00E676)),
+                                      const SizedBox(width: 4),
+                                      Text(perk, style: const TextStyle(fontSize: 10, color: Colors.white70)),
+                                    ],
+                                  ),
+                                )).toList(),
+                              ),
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 42,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isPopular ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      side: BorderSide(color: isPopular ? Colors.transparent : Colors.white24),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.shopping_cart_checkout, size: 16),
+                                  label: Text(
+                                    'Top Up +${pkg.sessionsCount} PT Credits (${state.formatPrice(pkg.priceInr)})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    _openPurchaseOptionsModal(context, state, pkg);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.person_search_rounded, size: 48, color: Color(0xFFFF5722)),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'No Primary Trainer Assigned',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Browse verified coaches in Discover to select your trainer and unlock custom 1-on-1 PT packages and pricing.',
+                        style: TextStyle(color: Colors.white60, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.search, size: 16),
+                          label: const Text('Discover Verified Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            setState(() => _tabIndex = 1);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),
