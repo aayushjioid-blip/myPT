@@ -3185,13 +3185,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
         (Icons.trending_up, 'Progress'),
       ],
       UserRole.coach => const [
-        (Icons.dashboard, 'Dashboard'),
-        (Icons.inbox, 'Requests'),
-        (Icons.calendar_month, 'Schedule'),
-        (Icons.people, 'Clients'),
-        (Icons.post_add, 'Build Chart'),
-        (Icons.fitness_center, 'Library'),
-        (Icons.inventory_2, 'Packages'),
+        (Icons.calendar_month_rounded, 'Upcoming Sessions'),
+        (Icons.chat_bubble_outline_rounded, 'Messages'),
       ],
       UserRole.headCoach => const [
         (Icons.dashboard, 'Overview'),
@@ -5347,19 +5342,389 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   // ============================================================================
-  // 7. COACH VIEWS (7 TABS: Dashboard, Requests, Schedule, Clients, Build Chart, Library, Packages)
+  // 7. COACH VIEWS (2 TABS: Upcoming Sessions, Messages)
   // ============================================================================
   Widget _buildCoachView(MyPtProvider state, int tab) {
     return switch (tab) {
       0 => _coachDashboardTab(state),
-      1 => _coachRequestsTab(state),
-      2 => _coachScheduleTab(state),
-      3 => _coachClientsTab(state),
-      4 => _coachBuildChartTab(),
-      5 => _coachLibraryTab(state),
-      6 => _coachPackagesTab(state),
+      1 => _coachMessagesTab(state),
       _ => _coachDashboardTab(state),
     };
+  }
+
+  void _openTrainerRequestsModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              Expanded(child: _coachRequestsTab(state)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTrainerClientsModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              Expanded(child: _coachClientsTab(state)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTrainerBuildChartModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              Expanded(child: _coachBuildChartTab()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTrainerLibraryModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              Expanded(child: _coachLibraryTab(state)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTrainerPackagesModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(ctx).size.height * 0.85,
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              Expanded(child: _coachPackagesTab(state)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _coachMessagesTab(MyPtProvider state) {
+    final coach = state.currentUser!;
+    final myClients = state.getClientsForTrainer(coach.id);
+
+    // Find all users who either are assigned clients or have sent/received messages to this coach
+    final allConversationPeers = <String>{};
+    for (final c in myClients) {
+      allConversationPeers.add(c.name);
+    }
+    for (final m in state.chatMessages) {
+      if (m.senderName.toLowerCase() == coach.name.toLowerCase()) {
+        allConversationPeers.add(m.receiverName);
+      } else if (m.receiverName.toLowerCase() == coach.name.toLowerCase()) {
+        allConversationPeers.add(m.senderName);
+      }
+    }
+
+    final peerList = allConversationPeers.toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Client Communication', style: TextStyle(color: Colors.white60, fontSize: 13)),
+                Text('Messages & Nutrition', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
+              ],
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF5722).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.chat_bubble, size: 12, color: Color(0xFFFF5722)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${peerList.length} Active',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Quick Active Clients Avatars Strip
+        if (myClients.isNotEmpty) ...[
+          const Text('Assigned Trainees', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 84,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: myClients.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final client = myClients[index];
+                final msgs = state.getMessagesBetween(coach.name, client.name);
+                final hasUnread = msgs.isNotEmpty;
+
+                return GestureDetector(
+                  onTap: () => _openChatModal(context, state, peerName: client.name),
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                            child: Text(
+                              client.name.isNotEmpty ? client.name[0] : '?',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFFFF5722)),
+                            ),
+                          ),
+                          if (hasUnread)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E676),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF0D1117), width: 2),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 60,
+                        child: Text(
+                          client.name.split(' ').first,
+                          style: const TextStyle(fontSize: 11, color: Colors.white),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Conversations List
+        const Text('Recent Conversations', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 10),
+
+        if (peerList.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 40, color: Colors.white38),
+                SizedBox(height: 12),
+                Text('No message history yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                SizedBox(height: 6),
+                Text('Messages and logged nutrition meals from your trainees will appear here.', style: TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
+              ],
+            ),
+          )
+        else
+          ...peerList.map((peer) {
+            final msgs = state.getMessagesBetween(coach.name, peer);
+            final lastMsg = msgs.isNotEmpty ? msgs.last : null;
+            final isClientAssigned = myClients.any((c) => c.name.toLowerCase() == peer.toLowerCase());
+
+            String previewText = 'Tap to start conversation or review daily meals';
+            String timeText = '';
+            bool isMeal = false;
+
+            if (lastMsg != null) {
+              if (lastMsg.mealAttachment != null) {
+                previewText = '${lastMsg.mealAttachment!.emoji} ${lastMsg.mealAttachment!.mealType}: ${lastMsg.mealAttachment!.description}';
+                isMeal = true;
+              } else {
+                previewText = lastMsg.text;
+              }
+              timeText = DateFormat('hh:mm a').format(lastMsg.timestamp);
+            }
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: isMeal ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white12),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _openChatModal(context, state, peerName: peer),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                        child: Text(
+                          peer.isNotEmpty ? peer[0] : '?',
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(peer, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                                if (timeText.isNotEmpty)
+                                  Text(timeText, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                if (isClientAssigned) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('1-on-1 Assigned', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  ),
+                                ],
+                                if (isMeal) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF9800).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('Meal Log', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              previewText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isMeal ? const Color(0xFF00E676) : Colors.white70,
+                                fontWeight: isMeal ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white38),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+      ],
+    );
   }
 
   Widget _coachDashboardTab(MyPtProvider state) {
@@ -5388,12 +5753,68 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
         Row(
           children: [
-            Expanded(child: _statCard('ASSIGNED CLIENTS', '${myClients.length}', 'Active Roster', const Color(0xFFFF5722))),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _openTrainerClientsModal(context, state),
+                child: _statCard('ASSIGNED CLIENTS', '${myClients.length}', 'Active Roster >', const Color(0xFFFF5722)),
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _statCard('EST. REVENUE', state.formatPrice(45990), 'This Month', const Color(0xFF00E676))),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _openTrainerPackagesModal(context, state),
+                child: _statCard('EST. REVENUE', state.formatPrice(45990), 'This Month >', const Color(0xFF00E676)),
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _statCard('PENDING REQUESTS', '${pendingSessions + pendingOfflinePayments.length}', 'Needs Review', const Color(0xFFFF9800))),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _openTrainerRequestsModal(context, state),
+                child: _statCard('PENDING REQUESTS', '${pendingSessions + pendingOfflinePayments.length}', 'Needs Review >', const Color(0xFFFF9800)),
+              ),
+            ),
           ],
+        ),
+        const SizedBox(height: 12),
+
+        // Quick Coach Toolkit Row
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ActionChip(
+                backgroundColor: const Color(0xFF161B22),
+                side: const BorderSide(color: Colors.white12),
+                avatar: const Icon(Icons.post_add, size: 14, color: Color(0xFFFF5722)),
+                label: const Text('Build Workout Chart', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                onPressed: () => _openTrainerBuildChartModal(context),
+              ),
+              const SizedBox(width: 8),
+              ActionChip(
+                backgroundColor: const Color(0xFF161B22),
+                side: const BorderSide(color: Colors.white12),
+                avatar: const Icon(Icons.fitness_center, size: 14, color: Color(0xFF29B6F6)),
+                label: const Text('Exercise Library', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                onPressed: () => _openTrainerLibraryModal(context, state),
+              ),
+              const SizedBox(width: 8),
+              ActionChip(
+                backgroundColor: const Color(0xFF161B22),
+                side: const BorderSide(color: Colors.white12),
+                avatar: const Icon(Icons.inventory_2, size: 14, color: Color(0xFFFFB300)),
+                label: const Text('My Packages', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                onPressed: () => _openTrainerPackagesModal(context, state),
+              ),
+              const SizedBox(width: 8),
+              ActionChip(
+                backgroundColor: const Color(0xFF161B22),
+                side: const BorderSide(color: Colors.white12),
+                avatar: const Icon(Icons.inbox, size: 14, color: Color(0xFF00E676)),
+                label: const Text('Consultation Requests', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
+                onPressed: () => _openTrainerRequestsModal(context, state),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
 
