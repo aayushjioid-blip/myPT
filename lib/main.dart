@@ -929,6 +929,25 @@ class MyPtProvider extends ChangeNotifier {
     MovementItem(name: 'Standing Overhead Press (OHP)', category: 'Shoulders', defaultSetsReps: '4 sets x 6 reps', equipment: 'Olympic Barbell'),
   ];
 
+  void addMovementItem(MovementItem item) {
+    movementLibrary.insert(0, item);
+    notifyListeners();
+  }
+
+  void updateMovementItem(int index, MovementItem item) {
+    if (index >= 0 && index < movementLibrary.length) {
+      movementLibrary[index] = item;
+      notifyListeners();
+    }
+  }
+
+  void deleteMovementItem(int index) {
+    if (index >= 0 && index < movementLibrary.length) {
+      movementLibrary.removeAt(index);
+      notifyListeners();
+    }
+  }
+
   Map<String, bool> globalFlags = {
     'ai_fitness_copilot': true,
     'bento_analytics_grid': true,
@@ -6304,19 +6323,114 @@ class _MainShellScreenState extends State<MainShellScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
-        const Text('Exercise Movement Library', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...state.movementLibrary.map((m) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            color: const Color(0xFF161B22),
-            child: ListTile(
-              leading: const Icon(Icons.fitness_center, color: Color(0xFFFF5722)),
-              title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('${m.category} • ${m.equipment}\n${m.defaultSetsReps}'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text('Exercise Movement Library', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
-          );
-        }),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5722),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('+ Create Exercise', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              onPressed: () => _openCreateExerciseModal(context, state),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text('Catalog custom movements, biomechanics cues, and target rep protocols.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 14),
+        if (state.movementLibrary.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
+            child: Center(
+              child: Column(
+                children: [
+                  const Icon(Icons.fitness_center, color: Colors.white30, size: 40),
+                  const SizedBox(height: 10),
+                  const Text('No exercises in library yet.', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Create First Exercise'),
+                    onPressed: () => _openCreateExerciseModal(context, state),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...state.movementLibrary.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final m = entry.value;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.white.withOpacity(0.06)),
+              ),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5722).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.fitness_center, color: Color(0xFFFF5722), size: 20),
+                ),
+                title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('${m.category} • ${m.equipment}\n${m.defaultSetsReps}', style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3)),
+                ),
+                trailing: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
+                  color: const Color(0xFF1C2128),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onSelected: (val) {
+                    if (val == 'edit') {
+                      _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx);
+                    } else if (val == 'delete') {
+                      state.deleteMovementItem(idx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Removed "${m.name}" from library')),
+                      );
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 16, color: Colors.blueAccent),
+                          SizedBox(width: 8),
+                          Text('Edit Exercise', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                onTap: () => _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx),
+              ),
+            );
+          }),
       ],
     );
   }
@@ -8620,6 +8734,171 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _openCreateExerciseModal(BuildContext context, MyPtProvider state, {MovementItem? existingItem, int? existingIndex}) {
+    final nameCtrl = TextEditingController(text: existingItem?.name ?? '');
+    final categoryCtrl = TextEditingController(text: existingItem?.category ?? 'Chest / Push');
+    final equipmentCtrl = TextEditingController(text: existingItem?.equipment ?? 'Dumbbells');
+    final setsRepsCtrl = TextEditingController(text: existingItem?.defaultSetsReps ?? '3 sets x 10-12 reps');
+
+    final categories = [
+      'Chest / Push',
+      'Back / Pull',
+      'Legs / Quads',
+      'Hamstrings & Glutes',
+      'Posterior Chain',
+      'Shoulders',
+      'Arms / Biceps / Triceps',
+      'Core & Abs',
+      'Full Body / Conditioning',
+    ];
+
+    final equipments = [
+      'Barbell & Squat Rack',
+      'Olympic Barbell & Plates',
+      'Olympic Barbell',
+      'Adjustable Bench & Dumbbells',
+      'Dumbbells',
+      'Cable Station',
+      'Kettlebell',
+      'Bodyweight / Pull-up Bar',
+      'Resistance Bands',
+      'Machine / Lever',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      existingItem == null ? 'Create Exercise Movement' : 'Edit Exercise Movement',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Exercise Name *',
+                    hintText: 'e.g., Bulgarian Split Squat',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.fitness_center, color: Color(0xFFFF5722), size: 20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Category Selector
+                const Text('Muscle Group / Category', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: categories.contains(categoryCtrl.text) ? categoryCtrl.text : categories.first,
+                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.category, color: Colors.white54, size: 20)),
+                  dropdownColor: const Color(0xFF1C2128),
+                  items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat, style: const TextStyle(fontSize: 13)))).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() => categoryCtrl.text = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Equipment Selector
+                const Text('Required Equipment', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: equipments.contains(equipmentCtrl.text) ? equipmentCtrl.text : equipments.first,
+                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.sports_gymnastics, color: Colors.white54, size: 20)),
+                  dropdownColor: const Color(0xFF1C2128),
+                  items: equipments.map((eq) => DropdownMenuItem(value: eq, child: Text(eq, style: const TextStyle(fontSize: 13)))).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() => equipmentCtrl.text = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Sets & Reps Target
+                TextField(
+                  controller: setsRepsCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Default Sets & Reps / Target Protocol',
+                    hintText: 'e.g., 3 sets x 10-12 reps @ RPE 8',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.repeat, color: Colors.white54, size: 20),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      final name = nameCtrl.text.trim();
+                      if (name.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter an exercise name')));
+                        return;
+                      }
+
+                      final newItem = MovementItem(
+                        name: name,
+                        category: categoryCtrl.text.trim().isEmpty ? 'General' : categoryCtrl.text.trim(),
+                        defaultSetsReps: setsRepsCtrl.text.trim().isEmpty ? '3 sets x 10 reps' : setsRepsCtrl.text.trim(),
+                        equipment: equipmentCtrl.text.trim().isEmpty ? 'Standard Gym Equipment' : equipmentCtrl.text.trim(),
+                      );
+
+                      if (existingIndex != null && existingIndex >= 0) {
+                        state.updateMovementItem(existingIndex, newItem);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Updated "${newItem.name}" in library')));
+                      } else {
+                        state.addMovementItem(newItem);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Added "${newItem.name}" to exercise library! 🏋️')));
+                      }
+
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(
+                      existingItem == null ? '+ Save to Movement Library' : 'Update Exercise',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

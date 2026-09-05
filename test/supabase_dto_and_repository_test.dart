@@ -13,6 +13,8 @@ import 'package:fittrainer/domain/entities/cancellation_policy_entity.dart';
 import 'package:fittrainer/domain/services/cancellation_evaluator.dart';
 import 'package:fittrainer/core/utils/formatters.dart';
 
+import 'package:fittrainer/main.dart' as app;
+
 void main() {
   group('Supabase DTO Models Serialization Tests', () {
     test('UserModel correctly deserializes PostgreSQL snake_case payload', () {
@@ -195,6 +197,52 @@ void main() {
       );
       expect(eval2h.isPenaltyApplied, true);
       expect(eval2h.creditsToDeduct, 1);
+    });
+  });
+
+  group('Movement Library Management Tests', () {
+    test('MovementItem creates and holds exercise parameters correctly', () {
+      final item = app.MovementItem(
+        name: 'Bulgarian Split Squat',
+        category: 'Legs / Quads',
+        defaultSetsReps: '3 sets x 10 reps',
+        equipment: 'Dumbbells & Bench',
+      );
+      expect(item.name, 'Bulgarian Split Squat');
+      expect(item.category, 'Legs / Quads');
+      expect(item.defaultSetsReps, '3 sets x 10 reps');
+      expect(item.equipment, 'Dumbbells & Bench');
+    });
+
+    test('MyPtProvider supports add, update, and delete movement operations', () {
+      final provider = app.MyPtProvider();
+      final initialCount = provider.movementLibrary.length;
+
+      final newItem = app.MovementItem(
+        name: 'Hammer Curls',
+        category: 'Arms / Biceps / Triceps',
+        defaultSetsReps: '3 sets x 12 reps',
+        equipment: 'Dumbbells',
+      );
+
+      // Add
+      provider.addMovementItem(newItem);
+      expect(provider.movementLibrary.length, initialCount + 1);
+      expect(provider.movementLibrary.first.name, 'Hammer Curls');
+
+      // Update
+      final updatedItem = app.MovementItem(
+        name: 'Hammer Curls (Incline)',
+        category: 'Arms / Biceps / Triceps',
+        defaultSetsReps: '4 sets x 10 reps',
+        equipment: 'Incline Bench & Dumbbells',
+      );
+      provider.updateMovementItem(0, updatedItem);
+      expect(provider.movementLibrary.first.name, 'Hammer Curls (Incline)');
+
+      // Delete
+      provider.deleteMovementItem(0);
+      expect(provider.movementLibrary.length, initialCount);
     });
   });
 }
