@@ -2088,6 +2088,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
     'Powerlifting',
   ];
 
+  // --- TRAINER GOOGLE CALENDAR SCHEDULE STATE ---
+  String _calendarViewMode = 'Month'; // 'Month', 'Week', '3-Day', 'Day', 'Schedule'
+  DateTime _calendarFocusedDate = DateTime.now();
+  DateTime _calendarSelectedDate = DateTime.now();
+  String _calendarStatusFilter = 'All'; // 'All', 'Confirmed', 'Pending'
+
   @override
   void initState() {
     super.initState();
@@ -4738,8 +4744,1253 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  // ============================================================================
+  // --- TRAINER GOOGLE CALENDAR SCHEDULE SYSTEM (MONTH, WEEK, 3-DAY, DAY, AGENDA) ---
+  // ============================================================================
+  int _parseStartHour(String timeSlot) {
+    try {
+      final startPart = timeSlot.split('-').first.trim();
+      final isPm = startPart.toUpperCase().contains('PM');
+      final isAm = startPart.toUpperCase().contains('AM');
+      final timeOnly = startPart.replaceAll('AM', '').replaceAll('PM', '').trim();
+      final parts = timeOnly.split(':');
+      int hour = int.parse(parts[0]);
+      if (isPm && hour < 12) hour += 12;
+      if (isAm && hour == 12) hour = 0;
+      return hour;
+    } catch (_) {
+      return 10;
+    }
+  }
+
+  String _formatShortTime(String timeSlot) {
+    try {
+      final startPart = timeSlot.split('-').first.trim();
+      return startPart.replaceAll(':00', '').replaceAll(' ', '');
+    } catch (_) {
+      return '10A';
+    }
+  }
+
+  List<SessionItem> _getTrainerSessions(MyPtProvider state, UserModel trainer) {
+    final nameLower = trainer.name.toLowerCase();
+    return state.sessions.where((s) {
+      final matchTrainer = s.trainerId == trainer.id ||
+          s.trainerName.toLowerCase().contains(nameLower) ||
+          nameLower.contains(s.trainerName.toLowerCase());
+      if (!matchTrainer) return false;
+      if (_calendarStatusFilter == 'Confirmed') return s.status == RequestStatus.confirmed;
+      if (_calendarStatusFilter == 'Pending') return s.status == RequestStatus.pending;
+      return true;
+    }).toList();
+  }
+
+  List<SessionItem> _getSessionsForDate(List<SessionItem> sessions, DateTime date) {
+    return sessions.where((s) =>
+      s.date.year == date.year && s.date.month == date.month && s.date.day == date.day
+    ).toList();
+  }
+
   Widget _coachScheduleTab(MyPtProvider state) {
-    return _coachDashboardTab(state);
+    final coach = state.currentUser!;
+    final trainerSessions = _getTrainerSessions(state, coach);
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            _buildCalendarHeader(context, state, coach, trainerSessions),
+            Expanded(
+              child: switch (_calendarViewMode) {
+                'Month' => _buildMonthView(context, state, coach, trainerSessions),
+                'Week' => _buildWeekView(context, state, coach, trainerSessions),
+                '3-Day' => _buildThreeDayView(context, state, coach, trainerSessions),
+                'Day' => _buildDayView(context, state, coach, trainerSessions),
+                'Schedule' => _buildScheduleAgendaView(context, state, coach, trainerSessions),
+                _ => _buildMonthView(context, state, coach, trainerSessions),
+              },
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 84,
+          right: 18,
+          child: FloatingActionButton.extended(
+            backgroundColor: const Color(0xFFFF5722),
+            foregroundColor: Colors.white,
+            elevation: 6,
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Schedule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            onPressed: () => _openScheduleModal(context, state),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarHeader(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    final now = DateTime.now();
+    final isCurrentMonth = _calendarFocusedDate.year == now.year && _calendarFocusedDate.month == now.month;
+    final allCount = sessions.length;
+    final confirmedCount = sessions.where((s) => s.status == RequestStatus.confirmed).length;
+    final pendingCount = sessions.where((s) => s.status == RequestStatus.pending).length;
+
+    String dateTitle = switch (_calendarViewMode) {
+      'Day' => DateFormat('EEEE, dd MMM yyyy').format(_calendarFocusedDate),
+      'Week' => () {
+        final start = _calendarFocusedDate.subtract(Duration(days: _calendarFocusedDate.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        return '${DateFormat('dd MMM').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}';
+      }(),
+      '3-Day' => () {
+        final end = _calendarFocusedDate.add(const Duration(days: 2));
+        return '${DateFormat('dd MMM').format(_calendarFocusedDate)} - ${DateFormat('dd MMM yyyy').format(end)}';
+      }(),
+      _ => DateFormat('MMMM yyyy').format(_calendarFocusedDate),
+    };
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+      decoration: const BoxDecoration(
+        color: Color(0xFF12161E),
+        border: Border(bottom: BorderSide(color: Colors.white12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Month/Date Title Dropdown & Navigation Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              InkWell(
+                onTap: () => _showMonthYearPickerModal(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        dateTitle,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.white),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.arrow_drop_down, color: Color(0xFFFF5722), size: 22),
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isCurrentMonth ? const Color(0xFFFF5722) : Colors.white70,
+                      side: BorderSide(color: isCurrentMonth ? const Color(0xFFFF5722) : Colors.white24),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.today, size: 12),
+                    label: const Text('Today', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      setState(() {
+                        _calendarFocusedDate = DateTime.now();
+                        _calendarSelectedDate = DateTime.now();
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    tooltip: 'Previous',
+                    onPressed: () => _navigateCalendarDate(-1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    tooltip: 'Next',
+                    onPressed: () => _navigateCalendarDate(1),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Row 2: Google Calendar View Switcher (Pill tabs)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _calendarViewPill('Month', Icons.calendar_view_month),
+                const SizedBox(width: 6),
+                _calendarViewPill('Week', Icons.calendar_view_week),
+                const SizedBox(width: 6),
+                _calendarViewPill('3-Day', Icons.view_column),
+                const SizedBox(width: 6),
+                _calendarViewPill('Day', Icons.calendar_view_day),
+                const SizedBox(width: 6),
+                _calendarViewPill('Schedule', Icons.view_agenda),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Row 3: Status Filter Chips & Quick Count
+          Row(
+            children: [
+              _calendarStatusFilterChip('All', allCount, const Color(0xFF29B6F6)),
+              const SizedBox(width: 6),
+              _calendarStatusFilterChip('Confirmed', confirmedCount, const Color(0xFF00E676)),
+              const SizedBox(width: 6),
+              _calendarStatusFilterChip('Pending', pendingCount, const Color(0xFFFF9800)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _calendarViewPill(String mode, IconData icon) {
+    final isSelected = _calendarViewMode == mode;
+    return GestureDetector(
+      onTap: () => setState(() => _calendarViewMode = mode),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF5722) : const Color(0xFF161B22),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: isSelected ? Colors.white : Colors.white70),
+            const SizedBox(width: 4),
+            Text(
+              mode,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.white70,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _calendarStatusFilterChip(String label, int count, Color color) {
+    final isSelected = _calendarStatusFilter == label;
+    return GestureDetector(
+      onTap: () => setState(() => _calendarStatusFilter = label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isSelected ? color : Colors.white12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text('$label ($count)', style: TextStyle(fontSize: 10.5, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? color : Colors.white60)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateCalendarDate(int direction) {
+    setState(() {
+      if (_calendarViewMode == 'Month') {
+        _calendarFocusedDate = DateTime(_calendarFocusedDate.year, _calendarFocusedDate.month + direction, 1);
+      } else if (_calendarViewMode == 'Week') {
+        _calendarFocusedDate = _calendarFocusedDate.add(Duration(days: direction * 7));
+      } else if (_calendarViewMode == '3-Day') {
+        _calendarFocusedDate = _calendarFocusedDate.add(Duration(days: direction * 3));
+      } else if (_calendarViewMode == 'Day') {
+        _calendarFocusedDate = _calendarFocusedDate.add(Duration(days: direction));
+      } else {
+        _calendarFocusedDate = _calendarFocusedDate.add(Duration(days: direction * 7));
+      }
+      _calendarSelectedDate = _calendarFocusedDate;
+    });
+  }
+
+  // --- 1. GOOGLE CALENDAR MONTH VIEW ---
+  Widget _buildMonthView(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    final year = _calendarFocusedDate.year;
+    final month = _calendarFocusedDate.month;
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstWeekday = DateTime(year, month, 1).weekday; // 1 = Mon, 7 = Sun
+    final prevMonthDays = DateTime(year, month, 0).day;
+    final now = DateTime.now();
+
+    final prevPadding = firstWeekday - 1;
+    final totalCells = ((prevPadding + daysInMonth + 6) ~/ 7) * 7;
+
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Column(
+      children: [
+        // Weekday Column Header Row
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0D1117),
+            border: Border(bottom: BorderSide(color: Colors.white12)),
+          ),
+          child: Row(
+            children: weekDays.map((d) {
+              final isWeekend = d == 'Sat' || d == 'Sun';
+              return Expanded(
+                child: Center(
+                  child: Text(
+                    d,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isWeekend ? const Color(0xFFFF5722) : Colors.white60,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        // 7-Column Calendar Grid
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 90),
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 0.65,
+              crossAxisSpacing: 3,
+              mainAxisSpacing: 3,
+            ),
+            itemCount: totalCells,
+            itemBuilder: (context, idx) {
+              DateTime cellDate;
+              bool isCurrentMonth = true;
+
+              if (idx < prevPadding) {
+                final d = prevMonthDays - (prevPadding - idx - 1);
+                cellDate = DateTime(year, month - 1, d);
+                isCurrentMonth = false;
+              } else if (idx < prevPadding + daysInMonth) {
+                final d = idx - prevPadding + 1;
+                cellDate = DateTime(year, month, d);
+                isCurrentMonth = true;
+              } else {
+                final d = idx - (prevPadding + daysInMonth) + 1;
+                cellDate = DateTime(year, month + 1, d);
+                isCurrentMonth = false;
+              }
+
+              final isToday = cellDate.year == now.year && cellDate.month == now.month && cellDate.day == now.day;
+              final isSelected = cellDate.year == _calendarSelectedDate.year && cellDate.month == _calendarSelectedDate.month && cellDate.day == _calendarSelectedDate.day;
+              final daySessions = _getSessionsForDate(sessions, cellDate);
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _calendarSelectedDate = cellDate);
+                  if (daySessions.isNotEmpty) {
+                    _showDaySessionsModal(context, state, cellDate, daySessions);
+                  } else {
+                    _openScheduleModal(context, state);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFFFF5722).withOpacity(0.12)
+                        : isCurrentMonth
+                            ? const Color(0xFF161B22)
+                            : const Color(0xFF0D1117).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFFFF5722)
+                          : isToday
+                              ? const Color(0xFF29B6F6)
+                              : Colors.white.withOpacity(0.06),
+                      width: (isSelected || isToday) ? 1.2 : 0.6,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Date Number Header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 18,
+                            height: 18,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isToday
+                                  ? const Color(0xFFFF5722)
+                                  : isSelected
+                                      ? Colors.white24
+                                      : Colors.transparent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${cellDate.day}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: (isToday || isSelected) ? FontWeight.bold : FontWeight.w500,
+                                color: isToday
+                                    ? Colors.white
+                                    : isCurrentMonth
+                                        ? Colors.white
+                                        : Colors.white24,
+                              ),
+                            ),
+                          ),
+                          if (daySessions.isNotEmpty)
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: daySessions.any((s) => s.status == RequestStatus.pending)
+                                    ? const Color(0xFFFF9800)
+                                    : const Color(0xFF00E676),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+
+                      // Session Mini-Chips inside cell
+                      Expanded(
+                        child: ListView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            ...daySessions.take(2).map((s) {
+                              final isPending = s.status == RequestStatus.pending;
+                              final chipColor = isPending ? const Color(0xFFFF9800) : const Color(0xFF00E676);
+
+                              return GestureDetector(
+                                onTap: () => _openSessionDetailsModal(context, state, s),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: chipColor.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Text(
+                                    '${_formatShortTime(s.timeSlot)} ${s.clientName.split(' ').first}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                            if (daySessions.length > 2)
+                              Text(
+                                '+${daySessions.length - 2} more',
+                                style: const TextStyle(fontSize: 7.5, color: Color(0xFFFF5722), fontWeight: FontWeight.bold),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 2. GOOGLE CALENDAR WEEK VIEW (7 DAYS) ---
+  Widget _buildWeekView(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    final startOfWeek = _calendarFocusedDate.subtract(Duration(days: _calendarFocusedDate.weekday - 1));
+    final weekDates = List.generate(7, (i) => DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day).add(Duration(days: i)));
+    final now = DateTime.now();
+
+    return Column(
+      children: [
+        // Week Header (7 days with dates)
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0D1117),
+            border: Border(bottom: BorderSide(color: Colors.white12)),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 44), // Time column padding
+              ...weekDates.map((d) {
+                final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+                final isSel = d.year == _calendarSelectedDate.year && d.month == _calendarSelectedDate.month && d.day == _calendarSelectedDate.day;
+
+                return Expanded(
+                  child: InkWell(
+                    onTap: () => setState(() => _calendarSelectedDate = d),
+                    child: Column(
+                      children: [
+                        Text(
+                          DateFormat('EEE').format(d).toUpperCase(),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isToday ? const Color(0xFFFF5722) : Colors.white60),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          width: 22,
+                          height: 22,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isToday
+                                ? const Color(0xFFFF5722)
+                                : isSel
+                                    ? Colors.white24
+                                    : Colors.transparent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${d.day}',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isToday ? Colors.white : Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+
+        // Hourly Grid (05:00 to 22:00)
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 90),
+            itemCount: 18, // 5 AM to 10 PM
+            itemBuilder: (context, hourIdx) {
+              final hour = 5 + hourIdx;
+              final hourLabel = '${hour.toString().padLeft(2, '0')}:00';
+
+              return Container(
+                height: 52,
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: Colors.white10)),
+                ),
+                child: Row(
+                  children: [
+                    // Time Label
+                    SizedBox(
+                      width: 44,
+                      child: Text(
+                        hourLabel,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 9.5, color: Colors.white38, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const VerticalDivider(width: 1, color: Colors.white12),
+
+                    // 7 Day Slots
+                    ...weekDates.map((d) {
+                      final daySessions = _getSessionsForDate(sessions, d);
+                      final hourSession = daySessions.where((s) => _parseStartHour(s.timeSlot) == hour).firstOrNull;
+
+                      return Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            border: Border(right: BorderSide(color: Colors.white10)),
+                          ),
+                          child: hourSession == null
+                              ? InkWell(
+                                  onTap: () => _openScheduleModal(context, state),
+                                  child: const SizedBox.expand(),
+                                )
+                              : GestureDetector(
+                                  onTap: () => _openSessionDetailsModal(context, state, hourSession),
+                                  child: Container(
+                                    margin: const EdgeInsets.all(1.5),
+                                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: hourSession.status == RequestStatus.pending
+                                          ? const Color(0xFFFF9800).withOpacity(0.9)
+                                          : const Color(0xFF00E676).withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          hourSession.clientName.split(' ').first,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.black),
+                                        ),
+                                        Text(
+                                          hourSession.focusArea,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 7.5, color: Colors.black87),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 3. GOOGLE CALENDAR 3-DAY VIEW ---
+  Widget _buildThreeDayView(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    final threeDates = List.generate(3, (i) => DateTime(_calendarFocusedDate.year, _calendarFocusedDate.month, _calendarFocusedDate.day).add(Duration(days: i)));
+    final now = DateTime.now();
+
+    return Column(
+      children: [
+        // 3-Day Header
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0D1117),
+            border: Border(bottom: BorderSide(color: Colors.white12)),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 50),
+              ...threeDates.map((d) {
+                final isToday = d.year == now.year && d.month == now.month && d.day == now.day;
+                return Expanded(
+                  child: Column(
+                    children: [
+                      Text(DateFormat('EEEE').format(d), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isToday ? const Color(0xFFFF5722) : Colors.white70)),
+                      Text('${d.day} ${DateFormat('MMM').format(d)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: isToday ? const Color(0xFFFF5722) : Colors.white)),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+
+        // Hourly Grid for 3 Days
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 90),
+            itemCount: 18,
+            itemBuilder: (context, hourIdx) {
+              final hour = 5 + hourIdx;
+              final hourLabel = '${hour.toString().padLeft(2, '0')}:00';
+
+              return Container(
+                height: 56,
+                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.white10))),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 50,
+                      child: Text(hourLabel, textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, color: Colors.white38, fontWeight: FontWeight.w600)),
+                    ),
+                    const VerticalDivider(width: 1, color: Colors.white12),
+                    ...threeDates.map((d) {
+                      final daySessions = _getSessionsForDate(sessions, d);
+                      final hourSession = daySessions.where((s) => _parseStartHour(s.timeSlot) == hour).firstOrNull;
+
+                      return Expanded(
+                        child: Container(
+                          decoration: const BoxDecoration(border: Border(right: BorderSide(color: Colors.white10))),
+                          child: hourSession == null
+                              ? InkWell(onTap: () => _openScheduleModal(context, state), child: const SizedBox.expand())
+                              : GestureDetector(
+                                  onTap: () => _openSessionDetailsModal(context, state, hourSession),
+                                  child: Container(
+                                    margin: const EdgeInsets.all(2),
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: hourSession.status == RequestStatus.pending ? const Color(0xFFFF9800) : const Color(0xFF00E676),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(hourSession.clientName, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black)),
+                                        Text(hourSession.focusArea, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9.5, color: Colors.black87)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- 4. GOOGLE CALENDAR DAY VIEW (1 DAY DETAIL TIMELINE) ---
+  Widget _buildDayView(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    final daySessions = _getSessionsForDate(sessions, _calendarFocusedDate);
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 90),
+      itemCount: 18,
+      itemBuilder: (context, hourIdx) {
+        final hour = 5 + hourIdx;
+        final hourStr = '${hour.toString().padLeft(2, '0')}:00';
+        final session = daySessions.where((s) => _parseStartHour(s.timeSlot) == hour).firstOrNull;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 50,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(hourStr, style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              Expanded(
+                child: session == null
+                    ? InkWell(
+                        onTap: () => _openScheduleModal(context, state),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF161B22).withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          ),
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Available Time Slot', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 11)),
+                              Icon(Icons.add, size: 14, color: Colors.white.withOpacity(0.2)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _buildFullCalendarSessionCard(context, state, session),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- 5. GOOGLE CALENDAR SCHEDULE / AGENDA VIEW (CHRONOLOGICAL LIST) ---
+  Widget _buildScheduleAgendaView(BuildContext context, MyPtProvider state, UserModel coach, List<SessionItem> sessions) {
+    if (sessions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.event_busy, size: 48, color: Colors.white38),
+            const SizedBox(height: 12),
+            const Text('No sessions match your calendar filter.', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 6),
+            const Text('Try changing the status filter or schedule a new 1-on-1 session.', style: TextStyle(fontSize: 12, color: Colors.white60)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Schedule Session 📅', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () => _openScheduleModal(context, state),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final sortedSessions = List<SessionItem>.from(sessions)..sort((a, b) => a.date.compareTo(b.date));
+    final Map<String, List<SessionItem>> grouped = {};
+    for (final s in sortedSessions) {
+      final key = DateFormat('yyyy-MM-dd').format(s.date);
+      grouped.putIfAbsent(key, () => []).add(s);
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 90),
+      children: grouped.entries.map((entry) {
+        final date = DateTime.parse(entry.key);
+        final list = entry.value;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Sticky Google Calendar Date Pill on the Left
+              Container(
+                width: 54,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B22),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('EEE').format(date).toUpperCase(),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                    ),
+                    Text(
+                      '${date.day}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                    Text(
+                      DateFormat('MMM').format(date),
+                      style: const TextStyle(fontSize: 9.5, color: Colors.white60),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // Sessions list for this date
+              Expanded(
+                child: Column(
+                  children: list.map((s) => _buildFullCalendarSessionCard(context, state, s)).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildFullCalendarSessionCard(BuildContext context, MyPtProvider state, SessionItem s) {
+    final isPending = s.status == RequestStatus.pending;
+    final isConfirmed = s.status == RequestStatus.confirmed;
+    final statusColor = isPending ? const Color(0xFFFF9800) : (isConfirmed ? const Color(0xFF00E676) : Colors.white38);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: const Color(0xFF161B22),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: statusColor.withOpacity(0.4), width: 1.2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: statusColor.withOpacity(0.15),
+                  child: Icon(isPending ? Icons.hourglass_top_rounded : Icons.fitness_center, color: statusColor, size: 16),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.clientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                      Text('${s.timeSlot} • ${s.focusArea}', style: const TextStyle(fontSize: 11.5, color: Colors.white70)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    isPending ? '⏳ PENDING' : (isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase()),
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isPending) ...[
+                  TextButton(
+                    style: TextButton.styleFrom(foregroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), minimumSize: Size.zero),
+                    child: const Text('Reject ❌', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      state.rejectSession(s);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: Colors.redAccent,
+                          content: Text('❌ Declined booking. 1 PT Credit refunded to ${s.clientName}.'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), minimumSize: Size.zero),
+                    child: const Text('Approve ✓', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      state.approveSession(s);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(backgroundColor: const Color(0xFF00E676), content: Text('✓ Approved session for ${s.clientName}!')),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ] else if (isConfirmed) ...[
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), minimumSize: Size.zero),
+                    icon: const Icon(Icons.videocam, size: 12, color: Colors.black),
+                    label: const Text('Join 📹', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(backgroundColor: const Color(0xFF00E676), content: Text('📹 Opening live meeting with ${s.clientName}...')),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF29B6F6),
+                    side: const BorderSide(color: Color(0xFF29B6F6)),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                  ),
+                  child: const Text('Reschedule 🔄', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () => _openRescheduleModal(context, state, s),
+                ),
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () => _openChatModal(context, state, peerName: s.clientName),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0xFF21262D), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.white24)),
+                    child: const Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- DAY SESSIONS SUMMARY MODAL (WHEN TAPPING A DATE IN MONTH VIEW) ---
+  void _showDaySessionsModal(BuildContext context, MyPtProvider state, DateTime date, List<SessionItem> daySessions) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  DateFormat('EEEE, dd MMMM yyyy').format(date),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                ),
+                Text('${daySessions.length} Sessions', style: const TextStyle(fontSize: 12, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const Divider(height: 20, color: Colors.white12),
+            ...daySessions.map((s) => _buildFullCalendarSessionCard(context, state, s)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF5722),
+                  side: const BorderSide(color: Color(0xFFFF5722)),
+                ),
+                icon: const Icon(Icons.calendar_view_day, size: 16),
+                label: const Text('Open in Single-Day View', style: TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() {
+                    _calendarFocusedDate = date;
+                    _calendarSelectedDate = date;
+                    _calendarViewMode = 'Day';
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- SESSION DETAILS MODAL ---
+  void _openSessionDetailsModal(BuildContext context, MyPtProvider state, SessionItem session) {
+    final isPending = session.status == RequestStatus.pending;
+    final isConfirmed = session.status == RequestStatus.confirmed;
+    final statusColor = isPending ? const Color(0xFFFF9800) : (isConfirmed ? const Color(0xFF00E676) : Colors.white60);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${session.focusArea} (1-on-1 PT)',
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.white),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: statusColor.withOpacity(0.5)),
+                  ),
+                  child: Text(
+                    isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : session.status.name.toUpperCase(),
+                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D1117),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                children: [
+                  _reviewRow('Client', session.clientName),
+                  const Divider(height: 14, color: Colors.white12),
+                  _reviewRow('Date', DateFormat('EEEE, dd MMMM yyyy').format(session.date)),
+                  const Divider(height: 14, color: Colors.white12),
+                  _reviewRow('Time Slot', session.timeSlot),
+                  const Divider(height: 14, color: Colors.white12),
+                  _reviewRow('Duration', '1 Hour (60 mins)'),
+                  const Divider(height: 14, color: Colors.white12),
+                  _reviewRow('Live Room', session.meetingLink ?? 'https://meet.mypt.pro'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                if (isPending) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                      ),
+                      onPressed: () {
+                        state.rejectSession(session);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: Colors.redAccent, content: Text('❌ Declined booking. 1 PT Credit refunded to ${session.clientName}.')),
+                        );
+                      },
+                      child: const Text('Reject ❌'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
+                      onPressed: () {
+                        state.approveSession(session);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: const Color(0xFF00E676), content: Text('✓ Session confirmed with ${session.clientName}!')),
+                        );
+                      },
+                      child: const Text('Approve ✓', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ] else ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF29B6F6),
+                        side: const BorderSide(color: Color(0xFF29B6F6)),
+                      ),
+                      icon: const Icon(Icons.edit_calendar, size: 14),
+                      label: const Text('Reschedule 🔄'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _openRescheduleModal(context, state, session);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 14),
+                      label: const Text('Message 💬', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _openChatModal(context, state, peerName: session.clientName);
+                      },
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- MONTH & YEAR PICKER MODAL ---
+  void _showMonthYearPickerModal(BuildContext context) {
+    int selectedYear = _calendarFocusedDate.year;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setPickerState) {
+          final months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+          ];
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, color: Colors.white70),
+                      onPressed: () => setPickerState(() => selectedYear -= 1),
+                    ),
+                    Text('$selectedYear', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right, color: Colors.white70),
+                      onPressed: () => setPickerState(() => selectedYear += 1),
+                    ),
+                  ],
+                ),
+                const Divider(height: 16, color: Colors.white12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: 12,
+                  itemBuilder: (context, mIdx) {
+                    final monthName = months[mIdx];
+                    final isCurrent = _calendarFocusedDate.year == selectedYear && _calendarFocusedDate.month == (mIdx + 1);
+
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _calendarFocusedDate = DateTime(selectedYear, mIdx + 1, 1);
+                          _calendarSelectedDate = _calendarFocusedDate;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isCurrent ? const Color(0xFFFF5722) : const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isCurrent ? const Color(0xFFFF5722) : Colors.white12),
+                        ),
+                        child: Text(
+                          monthName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                            color: isCurrent ? Colors.white : Colors.white70,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _coachClientsTab(MyPtProvider state) {
@@ -4939,11 +6190,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
   // 8. HEAD COACH / GYM MGR / SUPER ADMIN VIEWS
   // ============================================================================
   Widget _buildHeadCoachView(MyPtProvider state, int tab) {
-    return _coachDashboardTab(state);
+    return switch (tab) {
+      2 => _coachScheduleTab(state),
+      _ => _coachDashboardTab(state),
+    };
   }
 
   Widget _buildGymMgrView(MyPtProvider state, int tab) {
-    return _coachDashboardTab(state);
+    return switch (tab) {
+      2 => _coachScheduleTab(state),
+      _ => _coachDashboardTab(state),
+    };
   }
 
   Widget _buildAdminView(MyPtProvider state, int tab) {
