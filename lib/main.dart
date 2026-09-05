@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -2353,93 +2354,151 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          if (state.isImpersonating) _buildImpersonationBanner(context, state),
-          Expanded(
-            child: switch (user.role) {
-              UserRole.client => _buildClientView(state, safeTabIndex),
-              UserRole.coach => _buildCoachView(state, safeTabIndex),
-              UserRole.headCoach => _buildHeadCoachView(state, safeTabIndex),
-              UserRole.gymMgr => _buildGymMgrView(state, safeTabIndex),
-              UserRole.superAdmin => _buildAdminView(state, safeTabIndex),
-            },
-          ),
-        ],
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
+          children: [
+            if (state.isImpersonating) _buildImpersonationBanner(context, state),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1100),
+                  child: switch (user.role) {
+                    UserRole.client => _buildClientView(state, safeTabIndex),
+                    UserRole.coach => _buildCoachView(state, safeTabIndex),
+                    UserRole.headCoach => _buildHeadCoachView(state, safeTabIndex),
+                    UserRole.gymMgr => _buildGymMgrView(state, safeTabIndex),
+                    UserRole.superAdmin => _buildAdminView(state, safeTabIndex),
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildAppleLiquidGlassBottomNav(navTabs, safeTabIndex),
     );
   }
 
   Widget _buildAppleLiquidGlassBottomNav(List<(IconData, String)> tabs, int activeIndex) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+    return SafeArea(
+      top: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 640),
           child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             decoration: BoxDecoration(
-              color: const Color(0xDD12161E),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.12),
-                width: 1.2,
-              ),
+              borderRadius: BorderRadius.circular(28),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withOpacity(0.55),
+                  blurRadius: 28,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFFF5722).withOpacity(0.12),
                   blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  offset: const Offset(0, 2),
+                ),
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.06),
+                  blurRadius: 1,
+                  offset: const Offset(0, -1),
                 ),
               ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(tabs.length, (idx) {
-                final isSelected = activeIndex == idx;
-                final (iconData, label) = tabs[idx];
-
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _tabIndex = idx),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFFF5722).withOpacity(0.2) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            iconData,
-                            size: isSelected ? 20 : 18,
-                            color: isSelected ? const Color(0xFFFF5722) : Colors.white60,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          label,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.visible,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected ? const Color(0xFFFF5722) : Colors.white60,
-                          ),
-                        ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Container(
+                  height: 68,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF1E2430).withOpacity(0.85),
+                        const Color(0xFF0F131A).withOpacity(0.92),
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.18),
+                      width: 1.1,
+                    ),
                   ),
-                );
-              }),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List.generate(tabs.length, (idx) {
+                      final isSelected = activeIndex == idx;
+                      final (iconData, label) = tabs[idx];
+
+                      return Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _tabIndex = idx);
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        const Color(0xFFFF5722).withOpacity(0.28),
+                                        const Color(0xFFFF5722).withOpacity(0.10),
+                                      ],
+                                    )
+                                  : null,
+                              borderRadius: BorderRadius.circular(20),
+                              border: isSelected
+                                  ? Border.all(
+                                      color: const Color(0xFFFF5722).withOpacity(0.4),
+                                      width: 1.0,
+                                    )
+                                  : Border.all(color: Colors.transparent, width: 1.0),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  iconData,
+                                  size: isSelected ? 21 : 19,
+                                  color: isSelected ? const Color(0xFFFF5722) : Colors.white60,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  label,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.fade,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    letterSpacing: 0.15,
+                                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                                    color: isSelected ? const Color(0xFFFF5722) : Colors.white60,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -5071,17 +5130,21 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
         // 7-Column Calendar Grid
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 90),
-            physics: const BouncingScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              childAspectRatio: 0.65,
-              crossAxisSpacing: 3,
-              mainAxisSpacing: 3,
-            ),
-            itemCount: totalCells,
-            itemBuilder: (context, idx) {
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final childRatio = width > 900 ? 1.35 : (width > 600 ? 0.95 : 0.65);
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(4, 4, 4, 96),
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: childRatio,
+                  crossAxisSpacing: 3,
+                  mainAxisSpacing: 3,
+                ),
+                itemCount: totalCells,
+                itemBuilder: (context, idx) {
               DateTime cellDate;
               bool isCurrentMonth = true;
 
@@ -5221,10 +5284,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               );
             },
-          ),
-        ),
-      ],
-    );
+          );
+        },
+      ),
+    ),
+  ],
+);
   }
 
   // --- 2. GOOGLE CALENDAR WEEK VIEW (7 DAYS) ---
