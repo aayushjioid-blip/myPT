@@ -53,21 +53,27 @@ class UserModel {
 
 class SessionItem {
   final String id;
+  final String? clientId;
   final String clientName;
+  final String? trainerId;
   final String trainerName;
   DateTime date;
   String timeSlot;
   String focusArea;
   RequestStatus status;
+  String? meetingLink;
 
   SessionItem({
     required this.id,
+    this.clientId,
     required this.clientName,
+    this.trainerId,
     required this.trainerName,
     required this.date,
     required this.timeSlot,
     required this.focusArea,
     this.status = RequestStatus.pending,
+    this.meetingLink = 'https://meet.mypt.pro/1on1-live-session',
   });
 }
 
@@ -223,25 +229,29 @@ class BodyMeasurementEntry {
 
 class ClientRequestItem {
   final String id;
+  final String? clientId;
   final String clientName;
   final String email;
+  final String? trainerId;
+  final String? trainerName;
   final String requestType;
   final String message;
   final DateTime date;
-  final String? trainerId;
-  final String? clientId;
   RequestStatus status;
+  String? declineReason;
 
   ClientRequestItem({
     required this.id,
+    this.clientId,
     required this.clientName,
     required this.email,
+    this.trainerId,
+    this.trainerName,
     required this.requestType,
     required this.message,
     required this.date,
-    this.trainerId,
-    this.clientId,
     this.status = RequestStatus.pending,
+    this.declineReason,
   });
 }
 
@@ -1088,7 +1098,45 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool hasSeenOnboarding = false;
+
+  void setHasSeenOnboarding(bool val) {
+    hasSeenOnboarding = val;
+    notifyListeners();
+  }
+
   // --- SESSIONS & BOOKING ---
+  List<SessionItem> getSessionsForUser(UserModel user) {
+    List<SessionItem> userSessions;
+    if (user.role == UserRole.client) {
+      userSessions = sessions.where((s) {
+        if (s.clientId != null && s.clientId == user.id) return true;
+        return s.clientName.trim().toLowerCase() == user.name.trim().toLowerCase();
+      }).toList();
+    } else {
+      userSessions = sessions.where((s) {
+        if (s.trainerId != null && s.trainerId == user.id) return true;
+        return s.trainerName.trim().toLowerCase() == user.name.trim().toLowerCase();
+      }).toList();
+    }
+
+    // Sort upcoming sessions first
+    userSessions.sort((a, b) => a.date.compareTo(b.date));
+    return userSessions;
+  }
+
+  List<ClientRequestItem> getRequestsForUser(UserModel user) {
+    if (user.role == UserRole.client) {
+      return trainerRequests.where((r) {
+        if (r.clientId != null && r.clientId == user.id) return true;
+        if (r.email.trim().toLowerCase() == user.email.trim().toLowerCase()) return true;
+        return r.clientName.trim().toLowerCase() == user.name.trim().toLowerCase();
+      }).toList();
+    } else {
+      return trainerRequests.where((r) => r.trainerId == user.id || r.trainerId == null).toList();
+    }
+  }
+
   void rescheduleSession(SessionItem session, DateTime newDate, String newTimeSlot) {
     session.date = newDate;
     session.timeSlot = newTimeSlot;
@@ -1149,28 +1197,95 @@ class MyPtProvider extends ChangeNotifier {
   }
 
   void rejectSession(SessionItem session) {
+    cancelSession(session);
+  }
+
+  void cancelSession(SessionItem session) {
     session.status = RequestStatus.cancelled;
 
     UserModel? client;
     for (final c in rosterClients) {
-      if (c.name.toLowerCase() == session.clientName.toLowerCase()) {
+      if (c.id == session.clientId || c.name.toLowerCase() == session.clientName.toLowerCase()) {
         client = c;
         break;
       }
     }
     if (client != null) {
       client.ptCredits += 1;
-    } else if (currentUser?.name.toLowerCase() == session.clientName.toLowerCase()) {
+    } else if (currentUser?.name.toLowerCase() == session.clientName.toLowerCase() || currentUser?.id == session.clientId) {
       currentUser?.ptCredits += 1;
     }
 
     final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
     addNotification(
       title: '❌ Session Cancelled (1 PT Credit Refunded)',
-      message: 'Coach ${session.trainerName} cancelled your booking for $formattedDate at ${session.timeSlot}. 1 PT Credit has been refunded.',
+      message: 'Session with Coach ${session.trainerName} for $formattedDate at ${session.timeSlot} was cancelled. 1 PT Credit has been refunded.',
       recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'warning',
+    );
+
+    addNotification(
+      title: '❌ Session Cancelled by Client',
+      message: '${session.clientName} cancelled their session for $formattedDate at ${session.timeSlot}.',
+      recipientName: session.trainerName,
+      recipientRole: UserRole.coach,
+      type: 'warning',
+    );
+
+    notifyListeners();
+  }
+
+  // --- CONSULTATION REQUEST WORKFLOW ---
+  void sendConsultationRequest({
+    required UserModel coach,
+    required String requestType,
+    required String message,
+  }) {
+    if (currentUser == null) return;
+
+    final req = ClientRequestItem(
+      id: 'req_${DateTime.now().millisecondsSinceEpoch}',
+      clientId: currentUser!.id,
+      clientName: currentUser!.name,
+      email: currentUser!.email,
+      trainerId: coach.id,
+      trainerName: coach.name,
+      requestType: requestType,
+      message: message,
+      date: DateTime.now(),
+      status: RequestStatus.pending,
+    );
+
+    trainerRequests.insert(0, req);
+
+    // If client does not have an approved trainer, set trainer to pending
+    if (currentUser!.trainerId == null || currentUser!.trainerApprovalStatus != TrainerApprovalStatus.approved) {
+      currentUser!.trainerId = coach.id;
+      currentUser!.trainerApprovalStatus = TrainerApprovalStatus.pending;
+      for (final c in rosterClients) {
+        if (c.id == currentUser!.id || c.email.toLowerCase() == currentUser!.email.toLowerCase()) {
+          c.trainerId = coach.id;
+          c.trainerApprovalStatus = TrainerApprovalStatus.pending;
+          break;
+        }
+      }
+    }
+
+    addNotification(
+      title: '🤝 Consultation Request Sent to Coach ${coach.name}',
+      message: 'Your inquiry for "$requestType" was submitted. Coach ${coach.name} will review and respond shortly.',
+      recipientName: currentUser!.name,
+      recipientRole: UserRole.client,
+      type: 'booking',
+    );
+
+    addNotification(
+      title: '📩 New Consultation Request: ${currentUser!.name}',
+      message: '${currentUser!.name} requested a 1-on-1 consultation for "$requestType".',
+      recipientName: coach.name,
+      recipientRole: UserRole.coach,
+      type: 'booking',
     );
 
     notifyListeners();
@@ -1178,25 +1293,92 @@ class MyPtProvider extends ChangeNotifier {
 
   void acceptRequest(ClientRequestItem req) {
     req.status = RequestStatus.confirmed;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.id == req.clientId || c.name.toLowerCase() == req.clientName.toLowerCase() || c.email.toLowerCase() == req.email.toLowerCase()) {
+        client = c;
+        break;
+      }
+    }
+    if (client == null && currentUser?.id == req.clientId) {
+      client = currentUser;
+    }
+
+    if (client != null && req.trainerId != null) {
+      client.trainerId = req.trainerId;
+      client.trainerApprovalStatus = TrainerApprovalStatus.approved;
+    }
+    if (currentUser != null && (currentUser!.id == req.clientId || currentUser!.email.toLowerCase() == req.email.toLowerCase())) {
+      currentUser!.trainerId = req.trainerId;
+      currentUser!.trainerApprovalStatus = TrainerApprovalStatus.approved;
+    }
+
     addNotification(
-      title: '✓ Trainee Request Accepted',
-      message: 'You have accepted the consultation request from ${req.clientName}.',
+      title: '✓ Consultation Request Accepted!',
+      message: 'Coach ${req.trainerName ?? 'your coach'} has accepted your consultation request! You can now book 1-on-1 sessions and message directly.',
       recipientName: req.clientName,
       recipientRole: UserRole.client,
       type: 'approval',
     );
+
     notifyListeners();
   }
 
-  void declineRequest(ClientRequestItem req) {
+  void declineRequest(ClientRequestItem req, {String reason = 'Coach capacity is currently full for 1-on-1 consultations'}) {
     req.status = RequestStatus.cancelled;
+    req.declineReason = reason;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.id == req.clientId || c.name.toLowerCase() == req.clientName.toLowerCase() || c.email.toLowerCase() == req.email.toLowerCase()) {
+        client = c;
+        break;
+      }
+    }
+    if (client == null && currentUser?.id == req.clientId) {
+      client = currentUser;
+    }
+
+    if (client != null && client.trainerId == req.trainerId && client.trainerApprovalStatus == TrainerApprovalStatus.pending) {
+      client.trainerId = null;
+      client.trainerApprovalStatus = TrainerApprovalStatus.none;
+    }
+    if (currentUser != null && (currentUser!.id == req.clientId || currentUser!.email.toLowerCase() == req.email.toLowerCase())) {
+      if (currentUser!.trainerId == req.trainerId && currentUser!.trainerApprovalStatus == TrainerApprovalStatus.pending) {
+        currentUser!.trainerId = null;
+        currentUser!.trainerApprovalStatus = TrainerApprovalStatus.none;
+      }
+    }
+
     addNotification(
-      title: 'Request Declined',
-      message: 'Your consultation request was declined.',
+      title: 'Consultation Unavailable - Choose Another Coach',
+      message: 'Coach ${req.trainerName ?? 'your coach'} was unable to accept your request. Reason: $reason. Tap to explore other certified coaches.',
       recipientName: req.clientName,
       recipientRole: UserRole.client,
       type: 'warning',
     );
+
+    notifyListeners();
+  }
+
+  void cancelConsultationRequest(ClientRequestItem req) {
+    req.status = RequestStatus.cancelled;
+    req.declineReason = 'Cancelled by client';
+
+    if (currentUser != null && currentUser!.trainerId == req.trainerId && currentUser!.trainerApprovalStatus == TrainerApprovalStatus.pending) {
+      currentUser!.trainerId = null;
+      currentUser!.trainerApprovalStatus = TrainerApprovalStatus.none;
+    }
+
+    addNotification(
+      title: 'Consultation Request Cancelled',
+      message: 'You have cancelled your consultation request with Coach ${req.trainerName ?? 'your coach'}.',
+      recipientName: req.clientName,
+      recipientRole: UserRole.client,
+      type: 'system',
+    );
+
     notifyListeners();
   }
 
@@ -1752,6 +1934,7 @@ class MainShellScreen extends StatefulWidget {
 
 class _MainShellScreenState extends State<MainShellScreen> {
   int _tabIndex = 0;
+  String _sessionFilter = 'All';
   final TextEditingController _coachSearchCtrl = TextEditingController();
   String _coachSearchQuery = '';
   String _selectedCoachSpecialty = 'All';
@@ -1765,6 +1948,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
     'Conditioning',
     'Powerlifting',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = Provider.of<MyPtProvider>(context, listen: false);
+      if (!state.hasSeenOnboarding && state.currentUser?.role == UserRole.client) {
+        _openOnboardingTutorial(context, state);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -1908,6 +2102,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     ),
 
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.help_outline, color: Colors.white70, size: 21),
+                      tooltip: 'Getting Started Guide',
+                      onPressed: () => _openOnboardingTutorial(context, state),
+                    ),
                     IconButton(
                       icon: Badge(
                         isLabelVisible: state.unreadNotificationCount > 0,
@@ -2107,7 +2306,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   // --- HOME SCREEN (SIMPLIFIED HIERARCHY BASED ON USER TESTING FEEDBACK) ---
   Widget _clientHomeTab(MyPtProvider state) {
     final user = state.currentUser!;
-    final userSessions = state.sessions.where((s) => s.clientName.toLowerCase() == user.name.toLowerCase()).toList();
+    final userSessions = state.getSessionsForUser(user);
 
     // Find assigned trainer details if any
     UserModel? assignedTrainer;
@@ -2139,7 +2338,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         // 1. Who am I? (Header)
         Row(
@@ -2560,10 +2759,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- DISCOVER TAB (COACH SELECTION WITH 2-STEP CONFIRMATION) ---
+  // --- DISCOVER TAB (COACH SELECTION WITH CONSULTATION FLOW & RECOVERY) ---
   Widget _clientDiscoverTab(MyPtProvider state) {
     final user = state.currentUser!;
     final query = _coachSearchQuery.trim().toLowerCase();
+    final userRequests = state.getRequestsForUser(user);
+    final declinedRequests = userRequests.where((r) => r.status == RequestStatus.cancelled && r.declineReason != null && r.declineReason != 'Cancelled by client').toList();
 
     final filteredTrainers = state.allTrainers.where((t) {
       final specialties = _getTrainerSpecialties(t);
@@ -2581,12 +2782,47 @@ class _MainShellScreenState extends State<MainShellScreen> {
     }).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         const Text('Find Your Personal Coach', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        const Text('Browse certified coaches in India and select your primary trainer.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const Text('Browse certified coaches in India, send free 1-on-1 consultation requests, or select your trainer.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 14),
+
+        // Decline Recovery Banner (if any previous request was declined)
+        if (declinedRequests.isNotEmpty) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFFFF9800), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Inquiry Update (Coach ${declinedRequests.first.trainerName ?? 'Trainer'})',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Reason: "${declinedRequests.first.declineReason}"\nDon\'t worry! You can connect with any of our other certified coaches below.',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         // Search Bar
         TextField(
@@ -2668,6 +2904,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ...filteredTrainers.map((t) {
             final isPrimaryTrainer = user.trainerId == t.id && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
             final isPendingTrainer = user.trainerId == t.id && user.trainerApprovalStatus == TrainerApprovalStatus.pending;
+            final coachRequests = userRequests.where((r) => r.trainerId == t.id).toList();
+            final hasPendingRequest = coachRequests.any((r) => r.status == RequestStatus.pending);
+            final hasDeclinedRequest = coachRequests.any((r) => r.status == RequestStatus.cancelled && r.declineReason != null && r.declineReason != 'Cancelled by client');
             final specialties = _getTrainerSpecialties(t);
             final trainerPkgs = state.getPackagesForTrainer(t.id);
 
@@ -2677,8 +2916,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
-                  color: isPrimaryTrainer ? const Color(0xFF00E676) : isPendingTrainer ? const Color(0xFFFF9800) : Colors.white10,
-                  width: (isPrimaryTrainer || isPendingTrainer) ? 1.5 : 1,
+                  color: isPrimaryTrainer
+                      ? const Color(0xFF00E676)
+                      : (isPendingTrainer || hasPendingRequest)
+                          ? const Color(0xFFFF9800)
+                          : hasDeclinedRequest
+                              ? Colors.redAccent.withOpacity(0.5)
+                              : Colors.white10,
+                  width: (isPrimaryTrainer || isPendingTrainer || hasPendingRequest) ? 1.5 : 1,
                 ),
               ),
               child: Padding(
@@ -2741,7 +2986,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   ),
                                   child: const Text('✓ YOUR PRIMARY TRAINER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
                                 ),
-                              ] else if (isPendingTrainer) ...[
+                              ] else if (isPendingTrainer || hasPendingRequest) ...[
                                 const SizedBox(height: 4),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2750,7 +2995,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: const Color(0xFFFF9800), width: 0.8),
                                   ),
-                                  child: const Text('⏳ APPROVAL PENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                                  child: const Text('⏳ CONSULTATION PENDING REVIEW', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                                ),
+                              ] else if (hasDeclinedRequest) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.redAccent.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.redAccent, width: 0.8),
+                                  ),
+                                  child: const Text('❌ CONSULTATION DECLINED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.redAccent)),
                                 ),
                               ],
                             ],
@@ -2795,29 +3051,45 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isPrimaryTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            onPressed: () {
-                              if (isPrimaryTrainer) {
-                                _openScheduleModal(context, state, targetTrainer: t);
-                              } else {
-                                _openSelectCoachConfirmationModal(context, state, t);
-                              }
-                            },
-                            child: Text(
-                              isPrimaryTrainer ? 'Book Session 📅' : 'Select Coach 🚀',
-                              style: TextStyle(
-                                color: isPrimaryTrainer ? Colors.black : Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                        if (isPrimaryTrainer) ...[
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00E676),
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
+                              icon: const Icon(Icons.calendar_month, size: 15, color: Colors.black),
+                              label: const Text('Book Session', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              onPressed: () => _openScheduleModal(context, state, targetTrainer: t),
                             ),
                           ),
-                        ),
+                        ] else if (isPendingTrainer || hasPendingRequest) ...[
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFFF9800),
+                                side: const BorderSide(color: Color(0xFFFF9800)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.chat_bubble_outline, size: 14),
+                              label: const Text('Message Coach', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () => _openChatModal(context, state, peerName: t.name),
+                            ),
+                          ),
+                        ] else ...[
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFF5722),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.handshake_outlined, size: 15),
+                              label: const Text('Consultation 🤝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              onPressed: () => _openRequestConsultationModal(context, state, t),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -3509,94 +3781,314 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _clientScheduleTab(MyPtProvider state) {
     final user = state.currentUser!;
-    final userSessions = state.sessions.where((s) => s.clientName.toLowerCase() == user.name.toLowerCase()).toList();
+    final allUserSessions = state.getSessionsForUser(user);
+    final allUserRequests = state.getRequestsForUser(user);
+
+    final confirmedSessions = allUserSessions.where((s) => s.status == RequestStatus.confirmed).toList();
+    final pendingSessions = allUserSessions.where((s) => s.status == RequestStatus.pending).toList();
+    final completedSessions = allUserSessions.where((s) => s.status == RequestStatus.completed).toList();
+    final cancelledSessions = allUserSessions.where((s) => s.status == RequestStatus.cancelled).toList();
+
+    List<SessionItem> filteredSessions = switch (_sessionFilter) {
+      'Confirmed' => confirmedSessions,
+      'Pending' => pendingSessions,
+      'Completed' => completedSessions,
+      'Cancelled' => cancelledSessions,
+      _ => allUserSessions,
+    };
+
+    final filterOptions = [
+      ('All', allUserSessions.length),
+      ('Confirmed', confirmedSessions.length),
+      ('Pending', pendingSessions.length),
+      ('Completed', completedSessions.length),
+      ('Cancelled', cancelledSessions.length),
+    ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Bookings & Schedule', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Bookings & Schedule', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  '${allUserSessions.length} sessions booked • ${user.ptCredits} PT Credits left',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
             ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5722),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
               icon: const Icon(Icons.add, size: 16),
-              label: const Text('Book Session', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+              label: const Text('Book Session 📅', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
               onPressed: () => _openScheduleModal(context, state),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        const Text('Your 1-on-1 Sessions Calendar', style: TextStyle(color: Colors.white60, fontSize: 13)),
         const SizedBox(height: 14),
 
-        if (userSessions.isEmpty)
+        // Multi-status Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filterOptions.map((opt) {
+              final (label, count) = opt;
+              final isSelected = _sessionFilter == label;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text('$label ($count)'),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFFFF5722),
+                  backgroundColor: const Color(0xFF161B22),
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.white : Colors.white70,
+                  ),
+                  side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sessionFilter = label);
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Session Cards Section
+        if (filteredSessions.isEmpty) ...[
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white12)),
-            child: const Center(child: Text('No booked sessions found. Tap "Book Session" to schedule.', style: TextStyle(color: Colors.white54))),
-          )
-        else
-          ...userSessions.map((s) {
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  _sessionFilter == 'All' ? Icons.event_busy : Icons.filter_alt_off,
+                  size: 40,
+                  color: Colors.white38,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _sessionFilter == 'All'
+                      ? 'No 1-on-1 sessions booked yet'
+                      : 'No ${_sessionFilter.toLowerCase()} sessions found',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _sessionFilter == 'All'
+                      ? 'Schedule a session with your coach or send a consultation request to get started.'
+                      : 'Try switching the filter tab above to view other sessions.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                if (_sessionFilter == 'All') ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                        icon: const Icon(Icons.calendar_month, size: 16),
+                        label: const Text('Book Session 📅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        onPressed: () => _openScheduleModal(context, state),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white24),
+                        ),
+                        icon: const Icon(Icons.search, size: 16),
+                        label: const Text('Find Coach 🤝', style: TextStyle(fontSize: 12)),
+                        onPressed: () => setState(() => _tabIndex = 1),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ] else ...[
+          ...filteredSessions.map((s) {
             final isPending = s.status == RequestStatus.pending;
             final isConfirmed = s.status == RequestStatus.confirmed;
+            final isCompleted = s.status == RequestStatus.completed;
+
+            final statusColor = isConfirmed
+                ? const Color(0xFF00E676)
+                : isPending
+                    ? const Color(0xFFFF9800)
+                    : isCompleted
+                        ? const Color(0xFF29B6F6)
+                        : Colors.white38;
+
+            final statusLabel = isConfirmed
+                ? '✓ CONFIRMED'
+                : isPending
+                    ? '⏳ PENDING REVIEW'
+                    : isCompleted
+                        ? '✓ COMPLETED'
+                        : '❌ CANCELLED';
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 12),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isConfirmed
+                      ? const Color(0xFF00E676).withOpacity(0.35)
+                      : isPending
+                          ? const Color(0xFFFF9800).withOpacity(0.4)
+                          : Colors.white12,
+                  width: (isConfirmed || isPending) ? 1.2 : 1,
+                ),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CircleAvatar(
-                          radius: 18,
-                          backgroundColor: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : const Color(0xFFFF5722).withOpacity(0.15),
-                          child: Icon(isPending ? Icons.hourglass_top_rounded : Icons.event, color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722), size: 18),
+                          radius: 20,
+                          backgroundColor: statusColor.withOpacity(0.15),
+                          child: Icon(
+                            isPending
+                                ? Icons.hourglass_top_rounded
+                                : isConfirmed
+                                    ? Icons.event_available
+                                    : isCompleted
+                                        ? Icons.task_alt
+                                        : Icons.event_busy,
+                            color: statusColor,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              Text('${DateFormat('EEEE, dd MMM yyyy').format(s.date)} • ${s.timeSlot}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${DateFormat('EEEE, dd MMMM yyyy').format(s.date)} • ${s.timeSlot}',
+                                style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12.5, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Trainer: Coach ${s.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
                             ],
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFF21262D),
+                            color: statusColor.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: statusColor.withOpacity(0.5), width: 0.8),
                           ),
                           child: Text(
-                            isPending ? '⏳ PENDING' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
+                            statusLabel,
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const Divider(height: 20, color: Colors.white12),
+
+                    // Action Buttons Row
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.end,
                       children: [
-                        Text('Coach ${s.trainerName}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                        Row(
-                          children: [
-                            TextButton.icon(
-                              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                              icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
-                              label: const Text('Reschedule', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
-                              onPressed: () => _openRescheduleModal(context, state, s),
+                        if (isConfirmed) ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E676),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             ),
-                            const SizedBox(width: 10),
-                            InkWell(
-                              onTap: () => _openChatModal(context, state, peerName: s.trainerName),
-                              child: const Text('Message Coach', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                            icon: const Icon(Icons.videocam, size: 14, color: Colors.black),
+                            label: const Text('Join Live 📹', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  content: Text('📹 Opening live meeting room with Coach ${s.trainerName}... (${s.meetingLink ?? 'https://meet.mypt.pro'})'),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF29B6F6),
+                              side: const BorderSide(color: Color(0xFF29B6F6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             ),
-                          ],
+                            icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
+                            label: const Text('Reschedule 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openRescheduleModal(context, state, s),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.cancel_outlined, size: 13, color: Colors.redAccent),
+                            label: const Text('Cancel Session', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _openCancelSessionModal(context, state, s),
+                          ),
+                        ] else if (isPending) ...[
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.close, size: 13, color: Colors.redAccent),
+                            label: const Text('Withdraw Request', style: TextStyle(fontSize: 11)),
+                            onPressed: () => state.cancelSession(s),
+                          ),
+                        ] else ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF5722),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.replay, size: 13),
+                            label: const Text('Book Again 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openScheduleModal(context, state),
+                          ),
+                        ],
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFF5722),
+                            side: const BorderSide(color: Color(0xFFFF5722)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                          icon: const Icon(Icons.chat_bubble_outline, size: 13, color: Color(0xFFFF5722)),
+                          label: const Text('Message', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _openChatModal(context, state, peerName: s.trainerName),
                         ),
                       ],
                     ),
@@ -3605,6 +4097,151 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             );
           }),
+        ],
+
+        // Consultation Inquiries Section
+        if (allUserRequests.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const Text('1-on-1 Consultation Inquiries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          const Text('Status of prospective coaching & inquiry requests submitted to trainers.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const SizedBox(height: 12),
+
+          ...allUserRequests.map((req) {
+            final isReqPending = req.status == RequestStatus.pending;
+            final isReqConfirmed = req.status == RequestStatus.confirmed;
+            final isReqCancelled = req.status == RequestStatus.cancelled;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isReqPending
+                      ? const Color(0xFFFF9800).withOpacity(0.5)
+                      : isReqConfirmed
+                          ? const Color(0xFF00E676).withOpacity(0.4)
+                          : Colors.redAccent.withOpacity(0.4),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Inquiry: ${req.requestType}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isReqPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : isReqConfirmed
+                                    ? const Color(0xFF00E676).withOpacity(0.15)
+                                    : Colors.redAccent.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isReqPending
+                                ? '⏳ PENDING REVIEW'
+                                : isReqConfirmed
+                                    ? '✓ ACCEPTED'
+                                    : '❌ DECLINED',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: isReqPending
+                                  ? const Color(0xFFFF9800)
+                                  : isReqConfirmed
+                                      ? const Color(0xFF00E676)
+                                      : Colors.redAccent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Coach: ${req.trainerName ?? 'Personal Trainer'} • Submitted ${DateFormat('dd MMM, hh:mm a').format(req.date)}',
+                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '"${req.message}"',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                    if (isReqCancelled && req.declineReason != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.redAccent, size: 14),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Reason: ${req.declineReason}',
+                                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const Divider(height: 16, color: Colors.white12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (isReqPending) ...[
+                          TextButton(
+                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                            onPressed: () => state.cancelConsultationRequest(req),
+                            child: const Text('Cancel Inquiry', style: TextStyle(fontSize: 12)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                            icon: const Icon(Icons.chat_bubble_outline, size: 13),
+                            label: const Text('Message Coach', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openChatModal(context, state, peerName: req.trainerName ?? 'Coach'),
+                          ),
+                        ] else if (isReqCancelled) ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                            icon: const Icon(Icons.explore, size: 14),
+                            label: const Text('Explore Other Coaches 🚀', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => setState(() => _tabIndex = 1),
+                          ),
+                        ] else ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
+                            icon: const Icon(Icons.calendar_month, size: 14, color: Colors.black),
+                            label: const Text('Book 1-on-1 Session 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openScheduleModal(context, state),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ],
     );
   }
@@ -5661,6 +6298,378 @@ class _MainShellScreenState extends State<MainShellScreen> {
           Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
           Text('$current ($change)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00E676), fontSize: 13)),
         ],
+      ),
+    );
+  }
+
+  // --- CONSULTATION REQUEST MODAL (FREE INQUIRY / 0 PT CREDITS) ---
+  void _openRequestConsultationModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    String selectedTopic = 'Initial PT Consultation';
+    String selectedAvailability = 'Morning (06:00 AM - 10:00 AM)';
+    final msgCtrl = TextEditingController(
+      text: 'Looking to start a structured workout & nutrition routine tailored to my goals. Would love to discuss training options.',
+    );
+
+    final topics = [
+      'Initial PT Consultation',
+      'Strength Coaching 1-on-1',
+      'Fat Loss & Body Recomp',
+      'Hypertrophy & Posture Mastery',
+      'Injury Rehab & Mobility',
+      'Nutrition & Meal Strategy',
+    ];
+
+    final availabilityOptions = [
+      'Morning (06:00 AM - 10:00 AM)',
+      'Afternoon (12:00 PM - 04:00 PM)',
+      'Evening (05:00 PM - 09:00 PM)',
+      'Flexible / Any Slot',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                      child: Text(coach.name[0], style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722), fontSize: 16)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Request Consultation with Coach ${coach.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          const Text('Free 1-on-1 Inquiry (0 PT Credits deducted)', style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 20, color: Colors.white12),
+
+                const Text('Consultation Topic', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: selectedTopic,
+                      dropdownColor: const Color(0xFF161B22),
+                      items: topics.map((t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 13)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedTopic = val);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                const Text('Your Preferred Availability', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: availabilityOptions.map((avail) {
+                      final isSel = selectedAvailability == avail;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: Text(avail),
+                          selected: isSel,
+                          selectedColor: const Color(0xFFFF5722),
+                          backgroundColor: const Color(0xFF0D1117),
+                          labelStyle: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                            color: isSel ? Colors.white : Colors.white70,
+                          ),
+                          onSelected: (sel) {
+                            if (sel) setModalState(() => selectedAvailability = avail);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                const Text('Message to Coach / Goals & Questions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: msgCtrl,
+                  maxLines: 3,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: const InputDecoration(
+                    hintText: 'Share your fitness background, injuries, or what you hope to achieve...',
+                    filled: true,
+                    fillColor: Color(0xFF0D1117),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                    onPressed: () {
+                      final fullMessage = '${msgCtrl.text.trim()}\nPreferred Slot: $selectedAvailability';
+                      state.sendConsultationRequest(
+                        coach: coach,
+                        requestType: selectedTopic,
+                        message: fullMessage,
+                      );
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF00E676),
+                          content: Text('✓ Consultation request sent to Coach ${coach.name}! You will be notified once reviewed.'),
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    },
+                    child: const Text('Send Consultation Request 🤝', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- CANCEL SESSION CONFIRMATION MODAL WITH PT CREDIT REFUND GUARANTEE ---
+  void _openCancelSessionModal(BuildContext context, MyPtProvider state, SessionItem session) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: Colors.white12)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+            SizedBox(width: 8),
+            Text('Cancel Session?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to cancel your session ("${session.focusArea}") with Coach ${session.trainerName}?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E676).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Color(0xFF00E676), size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '1 PT Credit will be refunded immediately to your account balance.',
+                      style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep Session', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            onPressed: () {
+              state.cancelSession(session);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Color(0xFF00E676),
+                  content: Text('✓ Session cancelled. 1 PT Credit has been refunded to your balance.'),
+                ),
+              );
+            },
+            child: const Text('Confirm Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 4-STEP ONBOARDING TUTORIAL / USER GUIDE ---
+  void _openOnboardingTutorial(BuildContext context, MyPtProvider state) {
+    int currentStep = 0;
+
+    final steps = [
+      (
+        'Welcome to myPT 🙏',
+        'India\'s Premier Personal Training Experience',
+        'myPT connects you with verified elite personal trainers across India. Enjoy transparent pricing in Indian Rupees (₹), customized workout splits, and dedicated 1-on-1 coaching.',
+        Icons.flash_on,
+        const Color(0xFFFF5722),
+      ),
+      (
+        'Discover & Connect 🤝',
+        'Request Free Consultations with Top Coaches',
+        'Browse coach specialties from hypertrophy to biomechanics. Send free 1-on-1 consultation requests (0 PT credits) or connect directly with your primary trainer.',
+        Icons.person_search,
+        const Color(0xFF00E676),
+      ),
+      (
+        'Tailored Packages & Credits 💳',
+        'Transparent Direct Trainer Pricing',
+        'Packages in myPT are created directly by your assigned coach with custom pricing. Purchase credits instantly online or confirm offline with your trainer.',
+        Icons.token_outlined,
+        const Color(0xFF29B6F6),
+      ),
+      (
+        'Schedule, Train & Transform 📅',
+        'Seamless 1-on-1 Booking & Real-Time Tracking',
+        'Schedule 1-hour sessions with full calendar freedom, join live video workouts, log body scans, and watch your transformation progression unfold.',
+        Icons.calendar_month,
+        const Color(0xFFFF9800),
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setTutorialState) {
+          final (title, subtitle, description, iconData, accentColor) = steps[currentStep];
+          final isLastStep = currentStep == steps.length - 1;
+
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 18),
+
+                // Step Icon
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: accentColor.withOpacity(0.4), width: 1.5),
+                  ),
+                  child: Icon(iconData, color: accentColor, size: 36),
+                ),
+                const SizedBox(height: 16),
+
+                Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                const SizedBox(height: 4),
+                Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: accentColor)),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
+                ),
+                const SizedBox(height: 22),
+
+                // Step Dots
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(steps.length, (idx) {
+                    final isCurrent = idx == currentStep;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: isCurrent ? 20 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isCurrent ? const Color(0xFFFF5722) : Colors.white24,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 24),
+
+                // Bottom Navigation Buttons
+                Row(
+                  children: [
+                    if (currentStep > 0) ...[
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white24),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        onPressed: () => setTutorialState(() => currentStep -= 1),
+                        child: const Text('Back'),
+                      ),
+                      const SizedBox(width: 8),
+                    ] else ...[
+                      TextButton(
+                        onPressed: () {
+                          state.setHasSeenOnboarding(true);
+                          Navigator.pop(ctx);
+                        },
+                        child: const Text('Skip Tour', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      ),
+                    ],
+                    const Spacer(),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF5722),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      onPressed: () {
+                        if (isLastStep) {
+                          state.setHasSeenOnboarding(true);
+                          Navigator.pop(ctx);
+                        } else {
+                          setTutorialState(() => currentStep += 1);
+                        }
+                      },
+                      child: Text(
+                        isLastStep ? 'Get Started 🚀' : 'Next →',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
