@@ -1844,36 +1844,80 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final state = Provider.of<MyPtProvider>(context, listen: false);
 
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5722),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.flash_on, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text('myPT', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  isSignUp ? 'Create your personal training account' : 'Welcome back to your fitness command center',
-                  style: const TextStyle(color: Colors.white60, fontSize: 13),
-                ),
+    return PopScope(
+      canPop: !isSignUp,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (isSignUp) {
+          setState(() {
+            isSignUp = false;
+            _submitted = false;
+            _emailTouched = false;
+            _passTouched = false;
+            _nameTouched = false;
+          });
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      if (isSignUp)
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              isSignUp = false;
+                              _submitted = false;
+                              _emailTouched = false;
+                              _passTouched = false;
+                              _nameTouched = false;
+                            });
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
+                                SizedBox(width: 4),
+                                Text('Back', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF5722),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.flash_on, color: Colors.white, size: 24),
+                        ),
+                      const SizedBox(width: 10),
+                      const Text('myPT', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isSignUp ? 'Create your personal training account' : 'Welcome back to your fitness command center',
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  ),
                 const SizedBox(height: 24),
 
                 if (!kReleaseMode) ...[
@@ -2078,6 +2122,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -2218,34 +2263,64 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     final int safeTabIndex = _tabIndex.clamp(0, navTabs.length - 1);
 
-    return Scaffold(
-      extendBody: true,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(state.isDevMode ? 116 : 65),
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            color: const Color(0xFF0D1117),
-            padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5722),
-                        borderRadius: BorderRadius.circular(8),
+    return PopScope(
+      canPop: _tabIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_tabIndex != 0) {
+          setState(() => _tabIndex = 0);
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(state.isDevMode ? 116 : 65),
+          child: SafeArea(
+            bottom: false,
+            child: Container(
+              color: const Color(0xFF0D1117),
+              padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      if (_tabIndex != 0)
+                        GestureDetector(
+                          onTap: () => setState(() => _tabIndex = 0),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
+                                SizedBox(width: 4),
+                                Text('Back', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF5722),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.flash_on, color: Colors.white, size: 20),
+                        ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'myPT',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
                       ),
-                      child: const Icon(Icons.flash_on, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'myPT',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 8),
 
                     // Location Chip
                     GestureDetector(
@@ -2420,6 +2495,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
       ),
       bottomNavigationBar: _buildAppleLiquidGlassBottomNav(navTabs, safeTabIndex),
+      ),
     );
   }
 
@@ -3394,6 +3470,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -3420,6 +3498,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       const Text('Certified Personal Trainer', style: TextStyle(color: Colors.white60, fontSize: 12)),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -5830,6 +5914,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void _showDaySessionsModal(BuildContext context, MyPtProvider state, DateTime date, List<SessionItem> daySessions) {
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -5843,11 +5929,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  DateFormat('EEEE, dd MMMM yyyy').format(date),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                Expanded(
+                  child: Text(
+                    DateFormat('EEEE, dd MMMM yyyy').format(date),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                  ),
                 ),
                 Text('${daySessions.length} Sessions', style: const TextStyle(fontSize: 12, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
             const Divider(height: 20, color: Colors.white12),
@@ -5886,6 +5981,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -5897,7 +5994,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
             Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 14),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
                   child: Text(
@@ -5916,6 +6012,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : session.status.name.toUpperCase(),
                     style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor),
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -6019,6 +6122,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -6046,6 +6151,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     IconButton(
                       icon: const Icon(Icons.chevron_right, color: Colors.white70),
                       onPressed: () => setPickerState(() => selectedYear += 1),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
@@ -6891,6 +7002,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -6962,7 +7075,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         ],
                       ),
                     ),
-                    if (state.isImpersonating)
+                    if (state.isImpersonating) ...[
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF00E676),
@@ -6981,6 +7094,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         },
                         child: const Text('Exit to Master', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
+                      const SizedBox(width: 6),
+                    ],
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),
@@ -7225,6 +7346,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final indianCities = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad', 'Chandigarh'];
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -7235,11 +7358,22 @@ class _MainShellScreenState extends State<MainShellScreen> {
           children: [
             Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 14),
-            const Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.location_on, color: Color(0xFFFF5722)),
-                SizedBox(width: 8),
-                Text('Select Your Location in India 🇮🇳', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Row(
+                  children: [
+                    Icon(Icons.location_on, color: Color(0xFFFF5722)),
+                    SizedBox(width: 8),
+                    Text('Select Your Location in India 🇮🇳', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
             const SizedBox(height: 4),
@@ -7274,6 +7408,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void _openCurrencySelector(BuildContext context, MyPtProvider state) {
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
@@ -7282,7 +7418,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Select Currency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Select Currency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             ...MyPtProvider.supportedCurrencies.values.map((cur) {
               final isSelected = state.selectedCurrency == cur.code;
@@ -7308,6 +7457,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -7325,6 +7476,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   children: [
                     Expanded(child: Text(pkg.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
                     Text(state.formatPrice(pkg.priceInr), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -7471,6 +7629,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -7483,8 +7643,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
               children: [
                 Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 14),
-                Text('Reschedule Session: ${session.focusArea}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('With: ${session.clientName} & Coach ${session.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Reschedule Session: ${session.focusArea}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('With: ${session.clientName} & Coach ${session.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
                 const Divider(height: 20, color: Colors.white12),
 
                 // Date Selection with 21-day horizontal scroll + Calendar Picker Button
@@ -7651,6 +7829,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -7674,11 +7854,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Schedule with Coach $coachName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Expanded(child: Text('Schedule with Coach $coachName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(color: const Color(0xFFFF5722).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
                         child: Text('${user.ptCredits} PT Credits Left', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
@@ -7892,6 +8079,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -7906,7 +8095,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
               children: [
                 Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 14),
-                const Text('Confirm Your Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Confirm Your Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: isProcessing ? null : () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
 
                 Container(
@@ -8026,6 +8226,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -8046,12 +8248,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         child: Text(peerName.isNotEmpty ? peerName[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                       ),
                       const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Coach $peerName', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          const Text('1-on-1 Direct Chat • Message your coach', style: TextStyle(fontSize: 11, color: Colors.white60)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Coach $peerName', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text('1-on-1 Direct Chat • Message your coach', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
@@ -8141,6 +8351,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Container(
@@ -8158,12 +8370,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: Text(coach.name[0], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                 ),
                 const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Coach ${coach.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('⭐ 4.9 Rating • Certified Trainer in India', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Coach ${coach.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('⭐ 4.9 Rating • Certified Trainer in India', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ],
             ),
@@ -8223,6 +8443,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -8233,7 +8455,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Create Custom Workout Routine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Create Custom Workout Routine', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Routine Name', border: OutlineInputBorder())),
                 const SizedBox(height: 8),
@@ -8313,6 +8548,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -8321,7 +8558,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Log Circumference & Body Scan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Log Circumference & Body Scan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -8384,6 +8634,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Padding(
@@ -8392,7 +8644,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(existingPackage == null ? 'Create Custom Package' : 'Edit Package', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(existingPackage == null ? 'Create Custom Package' : 'Edit Package', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Package Title', border: OutlineInputBorder())),
             const SizedBox(height: 8),
@@ -8448,6 +8713,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => Container(
@@ -8456,6 +8723,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 14),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -8466,9 +8735,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     Text('In-App Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
                 ),
-                TextButton(
-                  onPressed: () => state.markAllNotificationsRead(),
-                  child: const Text('Mark all read', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => state.markAllNotificationsRead(),
+                      child: const Text('Mark all read', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -8632,6 +8912,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
@@ -9182,6 +9464,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -9215,6 +9499,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           const Text('Free 1-on-1 Inquiry (0 PT Credits deducted)', style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
@@ -9446,6 +9736,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     showModalBottomSheet(
       context: context,
       isDismissible: true,
+      enableDrag: true,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
@@ -9458,7 +9749,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const SizedBox(width: 24),
+                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 18),
 
                 // Step Icon

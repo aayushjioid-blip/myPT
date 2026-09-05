@@ -17,6 +17,8 @@ class UserProfileSheet extends StatefulWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Theme.of(context).cardTheme.color,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -181,9 +183,11 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _isEditing ? 'Edit Profile & Info ✏️' : 'User Profile & Settings',
-                  style: AppTypography.heading2,
+                Expanded(
+                  child: Text(
+                    _isEditing ? 'Edit Profile & Info ✏️' : 'User Profile & Settings',
+                    style: AppTypography.heading2,
+                  ),
                 ),
                 IconButton(
                   icon: Icon(_isEditing ? Icons.visibility_outlined : Icons.edit_note, color: AppColors.primary),
@@ -193,6 +197,11 @@ class _UserProfileSheetState extends State<UserProfileSheet> {
                     });
                   },
                   tooltip: _isEditing ? 'View Mode' : 'Edit Profile',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Close',
                 ),
               ],
             ),

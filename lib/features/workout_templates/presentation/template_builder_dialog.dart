@@ -42,32 +42,55 @@ class _TemplateBuilderDialogState extends State<TemplateBuilderDialog> {
   void _showAddExercise() {
     showModalBottomSheet(
       context: context,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Theme.of(context).cardTheme.color,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: widget.availableExercises.length,
-        itemBuilder: (c, i) {
-          final ex = widget.availableExercises[i];
-          return ListTile(
-            title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            subtitle: Text('${ExerciseEntity.getCategoryName(ex.category)} • ${ex.equipment}', style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted)),
-            trailing: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-            onTap: () {
-              setState(() {
-                _exercises.add(WorkoutExerciseItem(
-                  id: 'te-${DateTime.now().millisecondsSinceEpoch}',
-                  exerciseId: ex.id,
-                  name: ex.name,
-                  sets: 3,
-                  repetitions: 10,
-                  weightKg: 40,
-                ));
-              });
-              Navigator.pop(ctx);
-            },
-          );
-        },
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Select Exercise to Add', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: widget.availableExercises.length,
+              itemBuilder: (c, i) {
+                final ex = widget.availableExercises[i];
+                return ListTile(
+                  title: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: Text('${ExerciseEntity.getCategoryName(ex.category)} • ${ex.equipment}', style: const TextStyle(fontSize: 11, color: AppColors.darkTextMuted)),
+                  trailing: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                  onTap: () {
+                    setState(() {
+                      _exercises.add(WorkoutExerciseItem(
+                        id: 'te-${DateTime.now().millisecondsSinceEpoch}',
+                        exerciseId: ex.id,
+                        name: ex.name,
+                        sets: 3,
+                        repetitions: 10,
+                        weightKg: 40,
+                      ));
+                    });
+                    Navigator.pop(ctx);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -35,6 +35,8 @@ class PackageSelectionDialog extends StatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => PackageSelectionDialog(
         clientId: clientId,
