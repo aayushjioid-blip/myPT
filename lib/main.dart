@@ -2453,32 +2453,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
         // 1. Who am I? (Header)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Namaste / Welcome Back 🙏', style: TextStyle(color: Colors.white60, fontSize: 13)),
-                Text(user.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF5722).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.token_outlined, size: 14, color: Color(0xFFFF5722)),
-                  const SizedBox(width: 4),
-                  Text('${user.ptCredits} PT Credits', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFFFF5722))),
-                ],
-              ),
-            ),
+            const Text('Namaste / Welcome Back 🙏', style: TextStyle(color: Colors.white60, fontSize: 13)),
+            Text(user.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
           ],
         ),
         const SizedBox(height: 16),
