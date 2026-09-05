@@ -15,12 +15,13 @@ class WorkoutSetDetail {
   });
 
   WorkoutSetDetail copyWith({
+    int? setNumber,
     int? reps,
     double? weightKg,
     bool? isCompleted,
   }) {
     return WorkoutSetDetail(
-      setNumber: setNumber,
+      setNumber: setNumber ?? this.setNumber,
       reps: reps ?? this.reps,
       weightKg: weightKg ?? this.weightKg,
       isCompleted: isCompleted ?? this.isCompleted,

@@ -402,6 +402,23 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
     });
   }
 
+  void _removeSetFromLoggedExercise(int exerciseIndex, int setIndex) {
+    setState(() {
+      final ex = _exercises[exerciseIndex];
+      final currentDetails = ex.setDetails != null ? List<WorkoutSetDetail>.from(ex.setDetails!) : <WorkoutSetDetail>[];
+      if (currentDetails.length > 1 && setIndex < currentDetails.length) {
+        currentDetails.removeAt(setIndex);
+        for (int i = 0; i < currentDetails.length; i++) {
+          currentDetails[i] = currentDetails[i].copyWith(setNumber: i + 1);
+        }
+        _exercises[exerciseIndex] = ex.copyWith(
+          sets: currentDetails.length,
+          setDetails: currentDetails,
+        );
+      }
+    });
+  }
+
   // WIDGET: PER-EXERCISE VOLUME & PROGRESSIVE OVERLOAD CARD (SUMPRODUCT)
   Widget _buildExerciseVolumeCard({
     required BuildContext context,
@@ -1055,7 +1072,7 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
                         ),
                         const SizedBox(height: 8),
 
-                        // Per-set breakdown table: SET | WEIGHT | REPS | SUMPRODUCT
+                        // Per-set breakdown table: SET | WEIGHT | REPS | DONE | DEL
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
@@ -1064,20 +1081,39 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
                           ),
                           child: Column(
                             children: [
-                              ...details.map((setDetail) {
-                                final setSumproduct = setDetail.weightKg * setDetail.reps;
+                              ...details.asMap().entries.map((entry) {
+                                final sIdx = entry.key;
+                                final setDetail = entry.value;
                                 return Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 2.5),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('Set ${setDetail.setNumber}:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                                      Text('${setDetail.weightKg.toStringAsFixed(setDetail.weightKg % 1 == 0 ? 0 : 1)} kg', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                      SizedBox(
+                                        width: 50,
+                                        child: Text('Set ${setDetail.setNumber}:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text('${setDetail.weightKg.toStringAsFixed(setDetail.weightKg % 1 == 0 ? 0 : 1)} kg', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                      ),
                                       const Text('×', style: TextStyle(fontSize: 10, color: AppColors.darkTextMuted)),
-                                      Text('${setDetail.reps} reps', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                                      const Text('=', style: TextStyle(fontSize: 10, color: AppColors.darkTextMuted)),
-                                      Text('${setSumproduct.toStringAsFixed(0)} kg', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                                      const Icon(Icons.check_circle, size: 14, color: AppColors.primary),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text('${setDetail.reps} reps', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                      ),
+                                      const Icon(Icons.check_circle, size: 15, color: AppColors.primary),
+                                      const SizedBox(width: 6),
+                                      InkWell(
+                                        onTap: details.length > 1 ? () => _removeSetFromLoggedExercise(idx, sIdx) : null,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(2.0),
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 14,
+                                            color: details.length > 1 ? AppColors.rose : Colors.white24,
+                                          ),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
@@ -1151,6 +1187,7 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
                   workoutId: 'wo-${widget.session.id}',
                   exercises: _exercises,
                 );
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

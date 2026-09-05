@@ -9370,10 +9370,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       Container(width: 1, height: 28, color: Colors.white12),
                       Column(
                         children: [
-                          const Text('Total Sets', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const Text('Sets Done', style: TextStyle(fontSize: 10, color: Colors.white60)),
                           const SizedBox(height: 2),
                           Text(
-                            '$totalSetsCount Sets',
+                            '$totalCompletedSets / $totalSetsCount',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ],
@@ -9407,7 +9407,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         color: const Color(0xFF0D1117),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.white12),
+                          side: BorderSide(
+                            color: sets.every((s) => s.isCompleted) && sets.isNotEmpty
+                                ? const Color(0xFF00E676).withOpacity(0.4)
+                                : Colors.white12,
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -9428,14 +9432,16 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               ),
                               const Divider(height: 14, color: Colors.white12),
 
-                              // Set Table Header
+                              // Set Table Header (SET, WEIGHT, REPS, DONE, DELETE)
                               const Row(
                                 children: [
-                                  SizedBox(width: 44, child: Text('SET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  Expanded(flex: 5, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 12),
-                                  Expanded(flex: 5, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 36, child: Text('DEL', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 36, child: Text('SET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  Expanded(flex: 4, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 8),
+                                  Expanded(flex: 4, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 8),
+                                  SizedBox(width: 38, child: Text('DONE', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 34, child: Text('DEL', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
                                 ],
                               ),
                               const SizedBox(height: 6),
@@ -9447,22 +9453,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 6),
-                                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                  padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                                  decoration: BoxDecoration(
+                                    color: setItem.isCompleted ? const Color(0xFF00E676).withOpacity(0.08) : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
                                   child: Row(
                                     children: [
                                       SizedBox(
-                                        width: 44,
+                                        width: 36,
                                         child: Text(
                                           '#${sIdx + 1}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.white70,
+                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white70,
                                           ),
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 5,
+                                        flex: 4,
                                         child: SizedBox(
                                           height: 34,
                                           child: TextFormField(
@@ -9482,9 +9492,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(width: 8),
                                       Expanded(
-                                        flex: 5,
+                                        flex: 4,
                                         child: SizedBox(
                                           height: 34,
                                           child: TextFormField(
@@ -9504,8 +9514,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                           ),
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       SizedBox(
-                                        width: 36,
+                                        width: 38,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            setItem.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white38,
+                                            size: 20,
+                                          ),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          tooltip: 'Mark Done',
+                                          onPressed: () {
+                                            setSessionState(() => setItem.isCompleted = !setItem.isCompleted);
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 34,
                                         child: IconButton(
                                           icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
                                           padding: EdgeInsets.zero,
