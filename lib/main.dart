@@ -1567,6 +1567,21 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- THEME & APPEARANCE ---
+  bool isDarkMode = true;
+
+  void toggleTheme() {
+    isDarkMode = !isDarkMode;
+    notifyListeners();
+  }
+
+  void setIsDarkMode(bool val) {
+    if (isDarkMode != val) {
+      isDarkMode = val;
+      notifyListeners();
+    }
+  }
+
   // --- FEATURE FLAGS (SUPER ADMIN) ---
   bool enableExerciseTargetWeight = true;
 
@@ -2206,7 +2221,28 @@ class MyPtApp extends StatelessWidget {
     return MaterialApp(
       title: 'myPT',
       debugShowCheckedModeBanner: false,
+      themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF3F4F6),
+        cardColor: Colors.white,
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFFFF5722),
+          onPrimary: Colors.white,
+          secondary: Color(0xFF00E676),
+          onSecondary: Colors.black,
+          surface: Colors.white,
+          onSurface: Color(0xFF1E293B),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: const Color(0xFFFF5722),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+      ),
+      darkTheme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0D1117),
         cardColor: const Color(0xFF161B22),
@@ -11039,6 +11075,50 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         ),
                         const SizedBox(height: 18),
                       ],
+
+                      // Theme & Appearance
+                      const Text('THEME & APPEARANCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: (state.isDarkMode ? const Color(0xFF7C4DFF) : const Color(0xFFFFB300)).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              state.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                              color: state.isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFFFB300),
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            state.isDarkMode ? 'Dark Mode' : 'Light Mode',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            state.isDarkMode ? 'Sleek midnight dark theme active' : 'Bright crisp daylight theme active',
+                            style: const TextStyle(fontSize: 12, color: Colors.white60),
+                          ),
+                          trailing: Switch.adaptive(
+                            value: state.isDarkMode,
+                            activeColor: const Color(0xFFFF5722),
+                            inactiveThumbColor: const Color(0xFFFFB300),
+                            inactiveTrackColor: Colors.white24,
+                            onChanged: (val) {
+                              state.setIsDarkMode(val);
+                              setModalState(() {});
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
 
                       // Regional Preferences
                       const Text('REGIONAL & APP PREFERENCES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
