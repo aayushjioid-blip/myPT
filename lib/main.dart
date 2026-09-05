@@ -2658,22 +2658,68 @@ class _AuthScreenState extends State<AuthScreen> {
                       } else {
                         final success = state.login(emailCtrl.text.trim(), passCtrl.text);
                         if (!success) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              backgroundColor: Colors.redAccent,
+                            SnackBar(
+                              backgroundColor: const Color(0xFF1E242C),
+                              duration: const Duration(seconds: 3),
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.redAccent.withOpacity(0.7), width: 1.2),
+                              ),
                               content: Row(
                                 children: [
-                                  Icon(Icons.error_outline, color: Colors.white, size: 20),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      '❌ Invalid email or password. Please check your credentials or reset password.',
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  const Icon(Icons.lock_reset, color: Colors.redAccent, size: 22),
+                                  const SizedBox(width: 10),
+                                  const Expanded(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Invalid password',
+                                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                                        ),
+                                        SizedBox(height: 2),
+                                        Text(
+                                          'Retry or forgot password?',
+                                          style: TextStyle(fontSize: 11, color: Colors.white70),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFFFF5722),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      _openForgotPasswordModal(context, state);
+                                    },
+                                    child: const Text('Forgot?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF2D333B),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      passCtrl.clear();
+                                    },
+                                    child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                   ),
                                 ],
                               ),
-                              duration: Duration(seconds: 4),
                             ),
                           );
                         }
