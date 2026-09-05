@@ -1621,9 +1621,15 @@ class MyPtProvider extends ChangeNotifier {
 
   // --- FEATURE FLAGS (SUPER ADMIN) ---
   bool enableExerciseTargetWeight = true;
+  bool enableMealPhotoUpload = true;
 
   void setEnableExerciseTargetWeight(bool val) {
     enableExerciseTargetWeight = val;
+    notifyListeners();
+  }
+
+  void setEnableMealPhotoUpload(bool val) {
+    enableMealPhotoUpload = val;
     notifyListeners();
   }
 
@@ -8075,39 +8081,80 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF5722).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.tune, color: Color(0xFFFF5722), size: 16),
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Target Weight Feature Flag',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF5722).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            Text(
-                              'Display target weights configured by coaches/clients',
-                              style: TextStyle(fontSize: 10, color: Colors.white54),
+                            child: const Icon(Icons.tune, color: Color(0xFFFF5722), size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Target Weight Feature Flag',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                Text(
+                                  'Display target weights configured by coaches/clients',
+                                  style: TextStyle(fontSize: 10, color: Colors.white54),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Switch.adaptive(
+                            value: state.enableExerciseTargetWeight,
+                            activeColor: const Color(0xFF00E676),
+                            onChanged: (val) {
+                              state.setEnableExerciseTargetWeight(val);
+                              setModalState(() {});
+                            },
+                          ),
+                        ],
                       ),
-                      Switch.adaptive(
-                        value: state.enableExerciseTargetWeight,
-                        activeColor: const Color(0xFF00E676),
-                        onChanged: (val) {
-                          state.setEnableExerciseTargetWeight(val);
-                          setModalState(() {});
-                        },
+                      const Divider(height: 10, color: Colors.white10),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E676).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF00E676), size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Meal Photo & Nutrition Log Flag',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                Text(
+                                  'Enable meal picture upload in 1-on-1 trainer chat',
+                                  style: TextStyle(fontSize: 10, color: Colors.white54),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: state.enableMealPhotoUpload,
+                            activeColor: const Color(0xFF00E676),
+                            onChanged: (val) {
+                              state.setEnableMealPhotoUpload(val);
+                              setModalState(() {});
+                            },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -9458,28 +9505,30 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                   Row(
                     children: [
-                      // Camera / Meal Picture Upload Button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D1117),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+                      // Camera / Meal Picture Upload Button (Controlled by Feature Flag)
+                      if (state.enableMealPhotoUpload) ...[
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D1117),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.camera_alt_rounded, color: Color(0xFF00E676), size: 20),
+                            tooltip: 'Upload Meal Picture & Log',
+                            onPressed: () {
+                              _openMealUploadModal(
+                                context,
+                                state,
+                                peerName: peerName,
+                                isFromTrainer: isTrainer,
+                                onMealSent: () => setModalState(() {}),
+                              );
+                            },
+                          ),
                         ),
-                        child: IconButton(
-                          icon: const Icon(Icons.camera_alt_rounded, color: Color(0xFF00E676), size: 20),
-                          tooltip: 'Upload Meal Picture & Log',
-                          onPressed: () {
-                            _openMealUploadModal(
-                              context,
-                              state,
-                              peerName: peerName,
-                              isFromTrainer: isTrainer,
-                              onMealSent: () => setModalState(() {}),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
+                        const SizedBox(width: 8),
+                      ],
                       Expanded(
                         child: TextField(
                           controller: textCtrl,
