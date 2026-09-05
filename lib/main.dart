@@ -1476,11 +1476,34 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- AUTH & SWITCHING ---
-  bool get isMasterUser => currentUser?.email == 'master@mypt.com';
+  // --- AUTH, MASTER GOVERNANCE & SWITCHING ---
+  UserModel? originalMasterUser;
+
+  bool get isMasterUser =>
+      currentUser?.email == 'master@mypt.com' ||
+      (currentUser?.role == UserRole.superAdmin) ||
+      originalMasterUser != null;
+
+  bool get isImpersonating =>
+      originalMasterUser != null && currentUser?.id != originalMasterUser?.id;
+
+  List<UserModel> getAllAccounts() {
+    final Map<String, UserModel> map = {};
+    for (final u in demoAccounts.values) {
+      map[u.id] = u;
+    }
+    for (final t in allTrainers) {
+      map[t.id] = t;
+    }
+    for (final c in rosterClients) {
+      map[c.id] = c;
+    }
+    return map.values.toList();
+  }
 
   void login(String email, String pass) {
     final cleanEmail = email.trim().toLowerCase();
+    originalMasterUser = null;
     if (demoAccounts.containsKey(cleanEmail)) {
       currentUser = demoAccounts[cleanEmail];
     } else {
@@ -1497,6 +1520,7 @@ class MyPtProvider extends ChangeNotifier {
 
   void register({required String name, required String email, required String pass, required UserRole role}) {
     final cleanEmail = email.trim().toLowerCase();
+    originalMasterUser = null;
     final newUser = UserModel(
       id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -1516,20 +1540,81 @@ class MyPtProvider extends ChangeNotifier {
 
   void logout() {
     currentUser = null;
+    originalMasterUser = null;
     notifyListeners();
   }
 
+  void impersonateUser(UserModel targetUser) {
+    if (originalMasterUser == null) {
+      if (currentUser?.email == 'master@mypt.com' || currentUser?.role == UserRole.superAdmin) {
+        originalMasterUser = currentUser;
+      } else if (demoAccounts.containsKey('master@mypt.com')) {
+        originalMasterUser = demoAccounts['master@mypt.com'];
+      }
+    }
+    currentUser = targetUser;
+    notifyListeners();
+  }
+
+  void returnToMasterAdmin() {
+    if (originalMasterUser != null) {
+      currentUser = originalMasterUser;
+      originalMasterUser = null;
+      notifyListeners();
+    } else if (demoAccounts.containsKey('master@mypt.com')) {
+      currentUser = demoAccounts['master@mypt.com'];
+      notifyListeners();
+    }
+  }
+
   void switchUser(UserModel user) {
+    if ((currentUser?.email == 'master@mypt.com' || isMasterUser) && originalMasterUser == null) {
+      originalMasterUser = currentUser?.email == 'master@mypt.com' ? currentUser : (demoAccounts['master@mypt.com'] ?? currentUser);
+    }
     currentUser = user;
     notifyListeners();
   }
 
   void switchUserByEmail(String email) {
     final clean = email.trim().toLowerCase();
+    UserModel? foundUser;
     if (demoAccounts.containsKey(clean)) {
-      currentUser = demoAccounts[clean];
+      foundUser = demoAccounts[clean];
+    } else {
+      for (final u in getAllAccounts()) {
+        if (u.email.toLowerCase() == clean) {
+          foundUser = u;
+          break;
+        }
+      }
+    }
+
+    if (foundUser != null) {
+      if ((currentUser?.email == 'master@mypt.com' || isMasterUser) && originalMasterUser == null) {
+        originalMasterUser = currentUser?.email == 'master@mypt.com' ? currentUser : (demoAccounts['master@mypt.com'] ?? currentUser);
+      }
+      currentUser = foundUser;
       notifyListeners();
     }
+  }
+
+  void updateClientCredits(String clientId, int newCredits) {
+    for (final c in rosterClients) {
+      if (c.id == clientId) {
+        c.ptCredits = newCredits;
+        break;
+      }
+    }
+    for (final acc in demoAccounts.values) {
+      if (acc.id == clientId) {
+        acc.ptCredits = newCredits;
+        break;
+      }
+    }
+    if (currentUser?.id == clientId) {
+      currentUser?.ptCredits = newCredits;
+    }
+    notifyListeners();
   }
 
   void toggleFlag(String key, bool val) {
@@ -2120,7 +2205,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       tooltip: 'Notifications',
                       onPressed: () => _openNotificationModal(context, state),
                     ),
-                    const SizedBox(width: 6),
+                    if (state.isMasterUser || state.isImpersonating || user.role == UserRole.superAdmin) ...[
+                      IconButton(
+                        icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFFFF5722), size: 22),
+                        tooltip: 'Master User Switcher',
+                        onPressed: () => _openMasterUserSwitcherModal(context, state),
+                      ),
+                    ],
+                    const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => _openProfileModal(context, state),
                       child: Container(
@@ -2154,6 +2246,29 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                         ),
                         const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => _openMasterUserSwitcherModal(context, state),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF5722).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFFF5722)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.swap_horiz, size: 12, color: Color(0xFFFF5722)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '🔄 Switch Any User',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         _userChip('👤 Sarah (Client)', 'sarah@mypt.com', state),
                         const SizedBox(width: 6),
                         _userChip('👤 Sourabh (Client)', 'sourabh@mypt.com', state),
@@ -2178,13 +2293,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         ),
       ),
-      body: switch (user.role) {
-        UserRole.client => _buildClientView(state, safeTabIndex),
-        UserRole.coach => _buildCoachView(state, safeTabIndex),
-        UserRole.headCoach => _buildHeadCoachView(state, safeTabIndex),
-        UserRole.gymMgr => _buildGymMgrView(state, safeTabIndex),
-        UserRole.superAdmin => _buildAdminView(state, safeTabIndex),
-      },
+      body: Column(
+        children: [
+          if (state.isImpersonating) _buildImpersonationBanner(context, state),
+          Expanded(
+            child: switch (user.role) {
+              UserRole.client => _buildClientView(state, safeTabIndex),
+              UserRole.coach => _buildCoachView(state, safeTabIndex),
+              UserRole.headCoach => _buildHeadCoachView(state, safeTabIndex),
+              UserRole.gymMgr => _buildGymMgrView(state, safeTabIndex),
+              UserRole.superAdmin => _buildAdminView(state, safeTabIndex),
+            },
+          ),
+        ],
+      ),
       bottomNavigationBar: _buildAppleLiquidGlassBottomNav(navTabs, safeTabIndex),
     );
   }
@@ -4737,20 +4859,816 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Widget _buildAdminView(MyPtProvider state, int tab) {
+    return switch (tab) {
+      0 => _adminFlagsTab(state),
+      1 => _adminAccountsTab(state),
+      2 => _adminTelemetryTab(state),
+      _ => _adminFlagsTab(state),
+    };
+  }
+
+  Widget _adminFlagsTab(MyPtProvider state) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
-        const Text('Super Admin Governance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        ...state.globalFlags.entries.map((e) {
-          return SwitchListTile(
-            title: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-            value: e.value,
-            activeColor: const Color(0xFFFF5722),
-            onChanged: (val) => state.toggleFlag(e.key, val),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Super Admin Governance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Color(0xFFFF5722)),
+              tooltip: 'Reset Flags',
+              onPressed: () {
+                state.globalFlags.forEach((key, _) => state.toggleFlag(key, true));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✓ Feature flags reset to defaults.')),
+                );
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text('Runtime dynamic feature flags and platform controls', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 14),
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+          child: Column(
+            children: state.globalFlags.entries.map((e) {
+              final isLast = state.globalFlags.keys.last == e.key;
+              return Column(
+                children: [
+                  SwitchListTile(
+                    title: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      e.key.contains('chat')
+                          ? 'Real-time client-coach direct messaging system'
+                          : e.key.contains('calendar')
+                              ? 'Interactive session booking and scheduling module'
+                              : e.key.contains('telemetry')
+                                  ? 'Background event audit and system analytics'
+                                  : 'Global platform feature toggle',
+                      style: const TextStyle(fontSize: 11, color: Colors.white54),
+                    ),
+                    value: e.value,
+                    activeColor: const Color(0xFFFF5722),
+                    onChanged: (val) => state.toggleFlag(e.key, val),
+                  ),
+                  if (!isLast) const Divider(height: 1, color: Colors.white10),
+                ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminAccountsTab(MyPtProvider state) {
+    final allUsers = state.getAllAccounts();
+    final clientCount = allUsers.where((u) => u.role == UserRole.client).length;
+    final coachCount = allUsers.where((u) => u.role == UserRole.coach).length;
+    final headCoachCount = allUsers.where((u) => u.role == UserRole.headCoach).length;
+    final managerCount = allUsers.where((u) => u.role == UserRole.gymMgr).length;
+    final adminCount = allUsers.where((u) => u.role == UserRole.superAdmin).length;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('User Accounts Directory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5722),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              ),
+              icon: const Icon(Icons.swap_horiz, size: 14),
+              label: const Text('Switch User 👑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              onPressed: () => _openMasterUserSwitcherModal(context, state),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text('Master user governance & instant 1-tap account switching', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 14),
+
+        // Summary Metric Cards
+        Row(
+          children: [
+            Expanded(child: _statCard('TOTAL USERS', '${allUsers.length}', 'Registered', const Color(0xFFFF5722))),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('CLIENTS', '$clientCount', 'Trainees', const Color(0xFF29B6F6))),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('COACHES', '$coachCount', 'Trainers', const Color(0xFF00E676))),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('LEADERSHIP', '${headCoachCount + managerCount + adminCount}', 'Admins/Leads', Colors.amber)),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // User Directory List
+        const Text('All Registered User Accounts', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+
+        ...allUsers.map((u) {
+          final isCurrent = state.currentUser?.id == u.id;
+          final isMaster = u.email == 'master@mypt.com';
+          final roleColor = switch (u.role) {
+            UserRole.client => const Color(0xFF29B6F6),
+            UserRole.coach => const Color(0xFFFF5722),
+            UserRole.headCoach => const Color(0xFFFFD54F),
+            UserRole.gymMgr => const Color(0xFFAB47BC),
+            UserRole.superAdmin => const Color(0xFF00E676),
+          };
+
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            color: isCurrent ? const Color(0xFF21262D) : const Color(0xFF161B22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(
+                color: isCurrent ? const Color(0xFFFF5722) : Colors.white12,
+                width: isCurrent ? 1.5 : 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: roleColor.withOpacity(0.2),
+                        child: Text(
+                          u.name.isNotEmpty ? u.name[0] : '?',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: roleColor),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    u.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: roleColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    u.role.name.toUpperCase(),
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: roleColor),
+                                  ),
+                                ),
+                                if (isMaster) ...[
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('MASTER 👑', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(u.email, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      if (isCurrent)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                          child: const Text('ACTIVE NOW', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        ),
+                    ],
+                  ),
+                  const Divider(height: 18, color: Colors.white12),
+
+                  // Account Details Grid
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (u.role == UserRole.client) ...[
+                        Text('PT Credits: ${u.ptCredits}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        Text('Weight: ${u.currentWeight} kg', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                      ] else if (u.role == UserRole.coach) ...[
+                        Text('Managed Clients: ${state.getClientsForTrainer(u.id).length}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                        Text('Packages: ${state.getPackagesForTrainer(u.id).length}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                      ] else ...[
+                        Text('Dual Roles: ${u.dualRoles?.map((r) => r.name).join(', ') ?? 'None'}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Action Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (u.role == UserRole.client) ...[
+                        TextButton.icon(
+                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                          icon: const Icon(Icons.token_outlined, size: 13, color: Color(0xFF29B6F6)),
+                          label: const Text('Adjust Credits', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
+                          onPressed: () => _openAdjustCreditsDialog(context, state, u),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      if (!isCurrent)
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.person_pin, size: 13),
+                          label: const Text('Impersonate / Switch 👤', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            state.impersonateUser(u);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: const Color(0xFF00E676),
+                                content: Text('👑 Switched to ${u.name} (${u.role.name.toUpperCase()})'),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           );
         }),
       ],
+    );
+  }
+
+  Widget _adminTelemetryTab(MyPtProvider state) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        const Text('System Telemetry & Live Diagnostics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        const Text('Real-time runtime state, audit counters, and event log', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 14),
+
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('RUNTIME METRICS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                const SizedBox(height: 10),
+                _telemetryRow('Active User', '${state.currentUser?.name} (${state.currentUser?.email})'),
+                _telemetryRow('Impersonation Status', state.isImpersonating ? 'Active (Anchored to ${state.originalMasterUser?.name})' : 'Inactive (Direct)'),
+                _telemetryRow('Region & Currency', '${state.userLocation} • ${state.selectedCurrency}'),
+                _telemetryRow('Total Booked Sessions', '${state.sessions.length} sessions recorded'),
+                _telemetryRow('Consultation Requests', '${state.trainerRequests.length} inquiries'),
+                _telemetryRow('Custom Trainer Packages', '${state.packages.length} active packages'),
+                _telemetryRow('Movement Library Entries', '${state.movementLibrary.length} exercises cataloged'),
+                _telemetryRow('Total System Notifications', '${state.notifications.length} in-app alerts'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _telemetryRow(String key, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(key, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+        ],
+      ),
+    );
+  }
+
+  void _openAdjustCreditsDialog(BuildContext context, MyPtProvider state, UserModel client) {
+    final ctrl = TextEditingController(text: client.ptCredits.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF161B22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Adjust Credits: ${client.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Current Balance: ${client.ptCredits} PT Credits', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'New PT Credit Balance',
+                filled: true,
+                fillColor: Color(0xFF0D1117),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white60))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+            onPressed: () {
+              final val = int.tryParse(ctrl.text.trim());
+              if (val != null && val >= 0) {
+                state.updateClientCredits(client.id, val);
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF00E676),
+                    content: Text('✓ Updated ${client.name}\'s PT Credits to $val.'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Save Credits'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- ACTIVE MASTER IMPERSONATION BANNER ---
+  Widget _buildImpersonationBanner(BuildContext context, MyPtProvider state) {
+    final user = state.currentUser!;
+    final origMaster = state.originalMasterUser?.name ?? 'Master Admin';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE65100), Color(0xFFFF5722)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(Icons.admin_panel_settings, color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '👑 Master Impersonating: ${user.name}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        user.role.name.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.amberAccent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${user.email} • Session anchored to $origMaster',
+                  style: const TextStyle(fontSize: 10, color: Colors.white70),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF161B22),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            icon: const Icon(Icons.swap_horiz, size: 13, color: Color(0xFFFF5722)),
+            label: const Text('Switch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () => _openMasterUserSwitcherModal(context, state),
+          ),
+          const SizedBox(width: 6),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFFE65100),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            icon: const Icon(Icons.arrow_back, size: 13, color: Color(0xFFE65100)),
+            label: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              state.returnToMasterAdmin();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Color(0xFF00E676),
+                  content: Text('👑 Exited impersonation. Restored Master Admin account.'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- MASTER USER SWITCHER MODAL (ANY SPECIFIC USER ACCOUNT) ---
+  void _openMasterUserSwitcherModal(BuildContext context, MyPtProvider state) {
+    String searchQuery = '';
+    String selectedRoleFilter = 'All';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final allUsers = state.getAllAccounts();
+
+          final filteredUsers = allUsers.where((u) {
+            final q = searchQuery.trim().toLowerCase();
+            final matchesQuery = q.isEmpty ||
+                u.name.toLowerCase().contains(q) ||
+                u.email.toLowerCase().contains(q) ||
+                u.role.name.toLowerCase().contains(q) ||
+                u.goal.toLowerCase().contains(q);
+
+            final matchesRole = selectedRoleFilter == 'All' ||
+                switch (selectedRoleFilter) {
+                  'Clients' => u.role == UserRole.client,
+                  'Coaches' => u.role == UserRole.coach,
+                  'Head Coaches' => u.role == UserRole.headCoach,
+                  'Managers' => u.role == UserRole.gymMgr,
+                  'Admins' => u.role == UserRole.superAdmin,
+                  _ => true,
+                };
+
+            return matchesQuery && matchesRole;
+          }).toList();
+
+          final clientCount = allUsers.where((u) => u.role == UserRole.client).length;
+          final coachCount = allUsers.where((u) => u.role == UserRole.coach).length;
+          final headCoachCount = allUsers.where((u) => u.role == UserRole.headCoach).length;
+          final managerCount = allUsers.where((u) => u.role == UserRole.gymMgr).length;
+          final adminCount = allUsers.where((u) => u.role == UserRole.superAdmin).length;
+
+          return Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.9),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5722).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.manage_accounts, color: Color(0xFFFF5722), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Master User Switcher 👑', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('Impersonate or test any individual user account', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    if (state.isImpersonating)
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00E676),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        ),
+                        onPressed: () {
+                          state.returnToMasterAdmin();
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: Color(0xFF00E676),
+                              content: Text('👑 Returned to Master Admin account.'),
+                            ),
+                          );
+                        },
+                        child: const Text('Exit to Master', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Search Bar
+                TextField(
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Search by user name, email, or role...',
+                    prefixIcon: const Icon(Icons.search, size: 20, color: Colors.white60),
+                    suffixIcon: searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setModalState(() => searchQuery = ''),
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFF0D1117),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white12)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  onChanged: (val) => setModalState(() => searchQuery = val),
+                ),
+                const SizedBox(height: 10),
+
+                // Role Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _roleFilterChip('All (${allUsers.length})', 'All', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                      const SizedBox(width: 6),
+                      _roleFilterChip('Clients 👤 ($clientCount)', 'Clients', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                      const SizedBox(width: 6),
+                      _roleFilterChip('Coaches 🏋️ ($coachCount)', 'Coaches', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                      const SizedBox(width: 6),
+                      _roleFilterChip('Head Coaches 🥇 ($headCoachCount)', 'Head Coaches', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                      const SizedBox(width: 6),
+                      _roleFilterChip('Managers 🏢 ($managerCount)', 'Managers', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                      const SizedBox(width: 6),
+                      _roleFilterChip('Admins 👑 ($adminCount)', 'Admins', selectedRoleFilter, (sel) => setModalState(() => selectedRoleFilter = sel)),
+                    ],
+                  ),
+                ),
+                const Divider(height: 20, color: Colors.white12),
+
+                // User Cards List
+                Expanded(
+                  child: filteredUsers.isEmpty
+                      ? const Center(
+                          child: Text('No users match the search filter.', style: TextStyle(color: Colors.white54)),
+                        )
+                      : ListView.builder(
+                          itemCount: filteredUsers.length,
+                          itemBuilder: (context, idx) {
+                            final u = filteredUsers[idx];
+                            final isCurrent = state.currentUser?.id == u.id;
+                            final isMaster = u.email == 'master@mypt.com';
+
+                            final roleColor = switch (u.role) {
+                              UserRole.client => const Color(0xFF29B6F6),
+                              UserRole.coach => const Color(0xFFFF5722),
+                              UserRole.headCoach => const Color(0xFFFFD54F),
+                              UserRole.gymMgr => const Color(0xFFAB47BC),
+                              UserRole.superAdmin => const Color(0xFF00E676),
+                            };
+
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              color: isCurrent ? const Color(0xFF21262D) : const Color(0xFF0D1117),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: isCurrent
+                                      ? const Color(0xFFFF5722)
+                                      : isMaster
+                                          ? const Color(0xFF00E676).withOpacity(0.4)
+                                          : Colors.white10,
+                                  width: isCurrent ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: roleColor.withOpacity(0.2),
+                                      child: Text(
+                                        u.name.isNotEmpty ? u.name[0] : '?',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: roleColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  u.name,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                                decoration: BoxDecoration(
+                                                  color: roleColor.withOpacity(0.15),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  u.role.name.toUpperCase(),
+                                                  style: TextStyle(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: roleColor,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (isMaster) ...[
+                                                const SizedBox(width: 4),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF00E676).withOpacity(0.2),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text(
+                                                    'MASTER',
+                                                    style: TextStyle(
+                                                      fontSize: 8.5,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: Color(0xFF00E676),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            u.email,
+                                            style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            u.role == UserRole.client
+                                                ? '${u.ptCredits} PT Credits • ${u.goal}'
+                                                : u.role == UserRole.coach
+                                                    ? 'Assigned to Head Coach: ${u.headCoachId ?? 'None'}'
+                                                    : 'Privilege Level: Full System Access',
+                                            style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (isCurrent)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF00E676).withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          'ACTIVE 👤',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF00E676),
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFFF5722),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        onPressed: () {
+                                          state.impersonateUser(u);
+                                          Navigator.pop(ctx);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: const Color(0xFF00E676),
+                                              content: Text('👑 Switched to ${u.name} (${u.role.name.toUpperCase()})'),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('Switch 👤', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _roleFilterChip(String label, String key, String current, Function(String) onSelect) {
+    final isSel = current == key;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSel,
+      selectedColor: const Color(0xFFFF5722),
+      backgroundColor: const Color(0xFF0D1117),
+      labelStyle: TextStyle(
+        fontSize: 11,
+        fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+        color: isSel ? Colors.white : Colors.white70,
+      ),
+      onSelected: (val) {
+        if (val) onSelect(key);
+      },
     );
   }
 
@@ -6165,7 +7083,54 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 18),
+
+                      // Master User Controls
+                      if (state.isMasterUser || state.isImpersonating || user.role == UserRole.superAdmin) ...[
+                        const Text('MASTER USER CONTROLS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722), letterSpacing: 0.5)),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D1117),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+                          ),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.swap_horiz_rounded, color: Color(0xFFFF5722)),
+                                title: const Text('Switch / Impersonate Any User', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                                subtitle: const Text('Access any client, trainer, head coach, or manager account', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                                trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                                onTap: () {
+                                  Navigator.pop(ctx);
+                                  _openMasterUserSwitcherModal(context, state);
+                                },
+                              ),
+                              if (state.isImpersonating) ...[
+                                const Divider(height: 1, color: Colors.white10),
+                                ListTile(
+                                  leading: const Icon(Icons.admin_panel_settings, color: Color(0xFF00E676)),
+                                  title: const Text('Return to Master Admin', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  subtitle: const Text('Exit impersonation and restore Master Admin session', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                                  trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                                  onTap: () {
+                                    Navigator.pop(ctx);
+                                    state.returnToMasterAdmin();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        backgroundColor: Color(0xFF00E676),
+                                        content: Text('👑 Returned to Master Admin account.'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                      ],
 
                       // Sign Out Button
                       SizedBox(
