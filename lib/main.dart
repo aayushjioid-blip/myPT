@@ -94,7 +94,6 @@ class TrainingPackage {
     this.description = 'Personalized 1-on-1 coaching package',
   });
 
-  // Backward compatibility getter
   double get price => priceInr;
 }
 
@@ -133,7 +132,7 @@ class CurrencyInfo {
   final String symbol;
   final String name;
   final String flag;
-  final double rate; // Rate relative to USD
+  final double rate;
 
   const CurrencyInfo({
     required this.code,
@@ -358,7 +357,6 @@ class MyPtProvider extends ChangeNotifier {
 
   // Pre-configured demo accounts
   final Map<String, UserModel> demoAccounts = {
-    // --- MASTER PRODUCTION SUPERUSER (ALL ROLES) ---
     'master@mypt.com': UserModel(
       id: 'usr_master',
       name: 'Master Admin',
@@ -434,7 +432,7 @@ class MyPtProvider extends ChangeNotifier {
       role: UserRole.client,
       currentWeight: 70.0,
       startingWeight: 74.0,
-      ptCredits: 0,
+      ptCredits: 4,
       goal: 'General Fitness & Muscle Gain',
       trainerId: null,
       trainerApprovalStatus: TrainerApprovalStatus.none,
@@ -595,7 +593,7 @@ class MyPtProvider extends ChangeNotifier {
       role: UserRole.client,
       currentWeight: 70.0,
       startingWeight: 74.0,
-      ptCredits: 0,
+      ptCredits: 4,
       goal: 'General Fitness & Muscle Gain',
       trainerId: null,
       trainerApprovalStatus: TrainerApprovalStatus.none,
@@ -612,51 +610,6 @@ class MyPtProvider extends ChangeNotifier {
       trainerId: 'trn_alex',
       trainerApprovalStatus: TrainerApprovalStatus.approved,
     ),
-    UserModel(
-      id: 'c2',
-      name: 'David Miller',
-      email: 'david.m@mypt.com',
-      role: UserRole.client,
-      currentWeight: 82.0,
-      ptCredits: 8,
-      goal: 'Strength & Powerlifting',
-      trainerId: 'trn_alex',
-      trainerApprovalStatus: TrainerApprovalStatus.approved,
-    ),
-    UserModel(
-      id: 'c3',
-      name: 'Priya Sharma',
-      email: 'priya.s@mypt.com',
-      role: UserRole.client,
-      currentWeight: 58.2,
-      ptCredits: 2,
-      goal: 'Endurance & Core',
-      trainerId: 'usr_khushboo',
-      trainerApprovalStatus: TrainerApprovalStatus.approved,
-    ),
-    UserModel(
-      id: 'c4',
-      name: 'Marcus Sterling',
-      email: 'marcus.s@mypt.com',
-      role: UserRole.client,
-      currentWeight: 91.0,
-      ptCredits: 6,
-      goal: 'Body Recomposition',
-      trainerId: 'usr_khushboo',
-      trainerApprovalStatus: TrainerApprovalStatus.approved,
-    ),
-    UserModel(
-      id: 'usr_khushboo_client',
-      name: 'Khushboo (Client Mode)',
-      email: 'khushboo.client@mypt.com',
-      role: UserRole.client,
-      currentWeight: 56.0,
-      startingWeight: 59.0,
-      ptCredits: 5,
-      goal: 'Athletic Conditioning & Hypertrophy',
-      trainerId: 'trn_alex',
-      trainerApprovalStatus: TrainerApprovalStatus.approved,
-    ),
   ];
 
   List<SessionItem> sessions = [
@@ -667,24 +620,6 @@ class MyPtProvider extends ChangeNotifier {
       date: DateTime.now().add(const Duration(days: 1)),
       timeSlot: '10:00 AM - 11:00 AM',
       focusArea: 'Upper Body Hypertrophy',
-      status: RequestStatus.confirmed,
-    ),
-    SessionItem(
-      id: 's2',
-      clientName: 'David Miller',
-      trainerName: 'Alex Rivera',
-      date: DateTime.now().add(const Duration(days: 2)),
-      timeSlot: '04:00 PM - 05:00 PM',
-      focusArea: 'Deadlift Technique & Core',
-      status: RequestStatus.confirmed,
-    ),
-    SessionItem(
-      id: 's3',
-      clientName: 'Sarah Jenkins',
-      trainerName: 'Alex Rivera',
-      date: DateTime.now().add(const Duration(days: 4)),
-      timeSlot: '02:00 PM - 03:00 PM',
-      focusArea: 'Legs & Squat Biomechanics',
       status: RequestStatus.confirmed,
     ),
     SessionItem(
@@ -744,17 +679,6 @@ class MyPtProvider extends ChangeNotifier {
       perks: ['12 1-on-1 Private Sessions', 'Priority WhatsApp Access', '24/7 Form Guard Audits', 'Custom Nutrition & Supplementation'],
       description: 'Comprehensive transformation covering periodized hypertrophy & posture mastery.',
     ),
-    TrainingPackage(
-      id: 'pkg_rincy_24',
-      trainerId: 'usr_rincy',
-      trainerName: 'Rincy',
-      title: 'Elite Athlete Blueprint (Rincy)',
-      priceInr: 19999.0,
-      sessionsCount: 24,
-      durationWeeks: 24,
-      perks: ['24 1-on-1 Private Sessions', 'Bi-weekly Biomechanics Audit', 'Full Supplementation Protocol', 'Dedicated Head Coach Review'],
-      description: 'Complete high-performance programming for serious strength gains.',
-    ),
 
     // Trainer: Alex Rivera
     TrainingPackage(
@@ -779,17 +703,6 @@ class MyPtProvider extends ChangeNotifier {
       perks: ['12 1-on-1 Coaching Sessions', 'Direct Coach Chat', '24/7 Form Feedback', 'Full Macro Adjustments'],
       description: 'Aggressive fat loss and muscle building routine tailored to your physique.',
     ),
-    TrainingPackage(
-      id: 'pkg_alex_24',
-      trainerId: 'trn_alex',
-      trainerName: 'Alex Rivera',
-      title: 'Elite Physique Transformation (Alex)',
-      priceInr: 21999.0,
-      sessionsCount: 24,
-      durationWeeks: 24,
-      perks: ['24 1-on-1 Coaching Sessions', 'Advanced Periodization', 'Posing & Biomechanics', 'Continuous Performance Tracking'],
-      description: 'High-tier physique sculpting and athletic conditioning.',
-    ),
 
     // Trainer: Kumar
     TrainingPackage(
@@ -801,7 +714,7 @@ class MyPtProvider extends ChangeNotifier {
       sessionsCount: 4,
       durationWeeks: 4,
       perks: ['4 1-on-1 Powerlifting Sessions', 'Deadlift & Squat Form Check', 'Mobility Warmup Protocols'],
-      description: 'Lifting mechanics and raw strength building.',
+      description: 'Lifting mechanics and raw strength building with Coach Kumar.',
     ),
     TrainingPackage(
       id: 'pkg_kumar_12',
@@ -811,8 +724,8 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 9999.0,
       sessionsCount: 12,
       durationWeeks: 12,
-      perks: ['12 1-on-1 Powerlifting Sessions', 'Custom RPE Training Splits', 'Joint Health Protocols', 'WhatsApp Form Review'],
-      description: 'Overcome strength plateaus and increase your squat, bench, and deadlift.',
+      perks: ['12 1-on-1 Powerlifting Sessions', 'Custom RPE Training Splits', 'Joint Health Protocols'],
+      description: 'Overcome strength plateaus and master squat, bench, and deadlift.',
     ),
 
     // Trainer: Khushboo
@@ -825,37 +738,11 @@ class MyPtProvider extends ChangeNotifier {
       sessionsCount: 4,
       durationWeeks: 4,
       perks: ['4 1-on-1 Conditioning Sessions', 'Cardio Conditioning Plan', 'Body Fat Tracking'],
-      description: 'High-energy fat burning and mobility conditioning.',
-    ),
-    TrainingPackage(
-      id: 'pkg_khushboo_12',
-      trainerId: 'usr_khushboo',
-      trainerName: 'Khushboo',
-      title: '12-Week Metabolic Blast (Khushboo)',
-      priceInr: 10499.0,
-      sessionsCount: 12,
-      durationWeeks: 12,
-      perks: ['12 1-on-1 Conditioning Sessions', 'Weekly Check-ins', 'Nutrition Habit Coaching', '24/7 Support'],
-      description: 'Total body conditioning, core sculpting, and sustainable fat loss.',
+      description: 'High-energy fat burning and mobility conditioning with Coach Khushboo.',
     ),
   ];
 
-  List<PackagePurchaseRequest> packagePurchaseRequests = [
-    PackagePurchaseRequest(
-      id: 'ppr_demo_1',
-      clientId: 'usr_sarah',
-      clientName: 'Sarah Jenkins',
-      trainerId: 'trn_alex',
-      trainerName: 'Alex Rivera',
-      packageId: 'pkg_alex_12',
-      packageTitle: '12-Week Body Recomp (Alex)',
-      priceInr: 11999.0,
-      sessionsCount: 12,
-      paymentMethod: 'offline',
-      status: RequestStatus.confirmed,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
+  List<PackagePurchaseRequest> packagePurchaseRequests = [];
 
   List<BodyMeasurementEntry> measurementHistory = [
     BodyMeasurementEntry(
@@ -1008,14 +895,6 @@ class MyPtProvider extends ChangeNotifier {
       type: 'system',
       isRead: true,
     ),
-    AppNotificationItem(
-      id: 'notif_2',
-      title: '💳 Package Active',
-      message: '12-Week Transformation package active (+4 PT credits remaining).',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      type: 'payment',
-      isRead: false,
-    ),
   ];
 
   List<MovementItem> movementLibrary = [
@@ -1025,8 +904,6 @@ class MyPtProvider extends ChangeNotifier {
     MovementItem(name: 'Lat Pulldown (Neutral Grip)', category: 'Back / Pull', defaultSetsReps: '4 sets x 12 reps', equipment: 'Cable Station'),
     MovementItem(name: 'Romanian Deadlift (RDL)', category: 'Hamstrings & Glutes', defaultSetsReps: '3 sets x 10 reps', equipment: 'Barbell or Dumbbells'),
     MovementItem(name: 'Standing Overhead Press (OHP)', category: 'Shoulders', defaultSetsReps: '4 sets x 6 reps', equipment: 'Olympic Barbell'),
-    MovementItem(name: 'Cable Lateral Raises', category: 'Shoulders', defaultSetsReps: '4 sets x 15 reps', equipment: 'Cable Station'),
-    MovementItem(name: 'Barbell Bicep Curls', category: 'Arms', defaultSetsReps: '3 sets x 12 reps', equipment: 'EZ-Bar'),
   ];
 
   Map<String, bool> globalFlags = {
@@ -1048,9 +925,37 @@ class MyPtProvider extends ChangeNotifier {
     return rosterClients.where((c) => c.trainerId == trainerId).toList();
   }
 
-  List<UserModel> getClientsForHeadCoach(String headCoachId) {
-    final squadTrainerIds = getTrainersForHeadCoach(headCoachId).map((t) => t.id).toSet();
-    return rosterClients.where((c) => c.trainerId != null && squadTrainerIds.contains(c.trainerId)).toList();
+  // --- COACH SELECTION WORKFLOW ---
+  void selectPrimaryTrainer(UserModel coach) {
+    if (currentUser == null) return;
+    currentUser!.trainerId = coach.id;
+    currentUser!.trainerApprovalStatus = TrainerApprovalStatus.approved;
+
+    for (final c in rosterClients) {
+      if (c.id == currentUser!.id || c.email.toLowerCase() == currentUser!.email.toLowerCase()) {
+        c.trainerId = coach.id;
+        c.trainerApprovalStatus = TrainerApprovalStatus.approved;
+        break;
+      }
+    }
+
+    addNotification(
+      title: '🎉 Coach ${coach.name} Selected as Primary Trainer',
+      message: 'You have connected with Coach ${coach.name}. You can now schedule 1-on-1 sessions, follow custom workouts, and message your coach.',
+      recipientName: currentUser!.name,
+      recipientRole: UserRole.client,
+      type: 'approval',
+    );
+
+    addNotification(
+      title: '👤 New Trainee Assigned: ${currentUser!.name}',
+      message: '${currentUser!.name} selected you as their primary trainer.',
+      recipientName: coach.name,
+      recipientRole: UserRole.coach,
+      type: 'booking',
+    );
+
+    notifyListeners();
   }
 
   // --- PACKAGES & PURCHASES ---
@@ -1096,38 +1001,28 @@ class MyPtProvider extends ChangeNotifier {
     packagePurchaseRequests.add(req);
 
     if (isOffline) {
-      // Send alert to coach
       addNotification(
         title: '💵 Offline Payment Request from ${currentUser!.name}',
-        message: '${currentUser!.name} requested to purchase "${pkg.title}" (${formatPrice(pkg.priceInr)}). Confirm payment to credit +${pkg.sessionsCount} sessions.',
+        message: '${currentUser!.name} requested to purchase "${pkg.title}" (${formatPrice(pkg.priceInr)}). Confirm payment to credit +${pkg.sessionsCount} PT Credits.',
         recipientName: pkg.trainerName,
         recipientRole: UserRole.coach,
         type: 'payment',
       );
 
-      // Send alert to client
       addNotification(
         title: '⏳ Offline Payment Request Sent',
-        message: 'Your request for "${pkg.title}" was sent to Coach ${pkg.trainerName}. Once Coach confirms receiving payment, ${pkg.sessionsCount} PT sessions will be credited.',
+        message: 'Your request for "${pkg.title}" was sent to Coach ${pkg.trainerName}. Once Coach confirms receipt, +${pkg.sessionsCount} PT Credits will be added.',
         recipientName: currentUser!.name,
         recipientRole: UserRole.client,
         type: 'payment',
       );
     } else {
-      // Instant online payment
       currentUser!.ptCredits += pkg.sessionsCount;
       addNotification(
-        title: '🎉 Package Activated (+${pkg.sessionsCount} Credits)',
-        message: 'Online payment of ${formatPrice(pkg.priceInr)} successful for ${pkg.title}. Total balance: ${currentUser!.ptCredits} sessions.',
+        title: '🎉 Package Activated (+${pkg.sessionsCount} PT Credits)',
+        message: 'Online payment of ${formatPrice(pkg.priceInr)} successful for ${pkg.title}. Total balance: ${currentUser!.ptCredits} PT Credits.',
         recipientName: currentUser!.name,
         recipientRole: UserRole.client,
-        type: 'payment',
-      );
-      addNotification(
-        title: '💰 Client ${currentUser!.name} Purchased Package',
-        message: '${currentUser!.name} paid ${formatPrice(pkg.priceInr)} online for ${pkg.title} (+${pkg.sessionsCount} sessions).',
-        recipientName: pkg.trainerName,
-        recipientRole: UserRole.coach,
         type: 'payment',
       );
     }
@@ -1138,7 +1033,6 @@ class MyPtProvider extends ChangeNotifier {
   void approvePackagePurchase(PackagePurchaseRequest req) {
     req.status = RequestStatus.confirmed;
 
-    // Credit client
     UserModel? client;
     for (final c in rosterClients) {
       if (c.id == req.clientId || c.name.toLowerCase() == req.clientName.toLowerCase()) {
@@ -1155,8 +1049,8 @@ class MyPtProvider extends ChangeNotifier {
     }
 
     addNotification(
-      title: '🎉 Offline Payment Confirmed (+${req.sessionsCount} Credits)',
-      message: 'Coach ${req.trainerName} confirmed receiving your offline payment of ${formatPrice(req.priceInr)} for "${req.packageTitle}". +${req.sessionsCount} sessions added to your balance!',
+      title: '🎉 Payment Confirmed (+${req.sessionsCount} PT Credits)',
+      message: 'Coach ${req.trainerName} confirmed payment for "${req.packageTitle}". +${req.sessionsCount} PT Credits added to your balance!',
       recipientName: req.clientName,
       recipientRole: UserRole.client,
       type: 'payment',
@@ -1194,27 +1088,25 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- SESSIONS & RESCHEDULING ---
+  // --- SESSIONS & BOOKING ---
   void rescheduleSession(SessionItem session, DateTime newDate, String newTimeSlot) {
     session.date = newDate;
     session.timeSlot = newTimeSlot;
     session.status = RequestStatus.confirmed;
 
-    final formatted = DateFormat('EEE, dd MMM yyyy').format(newDate);
+    final formatted = DateFormat('EEEE, dd MMMM yyyy').format(newDate);
 
-    // Notify client
     addNotification(
       title: '🔄 Session Rescheduled',
-      message: 'Your session with Coach ${session.trainerName} was rescheduled to $formatted at $newTimeSlot.',
+      message: 'Your session with Coach ${session.trainerName} was rescheduled to $formatted from $newTimeSlot.',
       recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'booking',
     );
 
-    // Notify coach
     addNotification(
       title: '🔄 Session Rescheduled',
-      message: 'Session with ${session.clientName} was rescheduled to $formatted at $newTimeSlot.',
+      message: 'Session with ${session.clientName} was rescheduled to $formatted from $newTimeSlot.',
       recipientName: session.trainerName,
       recipientRole: UserRole.coach,
       type: 'booking',
@@ -1223,37 +1115,88 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void trainerScheduleSessionForClient({
-    required UserModel client,
-    required DateTime date,
-    required String timeSlot,
-    required String focusArea,
-  }) {
-    final coachName = currentUser?.name ?? 'Alex Rivera';
-    final newSession = SessionItem(
-      id: 's_${DateTime.now().millisecondsSinceEpoch}',
-      clientName: client.name,
-      trainerName: coachName,
-      date: date,
-      timeSlot: timeSlot,
-      focusArea: focusArea,
-      status: RequestStatus.confirmed,
-    );
+  void scheduleSession(SessionItem session) {
+    session.status = RequestStatus.confirmed;
+    sessions.insert(0, session);
 
-    sessions.insert(0, newSession);
-    if (client.ptCredits > 0) {
-      client.ptCredits -= 1;
+    if (currentUser?.role == UserRole.client && currentUser != null && currentUser!.ptCredits > 0) {
+      currentUser!.ptCredits -= 1;
     }
 
-    final formatted = DateFormat('EEE, dd MMM yyyy').format(date);
+    final formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(session.date);
     addNotification(
-      title: '📅 Coach $coachName Booked a Session For You',
-      message: 'Your coach scheduled a 1-on-1 session: "$focusArea" on $formatted at $timeSlot.',
-      recipientName: client.name,
+      title: '✓ Session Booked with Coach ${session.trainerName}',
+      message: 'Your 1-on-1 session ("${session.focusArea}") is confirmed for $formattedDate from ${session.timeSlot}. Cost: 1 PT Credit.',
+      recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'booking',
     );
 
+    addNotification(
+      title: '📅 New Session Booked: ${session.clientName}',
+      message: '${session.clientName} booked a 1-on-1 session for $formattedDate from ${session.timeSlot} (Focus: ${session.focusArea}).',
+      recipientName: session.trainerName,
+      recipientRole: UserRole.coach,
+      type: 'booking',
+    );
+
+    notifyListeners();
+  }
+
+  void approveSession(SessionItem session) {
+    session.status = RequestStatus.confirmed;
+    notifyListeners();
+  }
+
+  void rejectSession(SessionItem session) {
+    session.status = RequestStatus.cancelled;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.name.toLowerCase() == session.clientName.toLowerCase()) {
+        client = c;
+        break;
+      }
+    }
+    if (client != null) {
+      client.ptCredits += 1;
+    } else if (currentUser?.name.toLowerCase() == session.clientName.toLowerCase()) {
+      currentUser?.ptCredits += 1;
+    }
+
+    final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
+    addNotification(
+      title: '❌ Session Cancelled (1 PT Credit Refunded)',
+      message: 'Coach ${session.trainerName} cancelled your booking for $formattedDate at ${session.timeSlot}. 1 PT Credit has been refunded.',
+      recipientName: session.clientName,
+      recipientRole: UserRole.client,
+      type: 'warning',
+    );
+
+    notifyListeners();
+  }
+
+  void acceptRequest(ClientRequestItem req) {
+    req.status = RequestStatus.confirmed;
+    addNotification(
+      title: '✓ Trainee Request Accepted',
+      message: 'You have accepted the consultation request from ${req.clientName}.',
+      recipientName: req.clientName,
+      recipientRole: UserRole.client,
+      type: 'approval',
+    );
+    notifyListeners();
+  }
+
+  void declineRequest(ClientRequestItem req) {
+    req.status = RequestStatus.cancelled;
+    addNotification(
+      title: 'Request Declined',
+      message: 'Your consultation request was declined.',
+      recipientName: req.clientName,
+      recipientRole: UserRole.client,
+      type: 'warning',
+    );
     notifyListeners();
   }
 
@@ -1328,11 +1271,14 @@ class MyPtProvider extends ChangeNotifier {
     required String text,
     required bool isFromTrainer,
   }) {
+    final clean = text.trim();
+    if (clean.isEmpty) return;
+
     final msg = ChatMessageItem(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
       senderName: senderName,
       receiverName: receiverName,
-      text: text,
+      text: clean,
       timestamp: DateTime.now(),
       isFromTrainer: isFromTrainer,
     );
@@ -1340,198 +1286,9 @@ class MyPtProvider extends ChangeNotifier {
 
     addNotification(
       title: '💬 New Message from $senderName',
-      message: text.length > 60 ? '${text.substring(0, 60)}...' : text,
+      message: clean.length > 60 ? '${clean.substring(0, 60)}...' : clean,
       recipientName: receiverName,
       type: 'chat',
-    );
-
-    notifyListeners();
-  }
-
-  // --- RECRUIT / ASSIGN / BOOKING ---
-  void recruitTrainerToSquad({
-    required String name,
-    required String email,
-    required String headCoachId,
-  }) {
-    final trainer = UserModel(
-      id: 'trn_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      email: email,
-      role: UserRole.coach,
-      headCoachId: headCoachId,
-    );
-    allTrainers.add(trainer);
-    demoAccounts[email.toLowerCase()] = trainer;
-    notifyListeners();
-  }
-
-  void assignClientToTrainer({
-    required String clientId,
-    required String trainerId,
-  }) {
-    for (final client in rosterClients) {
-      if (client.id == clientId) {
-        client.trainerId = trainerId;
-        client.trainerApprovalStatus = TrainerApprovalStatus.approved;
-        break;
-      }
-    }
-    notifyListeners();
-  }
-
-  void scheduleSession(SessionItem session) {
-    session.status = RequestStatus.pending;
-    sessions.insert(0, session);
-
-    if (currentUser?.role == UserRole.client && currentUser != null && currentUser!.ptCredits > 0) {
-      currentUser!.ptCredits -= 1;
-    }
-
-    final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
-    addNotification(
-      title: '📅 New Session Request from ${session.clientName}',
-      message: '${session.clientName} requested a 1-on-1 session: "${session.focusArea}" on $formattedDate at ${session.timeSlot}.',
-      recipientName: session.trainerName,
-      recipientRole: UserRole.coach,
-      type: 'booking',
-    );
-
-    notifyListeners();
-  }
-
-  void approveSession(SessionItem session) {
-    session.status = RequestStatus.confirmed;
-
-    final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
-    addNotification(
-      title: '✓ Session Approved by Coach ${session.trainerName}',
-      message: 'Your 1-on-1 session on $formattedDate at ${session.timeSlot} is confirmed!',
-      recipientName: session.clientName,
-      recipientRole: UserRole.client,
-      type: 'approval',
-    );
-
-    notifyListeners();
-  }
-
-  void rejectSession(SessionItem session) {
-    session.status = RequestStatus.cancelled;
-
-    UserModel? client;
-    for (final c in rosterClients) {
-      if (c.name.toLowerCase() == session.clientName.toLowerCase()) {
-        client = c;
-        break;
-      }
-    }
-    if (client != null) {
-      client.ptCredits += 1;
-    } else if (currentUser?.name.toLowerCase() == session.clientName.toLowerCase()) {
-      currentUser?.ptCredits += 1;
-    }
-
-    final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
-    addNotification(
-      title: '❌ Session Declined (1 Credit Refunded)',
-      message: 'Coach ${session.trainerName} was unable to accept your booking for $formattedDate at ${session.timeSlot}. 1 PT credit has been refunded to your balance.',
-      recipientName: session.clientName,
-      recipientRole: UserRole.client,
-      type: 'warning',
-    );
-
-    notifyListeners();
-  }
-
-  void requestTrainerConsultation({
-    required UserModel coach,
-    required String message,
-    required String goal,
-  }) {
-    if (currentUser == null) return;
-    currentUser!.trainerId = coach.id;
-    currentUser!.trainerApprovalStatus = TrainerApprovalStatus.pending;
-    currentUser!.goal = goal;
-
-    final req = ClientRequestItem(
-      id: 'req_${DateTime.now().millisecondsSinceEpoch}',
-      clientName: currentUser!.name,
-      email: currentUser!.email,
-      requestType: '1-on-1 Coaching Consultation: $goal',
-      message: message,
-      date: DateTime.now(),
-      trainerId: coach.id,
-      clientId: currentUser!.id,
-      status: RequestStatus.pending,
-    );
-    trainerRequests.insert(0, req);
-
-    addNotification(
-      title: '🏋️ New Coaching Request from ${currentUser!.name}',
-      message: '${currentUser!.name} requested you as their personal trainer for "$goal". Message: "$message"',
-      recipientName: coach.name,
-      recipientRole: UserRole.coach,
-      type: 'booking',
-    );
-
-    notifyListeners();
-  }
-
-  void acceptRequest(ClientRequestItem req) {
-    req.status = RequestStatus.confirmed;
-
-    UserModel? client;
-    for (final c in rosterClients) {
-      if (c.email.toLowerCase() == req.email.toLowerCase() || (req.clientId != null && c.id == req.clientId)) {
-        client = c;
-        break;
-      }
-    }
-    if (client == null && demoAccounts.containsKey(req.email.toLowerCase())) {
-      client = demoAccounts[req.email.toLowerCase()];
-    }
-
-    if (client != null) {
-      client.trainerId = currentUser?.id ?? 'usr_rincy';
-      client.trainerApprovalStatus = TrainerApprovalStatus.approved;
-    }
-
-    addNotification(
-      title: '🎉 Coach ${currentUser?.name ?? 'Alex'} Accepted Your Request',
-      message: 'Great news! Coach ${currentUser?.name ?? 'Alex'} accepted your coaching consultation. You can now view their custom packages & schedule sessions.',
-      recipientName: req.clientName,
-      recipientRole: UserRole.client,
-      type: 'approval',
-    );
-
-    notifyListeners();
-  }
-
-  void declineRequest(ClientRequestItem req) {
-    req.status = RequestStatus.cancelled;
-
-    UserModel? client;
-    for (final c in rosterClients) {
-      if (c.email.toLowerCase() == req.email.toLowerCase() || (req.clientId != null && c.id == req.clientId)) {
-        client = c;
-        break;
-      }
-    }
-    if (client == null && demoAccounts.containsKey(req.email.toLowerCase())) {
-      client = demoAccounts[req.email.toLowerCase()];
-    }
-
-    if (client != null) {
-      client.trainerApprovalStatus = TrainerApprovalStatus.rejected;
-      client.trainerId = null;
-    }
-
-    addNotification(
-      title: '❌ Coaching Request Declined',
-      message: 'Coach ${currentUser?.name ?? 'Trainer'} was unable to accept your coaching request at this time.',
-      recipientName: req.clientName,
-      recipientRole: UserRole.client,
-      type: 'warning',
     );
 
     notifyListeners();
@@ -1550,6 +1307,7 @@ class MyPtProvider extends ChangeNotifier {
         name: cleanEmail.split('@').first.toUpperCase(),
         email: cleanEmail,
         role: UserRole.client,
+        ptCredits: 4,
       );
     }
     notifyListeners();
@@ -1562,6 +1320,7 @@ class MyPtProvider extends ChangeNotifier {
       name: name,
       email: cleanEmail,
       role: role,
+      ptCredits: role == UserRole.client ? 4 : 0,
     );
     demoAccounts[cleanEmail] = newUser;
     if (role == UserRole.coach) {
@@ -1660,7 +1419,7 @@ class MyPtApp extends StatelessWidget {
 }
 
 // ============================================================================
-// 4. AUTH SCREEN (SIGN IN / SIGN UP)
+// 4. AUTH SCREEN (WITH PROPER VALIDATION STATE & ZERO PREMATURE ERRORS)
 // ============================================================================
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -1673,6 +1432,8 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   bool isSignUp = false;
   bool _obscurePassword = true;
+  bool _submitted = false; // Prevents premature error display on initial load
+
   late final TextEditingController emailCtrl;
   late final TextEditingController passCtrl;
   final nameCtrl = TextEditingController();
@@ -1696,13 +1457,14 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<MyPtProvider>(context, listen: false);
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+            autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1763,7 +1525,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             _demoButton('👤 Sarah (Client)', 'sarah@mypt.com', 'client123', state),
                             _demoButton('👤 Sourabh (Client)', 'sourabh@mypt.com', 'client123', state),
-                            _demoButton('👤 New Trainee (No Coach)', 'newclient@mypt.com', 'client123', state),
+                            _demoButton('👤 New Trainee', 'newclient@mypt.com', 'client123', state),
                             _demoButton('⚡ Rincy (Coach)', 'rincy@mypt.com', 'trainer123', state),
                             _demoButton('🏋️ Alex (Coach)', 'alex@mypt.com', 'coach123', state),
                             _demoButton('🏋️ Kumar (Coach)', 'kumar@mypt.com', 'trainer123', state),
@@ -1866,6 +1628,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () {
+                      setState(() => _submitted = true);
                       if (!_formKey.currentState!.validate()) return;
                       if (isSignUp) {
                         state.register(
@@ -1888,7 +1651,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
                 Center(
                   child: TextButton(
-                    onPressed: () => setState(() => isSignUp = !isSignUp),
+                    onPressed: () {
+                      setState(() {
+                        isSignUp = !isSignUp;
+                        _submitted = false;
+                      });
+                    },
                     child: Text(
                       isSignUp ? 'Already have an account? Sign In' : 'New to myPT? Create Account',
                       style: const TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.w600),
@@ -2018,7 +1786,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final int safeTabIndex = _tabIndex.clamp(0, navTabs.length - 1);
 
     return Scaffold(
-      extendBody: true, // Allows content behind glass navigation bar
+      extendBody: true,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(state.isDevMode ? 116 : 65),
         child: SafeArea(
@@ -2046,7 +1814,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     ),
                     const SizedBox(width: 8),
 
-                    // Location Chip (Tappable)
+                    // Location Chip
                     GestureDetector(
                       onTap: () => _openLocationPromptModal(context, state),
                       child: Container(
@@ -2171,7 +1939,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- APPLE-STYLE LIQUID GLASS BOTTOM NAVIGATION BAR ---
   Widget _buildAppleLiquidGlassBottomNav(List<(IconData, String)> tabs, int activeIndex) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -2286,6 +2053,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     };
   }
 
+  // --- HOME SCREEN (SIMPLIFIED HIERARCHY BASED ON USER TESTING FEEDBACK) ---
   Widget _clientHomeTab(MyPtProvider state) {
     final user = state.currentUser!;
     final userSessions = state.sessions.where((s) => s.clientName.toLowerCase() == user.name.toLowerCase()).toList();
@@ -2301,13 +2069,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
       }
     }
 
-    final isCoachApproved = user.trainerApprovalStatus == TrainerApprovalStatus.approved && assignedTrainer != null;
-    final isCoachPending = user.trainerApprovalStatus == TrainerApprovalStatus.pending;
+    final hasCoach = assignedTrainer != null && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
+    final isPendingCoach = user.trainerApprovalStatus == TrainerApprovalStatus.pending;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
-        // Welcome Header
+        // 1. Who am I?
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -2328,7 +2096,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.fitness_center, size: 14, color: Color(0xFFFF5722)),
+                  const Icon(Icons.token_outlined, size: 14, color: Color(0xFFFF5722)),
                   const SizedBox(width: 4),
                   Text('${user.ptCredits} PT Credits', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFFFF5722))),
                 ],
@@ -2338,18 +2106,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         const SizedBox(height: 16),
 
-        // KPI Stat Cards
+        // 2. What is my current status? (2 Balanced KPI cards)
         Row(
           children: [
-            Expanded(
-              child: _statCard(
-                'REMAINING SESSIONS',
-                '${user.ptCredits}',
-                user.ptCredits > 0 ? 'Active & Ready' : 'Top up credits',
-                const Color(0xFFFF5722),
-              ),
-            ),
-            const SizedBox(width: 10),
             Expanded(
               child: GestureDetector(
                 onTap: () => _openWeightLogDialog(context, state),
@@ -2361,104 +2120,71 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               ),
             ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _statCard(
+                'PT CREDITS',
+                '${user.ptCredits}',
+                user.ptCredits > 0 ? 'Active & Ready' : 'Top up credits',
+                const Color(0xFFFF5722),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // --- CURRENT TRAINER CARD / ONBOARDING STATUS ---
-        if (isCoachApproved) ...[
+        // 3. What should I do next? (Single Primary Hero Section)
+        if (!hasCoach && !isPendingCoach) ...[
+          // State A: No Trainer Selected
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: const Color(0xFF161B22),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
+              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4), width: 1.2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: const Color(0xFF00E676).withOpacity(0.2),
-                      child: Text(
-                        assignedTrainer.name[0],
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5722).withOpacity(0.15),
+                        shape: BoxShape.circle,
                       ),
+                      child: const Icon(Icons.person_search, color: Color(0xFFFF5722), size: 22),
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Coach ${assignedTrainer.name}',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF00E676).withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: const Color(0xFF00E676), width: 0.8),
-                                ),
-                                child: const Text(
-                                  '✓ YOUR TRAINER',
-                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            '⭐ 4.9 Rating • Certified Strength & Conditioning Specialist',
-                            style: TextStyle(color: Colors.white60, fontSize: 11),
-                          ),
+                          Text('Find Your Primary Coach', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          SizedBox(height: 2),
+                          Text('Explore verified coaches in India and select your trainer.', style: TextStyle(color: Colors.white60, fontSize: 12)),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const Divider(height: 20, color: Colors.white12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFFF5722),
-                          side: const BorderSide(color: Color(0xFFFF5722)),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.chat_bubble_outline, size: 14),
-                        label: const Text('Message Coach', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        onPressed: () => _openChatModal(context, state, peerName: assignedTrainer!.name),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5722),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.calendar_month, size: 14),
-                        label: const Text('Schedule', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        onPressed: () => _openScheduleModal(context, state, targetTrainer: assignedTrainer),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                    icon: const Icon(Icons.explore, size: 18),
+                    label: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    onPressed: () => setState(() => _tabIndex = 1),
+                  ),
                 ),
               ],
             ),
           ),
-        ] else if (isCoachPending) ...[
+        ] else if (isPendingCoach) ...[
+          // State B: Coach Request Pending
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -2483,59 +2209,161 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     children: [
                       Text('Coach Approval Pending', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                       SizedBox(height: 2),
-                      Text('Your consultation request is under review. You will be notified once accepted.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                      Text('Your consultation is under review. You will be notified once accepted.', style: TextStyle(color: Colors.white60, fontSize: 11)),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-        ] else ...[
+        ] else if (hasCoach && userSessions.isEmpty) ...[
+          // State C: Coach Selected, No Session Scheduled Yet
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: const Color(0xFF161B22),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+              border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.person_search, color: Color(0xFFFF5722), size: 20),
-                    SizedBox(width: 8),
-                    Text('Step 1: Choose Your Coach', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                    CircleAvatar(
+                      radius: 22,
+                      backgroundColor: const Color(0xFF00E676).withOpacity(0.2),
+                      child: Text(assignedTrainer.name[0], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Ready for your next session?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('Primary Trainer: Coach ${assignedTrainer.name}', style: const TextStyle(color: Color(0xFF00E676), fontSize: 12, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Connect with a certified trainer to unlock personalized training packages and calendar bookings.',
-                  style: TextStyle(color: Colors.white60, fontSize: 12),
-                ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                    icon: const Icon(Icons.explore, size: 16),
-                    label: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    onPressed: () => setState(() => _tabIndex = 1),
-                  ),
+                const Text(
+                  'Book a 1-on-1 private session with your trainer to continue your workout program.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const Divider(height: 20, color: Colors.white12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF5722),
+                          side: const BorderSide(color: Color(0xFFFF5722)),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline, size: 14),
+                        label: const Text('Message Coach', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () => _openChatModal(context, state, peerName: assignedTrainer!.name),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF5722),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                        icon: const Icon(Icons.calendar_month, size: 14),
+                        label: const Text('Book Session 📅', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        onPressed: () => _openScheduleModal(context, state, targetTrainer: assignedTrainer),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+        ] else if (hasCoach && userSessions.isNotEmpty) ...[
+          // State D: Upcoming Confirmed Session Exists
+          () {
+            final nextSession = userSessions.first;
+            return Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Your Next Upcoming Session', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white70)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E676).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('✓ CONFIRMED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(nextSession.focusArea, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${DateFormat('EEEE, dd MMMM yyyy').format(nextSession.date)} • ${nextSession.timeSlot}',
+                    style: const TextStyle(color: Color(0xFFFF5722), fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  Text('Trainer: Coach ${nextSession.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                  const Divider(height: 20, color: Colors.white12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFF5722),
+                            side: const BorderSide(color: Color(0xFFFF5722)),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.chat_bubble_outline, size: 14),
+                          label: const Text('Message Coach', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () => _openChatModal(context, state, peerName: nextSession.trainerName),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
+                          icon: const Icon(Icons.calendar_month, size: 14),
+                          label: const Text('View Schedule', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () => setState(() => _tabIndex = 4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }(),
         ],
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // Upcoming Sessions Header
+        // Upcoming Sessions List
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Your Training Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('All Scheduled Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
               label: const Text('Book New', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
@@ -2552,14 +2380,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF161B22),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: BorderSide(
-                  color: isPending
-                      ? const Color(0xFFFF9800).withOpacity(0.5)
-                      : isConfirmed
-                          ? const Color(0xFF00E676).withOpacity(0.3)
-                          : Colors.white10,
+                  color: isPending ? const Color(0xFFFF9800).withOpacity(0.5) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white10,
                 ),
               ),
               child: Padding(
@@ -2571,14 +2396,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       children: [
                         CircleAvatar(
                           radius: 18,
-                          backgroundColor: isPending
-                              ? const Color(0xFFFF9800).withOpacity(0.15)
-                              : const Color(0xFFFF5722).withOpacity(0.15),
-                          child: Icon(
-                            isPending ? Icons.hourglass_top_rounded : Icons.event,
-                            color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
-                            size: 18,
-                          ),
+                          backgroundColor: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : const Color(0xFFFF5722).withOpacity(0.15),
+                          child: Icon(isPending ? Icons.hourglass_top_rounded : Icons.event, color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722), size: 18),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -2596,24 +2415,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isPending
-                                ? const Color(0xFFFF9800).withOpacity(0.15)
-                                : isConfirmed
-                                    ? const Color(0xFF00E676).withOpacity(0.15)
-                                    : const Color(0xFF21262D),
+                            color: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFF21262D),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white24,
-                              width: 0.8,
-                            ),
                           ),
                           child: Text(
                             isPending ? '⏳ PENDING' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70,
-                            ),
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
                           ),
                         ),
                       ],
@@ -2626,35 +2433,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         Row(
                           children: [
                             TextButton.icon(
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white70,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                              ),
+                              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: Size.zero),
                               icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
                               label: const Text('Reschedule', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
                               onPressed: () => _openRescheduleModal(context, state, s),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             InkWell(
                               onTap: () => _openChatModal(context, state, peerName: s.trainerName),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF21262D),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.white24),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.chat_bubble_outline, size: 12, color: Color(0xFFFF5722)),
-                                    SizedBox(width: 4),
-                                    Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
+                              child: const Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -2666,48 +2453,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
             );
           }),
         ] else ...[
-          InkWell(
-            onTap: () => _openScheduleModal(context, state),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF161B22),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.35), width: 1.2),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5722).withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.calendar_month_outlined, color: Color(0xFFFF5722), size: 28),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text('No upcoming session', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 4),
-                  const Text('Book 1-on-1 sessions with your certified coach.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF5722),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add, size: 14, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text('Click to Schedule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                ],
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: const Center(
+              child: Text(
+                'No upcoming sessions yet. Book a session with your trainer to get started.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -2716,6 +2473,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  // --- DISCOVER TAB (COACH SELECTION WITH 2-STEP CONFIRMATION) ---
   Widget _clientDiscoverTab(MyPtProvider state) {
     final user = state.currentUser!;
     final query = _coachSearchQuery.trim().toLowerCase();
@@ -2740,7 +2498,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       children: [
         const Text('Find Your Personal Coach', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        const Text('Certified trainers in India with personalized 1-on-1 packages.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const Text('Browse certified coaches in India and select your primary trainer.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 14),
 
         // Search Bar
@@ -2801,7 +2559,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
         Row(
           children: [
-            Text('${filteredTrainers.length} coaches available in India', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white54)),
+            Text('${filteredTrainers.length} certified coaches available', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white54)),
             if (_coachSearchQuery.isNotEmpty || _selectedCoachSpecialty != 'All') ...[
               const Spacer(),
               InkWell(
@@ -2821,9 +2579,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
         if (filteredTrainers.isNotEmpty) ...[
           ...filteredTrainers.map((t) {
-            final isCurrentTrainer = user.trainerId == t.id;
-            final isApprovedTrainer = isCurrentTrainer && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
-            final isPendingTrainer = isCurrentTrainer && user.trainerApprovalStatus == TrainerApprovalStatus.pending;
+            final isPrimaryTrainer = user.trainerId == t.id && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
+            final isPendingTrainer = user.trainerId == t.id && user.trainerApprovalStatus == TrainerApprovalStatus.pending;
             final specialties = _getTrainerSpecialties(t);
             final trainerPkgs = state.getPackagesForTrainer(t.id);
 
@@ -2833,8 +2590,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
-                  color: isApprovedTrainer ? const Color(0xFF00E676) : isPendingTrainer ? const Color(0xFFFF9800) : Colors.white10,
-                  width: (isApprovedTrainer || isPendingTrainer) ? 1.5 : 1,
+                  color: isPrimaryTrainer ? const Color(0xFF00E676) : isPendingTrainer ? const Color(0xFFFF9800) : Colors.white10,
+                  width: (isPrimaryTrainer || isPendingTrainer) ? 1.5 : 1,
                 ),
               ),
               child: Padding(
@@ -2847,13 +2604,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor: isApprovedTrainer ? const Color(0xFF00E676).withOpacity(0.2) : const Color(0xFFFF5722).withOpacity(0.2),
+                          backgroundColor: isPrimaryTrainer ? const Color(0xFF00E676).withOpacity(0.2) : const Color(0xFFFF5722).withOpacity(0.2),
                           child: Text(
                             t.name[0],
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: isApprovedTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
+                              color: isPrimaryTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
                             ),
                           ),
                         ),
@@ -2885,8 +2642,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              const Text('Certified Personal Trainer • Strength & Conditioning', style: TextStyle(color: Colors.white54, fontSize: 11)),
-                              if (isApprovedTrainer) ...[
+                              const Text('Certified Strength & Conditioning Specialist', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                              if (isPrimaryTrainer) ...[
                                 const SizedBox(height: 4),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2895,7 +2652,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: const Color(0xFF00E676), width: 0.8),
                                   ),
-                                  child: const Text('✓ YOUR ASSIGNED COACH', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  child: const Text('✓ YOUR PRIMARY TRAINER', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
                                 ),
                               ] else if (isPendingTrainer) ...[
                                 const SizedBox(height: 4),
@@ -2906,7 +2663,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(color: const Color(0xFFFF9800), width: 0.8),
                                   ),
-                                  child: const Text('⏳ COACH APPROVAL PENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                                  child: const Text('⏳ APPROVAL PENDING', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
                                 ),
                               ],
                             ],
@@ -2931,7 +2688,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     if (trainerPkgs.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Packages starting from ${state.formatPrice(trainerPkgs.first.priceInr)}',
+                        '1-on-1 Packages starting from ${state.formatPrice(trainerPkgs.first.priceInr)}',
                         style: const TextStyle(fontSize: 11, color: Color(0xFF00E676), fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -2954,22 +2711,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isApprovedTrainer ? const Color(0xFF00E676) : isPendingTrainer ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              backgroundColor: isPrimaryTrainer ? const Color(0xFF00E676) : const Color(0xFFFF5722),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                             onPressed: () {
-                              if (isApprovedTrainer) {
-                                _openScheduleModal(context, state, targetTrainer: t);
-                              } else if (isPendingTrainer) {
+                              if (isPrimaryTrainer) {
                                 _openScheduleModal(context, state, targetTrainer: t);
                               } else {
-                                _openCoachRequestModal(context, state, t);
+                                _openSelectCoachConfirmationModal(context, state, t);
                               }
                             },
                             child: Text(
-                              isApprovedTrainer ? 'Book Session 📅' : isPendingTrainer ? 'Pending ⏳' : 'Request Coach 🚀',
+                              isPrimaryTrainer ? 'Book Session 📅' : 'Select Coach 🚀',
                               style: TextStyle(
-                                color: isApprovedTrainer ? Colors.black : Colors.white,
+                                color: isPrimaryTrainer ? Colors.black : Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                               ),
@@ -2994,7 +2749,96 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- WORKOUTS TAB WITH CUSTOM WORKOUT CREATION & LIVE LOGGER ---
+  // --- 2-STEP COACH SELECTION CONFIRMATION MODAL ---
+  void _openSelectCoachConfirmationModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    final specialties = _getTrainerSpecialties(coach);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                  child: Text(coach.name[0], style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Select ${coach.name} as primary trainer?', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const Text('Certified Personal Trainer', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24, color: Colors.white12),
+            const Text(
+              'By confirming, Coach will become your assigned primary trainer. You will be able to schedule 1-on-1 sessions, follow personalized workout protocols, and message them directly.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: specialties.map((s) => Chip(label: Text(s, style: const TextStyle(fontSize: 10)), backgroundColor: const Color(0xFF0D1117))).toList(),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      state.selectPrimaryTrainer(coach);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF00E676),
+                          content: Text('🎉 Coach ${coach.name} is now your primary trainer!'),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    },
+                    child: const Text('Confirm Selection ✓', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- WORKOUTS TAB (EXERCISE COMPLETION DIFFERENTIATION) ---
   Widget _clientWorkoutsTab(MyPtProvider state) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
@@ -3028,7 +2872,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: const Text('+ Create Custom Workout Routine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            label: const Text('+ Build / Log Custom Workout', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             onPressed: () => _openCreateWorkoutModal(context, state),
           ),
         ),
@@ -3057,7 +2901,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ),
                     ],
                   ),
-                  Text('Created by: ${routine.createdBy}', style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11)),
+                  Text('Prescribed by: ${routine.createdBy}', style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11)),
                   const Divider(height: 18, color: Colors.white12),
                   ...routine.exercises.map((ex) {
                     return Padding(
@@ -3068,7 +2912,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             icon: Icon(
                               ex.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
                               color: ex.isCompleted ? const Color(0xFF00E676) : Colors.white38,
-                              size: 20,
+                              size: 22,
                             ),
                             onPressed: () {
                               setState(() => ex.isCompleted = !ex.isCompleted);
@@ -3076,7 +2920,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     backgroundColor: const Color(0xFF00E676),
-                                    content: Text('✓ Set completed: ${ex.name} (${ex.sets}x${ex.reps} @ ${ex.weight})'),
+                                    content: Text('✓ Completed ${ex.name} (${ex.sets}x${ex.reps} @ ${ex.weight})'),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -3087,14 +2931,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  ex.name,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: ex.isCompleted ? TextDecoration.lineThrough : null,
-                                    color: ex.isCompleted ? Colors.white54 : Colors.white,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      ex.name,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        decoration: ex.isCompleted ? TextDecoration.lineThrough : null,
+                                        color: ex.isCompleted ? Colors.white54 : Colors.white,
+                                      ),
+                                    ),
+                                    if (ex.isCompleted) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                                        child: const Text('✓ Completed', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 Text(
                                   '${ex.sets} Sets x ${ex.reps} Reps • Target: ${ex.weight} • Rest: ${ex.restSeconds}',
@@ -3116,7 +2972,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- ANALYTICS & CHARTS TAB WITH EXPLICIT MEANING ---
+  // --- ANALYTICS TAB (CLEAR HIERARCHY FOR NUTRITION, SPLITS, PROGRESS) ---
   Widget _clientChartsTab(MyPtProvider state) {
     final user = state.currentUser!;
     final measurements = state.measurementHistory;
@@ -3126,10 +2982,58 @@ class _MainShellScreenState extends State<MainShellScreen> {
       children: [
         const Text('Performance & Body Analytics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        const Text('Real-time body composition, weight drop trend, and session volume.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+        const Text('Current training phase, nutrition targets, and 8-week progress trajectory.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 16),
 
-        // Section 1: Weight Loss & Body Fat Progression Chart (8 Weeks)
+        // Section 1: Current Plan & Nutrition Targets
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Phase 1: Hypertrophy & Fat Loss', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                      child: const Text('ACTIVE PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                const Text('Assigned by primary coach for body recomposition', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                const Divider(height: 20, color: Colors.white12),
+
+                const Text('Daily Nutrition Targets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _macroPill('Calories', '1,950 kcal', const Color(0xFFFF5722)),
+                    const SizedBox(width: 6),
+                    _macroPill('Protein', '150g', const Color(0xFF29B6F6)),
+                    const SizedBox(width: 6),
+                    _macroPill('Carbs', '190g', const Color(0xFF00E676)),
+                    const SizedBox(width: 6),
+                    _macroPill('Fat', '55g', Colors.amber),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                const Text('Weekly Workout Split', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                const Text('• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Section 2: Weight Loss & Body Fat Progression Chart (8 Weeks)
         Card(
           color: const Color(0xFF161B22),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
@@ -3144,10 +3048,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     const Text('📉 Weight & Body Fat Decline (6 Scans)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00E676).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
                       child: const Text('ON TRACK 🎯', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
                     ),
                   ],
@@ -3156,12 +3057,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 const Text('Progress tracking from starting baseline to current check-in.', style: TextStyle(color: Colors.white60, fontSize: 11)),
                 const Divider(height: 20, color: Colors.white12),
 
-                // Visual Bars for Weight Drop
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: measurements.reversed.map((m) {
-                    final normalizedHeight = ((m.weightKg - 60.0) / (70.0 - 60.0)).clamp(0.2, 1.0) * 110.0;
+                    final normalizedHeight = ((m.weightKg - 60.0) / (70.0 - 60.0)).clamp(0.2, 1.0) * 100.0;
                     final dateLabel = DateFormat('dd MMM').format(m.date);
 
                     return Column(
@@ -3189,7 +3089,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Meaning KPI Breakdown
                 Row(
                   children: [
                     Expanded(
@@ -3239,40 +3138,23 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-
-        // Section 2: Weekly Consistency & Volume Load
-        const Card(
-          color: Color(0xFF161B22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16)), side: BorderSide(color: Colors.white12)),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('🔥 Weekly Workout Consistency', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 2),
-                Text('4 of 4 scheduled sessions completed this week (100% adherence)', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                Divider(height: 18, color: Colors.white12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _DayDot('Mon', 'Upper', true),
-                    _DayDot('Tue', 'Legs', true),
-                    _DayDot('Wed', 'Rest', false),
-                    _DayDot('Thu', 'Push', true),
-                    _DayDot('Fri', 'Pull', true),
-                    _DayDot('Sat', 'Core', false),
-                    _DayDot('Sun', 'Rest', false),
-                  ],
-                ),
-                SizedBox(height: 14),
-                Text('Total Tonnage Lifted: 14,250 kg • Average Heart Rate: 138 bpm', style: TextStyle(color: Color(0xFFFF5722), fontSize: 11, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
       ],
+    );
+  }
+
+  static Widget _macroPill(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+            const SizedBox(height: 2),
+            Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -3368,7 +3250,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- PACKAGES TAB WITH TRAINER-SPECIFIC PRICING & OFFLINE PAYMENT CONFIRMATION ---
+  // --- PACKAGES TAB ---
   Widget _clientPackagesTab(MyPtProvider state) {
     final user = state.currentUser!;
     final isApproved = user.trainerApprovalStatus == TrainerApprovalStatus.approved && user.trainerId != null;
@@ -3388,7 +3270,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
-        // Pricing Region Bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
@@ -3426,7 +3307,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
         const SizedBox(height: 16),
 
         if (!isApproved) ...[
-          // Guard: No Trainer Assigned Yet
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -3473,7 +3353,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'Balance: ${user.ptCredits} Credits',
+                  'Balance: ${user.ptCredits} PT Credits',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                 ),
               ),
@@ -3678,12 +3558,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 Text(coach.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
               ],
             ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('+ Book for Client', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              onPressed: () => _openTrainerBookClientModal(context, state),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -3699,7 +3573,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Offline Payment Approvals Section (If Any)
         if (pendingOfflinePayments.isNotEmpty) ...[
           Container(
             padding: const EdgeInsets.all(14),
@@ -3729,7 +3602,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('${payReq.clientName} - ${payReq.packageTitle}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              Text('Amount: ${state.formatPrice(payReq.priceInr)} • +${payReq.sessionsCount} Sessions', style: const TextStyle(color: Color(0xFF00E676), fontSize: 11)),
+                              Text('Amount: ${state.formatPrice(payReq.priceInr)} • +${payReq.sessionsCount} PT Credits', style: const TextStyle(color: Color(0xFF00E676), fontSize: 11)),
                             ],
                           ),
                         ),
@@ -3967,7 +3840,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: Text(client.name[0], style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                 ),
                 title: Text(client.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('Goal: ${client.goal} • ${client.ptCredits} Credits Left'),
+                subtitle: Text('Goal: ${client.goal} • ${client.ptCredits} PT Credits Left'),
                 trailing: IconButton(
                   icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFFF5722), size: 20),
                   onPressed: () => _openChatModal(context, state, peerName: client.name),
@@ -4045,7 +3918,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- COACH PACKAGES TAB (CUSTOM TRAINER PACKAGES CREATION & EDITING) ---
   Widget _coachPackagesTab(MyPtProvider state) {
     final coach = state.currentUser!;
     final myPkgs = state.getPackagesForTrainer(coach.id);
@@ -4162,7 +4034,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
   // 9. MODALS & BOTTOM SHEETS
   // ============================================================================
 
-  // --- LOCATION PROMPT MODAL ---
   void _openLocationPromptModal(BuildContext context, MyPtProvider state) {
     final indianCities = ['Bengaluru', 'Mumbai', 'Delhi NCR', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad', 'Chandigarh'];
     showModalBottomSheet(
@@ -4213,7 +4084,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- CURRENCY SELECTOR MODAL ---
   void _openCurrencySelector(BuildContext context, MyPtProvider state) {
     showModalBottomSheet(
       context: context,
@@ -4245,7 +4115,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- PURCHASE OPTIONS MODAL (OFFLINE PAYMENT APPROVAL OR INSTANT ONLINE) ---
   void _openPurchaseOptionsModal(BuildContext context, MyPtProvider state, TrainingPackage pkg) {
     showModalBottomSheet(
       context: context,
@@ -4267,13 +4136,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ],
             ),
             const SizedBox(height: 4),
-            Text('+${pkg.sessionsCount} Sessions • Coach ${pkg.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            Text('+${pkg.sessionsCount} PT Credits • Coach ${pkg.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
             const Divider(height: 20, color: Colors.white12),
 
             const Text('Choose Payment Method', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
             const SizedBox(height: 10),
 
-            // Option 1: Offline Payment / Direct to Trainer
             InkWell(
               onTap: () {
                 state.requestPackagePurchase(pkg, 'offline');
@@ -4281,7 +4149,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: const Color(0xFFFF9800),
-                    content: Text('⏳ Offline payment request sent to Coach ${pkg.trainerName}. Once approved, sessions will be credited.'),
+                    content: Text('⏳ Offline payment request sent to Coach ${pkg.trainerName}. Once approved, +${pkg.sessionsCount} PT Credits will be added.'),
                     duration: const Duration(seconds: 4),
                   ),
                 );
@@ -4304,7 +4172,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         children: [
                           Text('💵 Payment Taken Offline (Cash / Direct UPI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
                           SizedBox(height: 2),
-                          Text('Pay trainer directly. Coach confirms receipt to activate sessions.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                          Text('Pay trainer directly. Coach confirms receipt to activate PT credits.', style: TextStyle(color: Colors.white60, fontSize: 11)),
                         ],
                       ),
                     ),
@@ -4315,7 +4183,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
             const SizedBox(height: 10),
 
-            // Option 2: Instant Online UPI / Card
             InkWell(
               onTap: () {
                 state.requestPackagePurchase(pkg, 'online');
@@ -4323,7 +4190,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: const Color(0xFF00E676),
-                    content: Text('🎉 Instant Online Payment Successful! +${pkg.sessionsCount} PT Credits activated.'),
+                    content: Text('🎉 Instant Online Payment Successful! +${pkg.sessionsCount} PT Credits added.'),
                     duration: const Duration(seconds: 4),
                   ),
                 );
@@ -4346,7 +4213,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         children: [
                           Text('⚡ Instant Online / UPI Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
                           SizedBox(height: 2),
-                          Text('Immediate activation and credit deposit.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                          Text('Immediate activation and PT credit deposit.', style: TextStyle(color: Colors.white60, fontSize: 11)),
                         ],
                       ),
                     ),
@@ -4361,7 +4228,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- RESCHEDULING MODAL (1-HOUR SLOTS 5 AM - 10 PM) ---
   void _openRescheduleModal(BuildContext context, MyPtProvider state, SessionItem session) {
     DateTime selectedDate = session.date;
     String selectedSlot = session.timeSlot;
@@ -4402,7 +4268,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: List.generate(7, (i) {
+                    children: List.generate(14, (i) {
                       final d = DateTime.now().add(Duration(days: i + 1));
                       final isSel = selectedDate.day == d.day && selectedDate.month == d.month;
                       return Padding(
@@ -4421,7 +4287,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                const Text('Select New Time Slot (1-Hour)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const Text('Select New Time Slot (1-Hour Duration)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -4452,7 +4318,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: const Color(0xFF00E676),
-                          content: Text('✓ Session rescheduled to ${DateFormat('dd MMM').format(selectedDate)} at $selectedSlot!'),
+                          content: Text('✓ Session rescheduled to ${DateFormat('EEEE, dd MMM').format(selectedDate)} at $selectedSlot!'),
                         ),
                       );
                     },
@@ -4467,20 +4333,60 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- TRAINER SCHEDULE FOR CLIENT MODAL ---
-  void _openTrainerBookClientModal(BuildContext context, MyPtProvider state) {
-    final coach = state.currentUser!;
-    final myClients = state.getClientsForTrainer(coach.id);
+  // --- DYNAMIC BOOKING FLOW (14 DAYS + CALENDAR PICKER + CONFIRMATION REVIEW MODAL) ---
+  void _openScheduleModal(BuildContext context, MyPtProvider state, {UserModel? targetTrainer}) {
+    final user = state.currentUser;
+    if (user == null) return;
 
-    if (myClients.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No assigned clients available to book for.')));
-      return;
+    // Check if client has a trainer
+    UserModel? trainer = targetTrainer;
+    if (trainer == null && user.trainerId != null) {
+      for (final t in state.allTrainers) {
+        if (t.id == user.trainerId) {
+          trainer = t;
+          break;
+        }
+      }
     }
 
-    UserModel selectedClient = myClients.first;
+    if (user.role == UserRole.client) {
+      if (trainer == null || user.trainerApprovalStatus != TrainerApprovalStatus.approved) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFFF9800),
+            content: Text('Please select your primary coach first before scheduling a session.'),
+          ),
+        );
+        setState(() => _tabIndex = 1); // Open Discover tab
+        return;
+      }
+      if (user.ptCredits <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFFF9800),
+            content: Text('You have 0 PT Credits available. Please view training packages to top up credits.'),
+          ),
+        );
+        setState(() => _tabIndex = 6); // Open Packages tab
+        return;
+      }
+    }
+
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     String selectedSlot = '10:00 AM - 11:00 AM';
     String focus = 'Hypertrophy & Form';
+
+    final timeSlots = [
+      '05:00 AM - 06:00 AM', '05:30 AM - 06:30 AM', '06:00 AM - 07:00 AM', '06:30 AM - 07:30 AM',
+      '07:00 AM - 08:00 AM', '07:30 AM - 08:30 AM', '08:00 AM - 09:00 AM', '08:30 AM - 09:30 AM',
+      '09:00 AM - 10:00 AM', '09:30 AM - 10:30 AM', '10:00 AM - 11:00 AM', '10:30 AM - 11:30 AM',
+      '11:00 AM - 12:00 PM', '11:30 AM - 12:30 PM', '12:00 PM - 01:00 PM', '12:30 PM - 01:30 PM',
+      '01:00 PM - 02:00 PM', '01:30 PM - 02:30 PM', '02:00 PM - 03:00 PM', '02:30 PM - 03:30 PM',
+      '03:00 PM - 04:00 PM', '03:30 PM - 04:30 PM', '04:00 PM - 05:00 PM', '04:30 PM - 05:30 PM',
+      '05:00 PM - 06:00 PM', '05:30 PM - 06:30 PM', '06:00 PM - 07:00 PM', '06:30 PM - 07:30 PM',
+      '07:00 PM - 08:00 PM', '07:30 PM - 08:30 PM', '08:00 PM - 09:00 PM', '08:30 PM - 09:30 PM',
+      '09:00 PM - 10:00 PM', '09:30 PM - 10:30 PM', '10:00 PM - 11:00 PM',
+    ];
 
     showModalBottomSheet(
       context: context,
@@ -4489,35 +4395,109 @@ class _MainShellScreenState extends State<MainShellScreen> {
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
+          final coachName = trainer?.name ?? 'Alex Rivera';
+
           return Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Schedule Session for Client', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
                 const SizedBox(height: 14),
-
-                const Text('Select Trainee', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<UserModel>(
-                  value: selectedClient,
-                  decoration: const InputDecoration(filled: true, fillColor: Color(0xFF0D1117), border: OutlineInputBorder()),
-                  items: myClients.map((c) => DropdownMenuItem(value: c, child: Text('${c.name} (${c.ptCredits} Credits Left)'))).toList(),
-                  onChanged: (val) {
-                    if (val != null) setModalState(() => selectedClient = val);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Schedule with Coach $coachName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: const Color(0xFFFF5722).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                      child: Text('${user.ptCredits} PT Credits Left', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 14),
 
-                const Text('Focus Area', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                // Date Selection with 14-day horizontal scroll + Calendar Picker Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Select Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 90)),
+                        );
+                        if (picked != null) {
+                          setModalState(() => selectedDate = picked);
+                        }
+                      },
+                      child: const Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 12, color: Color(0xFFFF5722)),
+                          SizedBox(width: 4),
+                          Text('Pick Calendar Date 📅', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: List.generate(14, (i) {
+                      final d = DateTime.now().add(Duration(days: i + 1));
+                      final isSel = selectedDate.day == d.day && selectedDate.month == d.month && selectedDate.year == d.year;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ChoiceChip(
+                          label: Text(DateFormat('EEE, dd MMM').format(d)),
+                          selected: isSel,
+                          selectedColor: const Color(0xFFFF5722),
+                          backgroundColor: const Color(0xFF0D1117),
+                          labelStyle: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : Colors.white70),
+                          onSelected: (sel) => setModalState(() => selectedDate = d),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Time Slot Selector
+                const Text('Select Time Slot (1-Hour Duration)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: timeSlots.contains(selectedSlot) ? selectedSlot : timeSlots[10],
+                      dropdownColor: const Color(0xFF161B22),
+                      menuMaxHeight: 300,
+                      items: timeSlots.map((slot) => DropdownMenuItem(value: slot, child: Text(slot, style: const TextStyle(fontSize: 13)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedSlot = val);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Workout Focus
+                const Text('Workout Focus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
                 const SizedBox(height: 6),
                 TextFormField(
                   initialValue: focus,
                   decoration: const InputDecoration(filled: true, fillColor: Color(0xFF0D1117), border: OutlineInputBorder()),
                   onChanged: (val) => focus = val.trim(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
 
                 SizedBox(
                   width: double.infinity,
@@ -4525,16 +4505,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
                     onPressed: () {
-                      state.trainerScheduleSessionForClient(client: selectedClient, date: selectedDate, timeSlot: selectedSlot, focusArea: focus);
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: const Color(0xFF00E676),
-                          content: Text('✓ Session booked for ${selectedClient.name}!'),
-                        ),
+                      _openBookingReviewModal(
+                        context,
+                        state,
+                        coachName: coachName,
+                        date: selectedDate,
+                        timeSlot: selectedSlot,
+                        focusArea: focus,
                       );
                     },
-                    child: const Text('Book & Confirm Session 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Review & Confirm Booking 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -4545,7 +4526,334 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- CREATE CUSTOM WORKOUT MODAL ---
+  // --- REVIEW & CONFIRM BOOKING MODAL (PREVENTS ACCIDENTAL DOUBLE CLICKS) ---
+  void _openBookingReviewModal(
+    BuildContext context,
+    MyPtProvider state, {
+    required String coachName,
+    required DateTime date,
+    required String timeSlot,
+    required String focusArea,
+  }) {
+    final user = state.currentUser;
+    if (user == null) return;
+    bool isProcessing = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setReviewState) {
+          final formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(date);
+
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 14),
+                const Text('Confirm Your Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 12),
+
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white12)),
+                  child: Column(
+                    children: [
+                      _reviewRow('Coach', 'Coach $coachName'),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Date', formattedDate),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Time', timeSlot),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Workout Focus', focusArea),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Duration', '1 Hour (60 mins)'),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Cost', '1 PT Credit (${user.ptCredits - 1} PT Credits remaining after booking)', isHighlight: true),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white24),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: isProcessing ? null : () => Navigator.pop(ctx),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF5722),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: isProcessing
+                            ? null
+                            : () {
+                                setReviewState(() => isProcessing = true);
+                                state.scheduleSession(
+                                  SessionItem(
+                                    id: 's_${DateTime.now().millisecondsSinceEpoch}',
+                                    clientName: user.name,
+                                    trainerName: coachName,
+                                    date: date,
+                                    timeSlot: timeSlot,
+                                    focusArea: focusArea,
+                                    status: RequestStatus.confirmed,
+                                  ),
+                                );
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    content: Text('🎉 1-on-1 session confirmed with Coach $coachName for $formattedDate from $timeSlot!'),
+                                    duration: const Duration(seconds: 4),
+                                  ),
+                                );
+                              },
+                        child: Text(
+                          isProcessing ? 'Confirming...' : 'Confirm Booking ✓',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  static Widget _reviewRow(String label, String value, {bool isHighlight = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: isHighlight ? FontWeight.w900 : FontWeight.bold,
+              color: isHighlight ? const Color(0xFF00E676) : Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // --- CHAT MODAL (HONEST PRESENCE & PROPER INPUT HANDLING) ---
+  void _openChatModal(BuildContext context, MyPtProvider state, {required String peerName}) {
+    final textCtrl = TextEditingController();
+    final isTrainer = state.currentUser?.role == UserRole.coach;
+    final myName = state.currentUser?.name ?? 'User';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final messages = state.getMessagesBetween(myName, peerName);
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                        child: Text(peerName.isNotEmpty ? peerName[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Coach $peerName', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text('1-on-1 Direct Chat • Message your coach', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 20, color: Colors.white12),
+
+                  Expanded(
+                    child: messages.isEmpty
+                        ? const Center(child: Text('Say hello! Send a message to your coach.', style: TextStyle(color: Colors.white54)))
+                        : ListView.builder(
+                            itemCount: messages.length,
+                            itemBuilder: (context, idx) {
+                              final m = messages[idx];
+                              final isMe = m.senderName.toLowerCase() == myName.toLowerCase();
+                              return Align(
+                                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isMe ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      Text(m.text, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                                      const SizedBox(height: 2),
+                                      Text(DateFormat('hh:mm a').format(m.timestamp), style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: textCtrl,
+                          decoration: InputDecoration(
+                            hintText: 'Type a message to Coach $peerName...',
+                            filled: true,
+                            fillColor: const Color(0xFF0D1117),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          onChanged: (_) => setModalState(() {}),
+                          onSubmitted: (val) {
+                            if (val.trim().isNotEmpty) {
+                              state.sendChatMessage(senderName: myName, receiverName: peerName, text: val.trim(), isFromTrainer: isTrainer);
+                              textCtrl.clear();
+                              setModalState(() {});
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      CircleAvatar(
+                        backgroundColor: textCtrl.text.trim().isNotEmpty ? const Color(0xFFFF5722) : Colors.white12,
+                        child: IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white, size: 18),
+                          onPressed: textCtrl.text.trim().isEmpty
+                              ? null
+                              : () {
+                                  state.sendChatMessage(senderName: myName, receiverName: peerName, text: textCtrl.text.trim(), isFromTrainer: isTrainer);
+                                  textCtrl.clear();
+                                  setModalState(() {});
+                                },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openCoachProfileModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    final specialties = _getTrainerSpecialties(coach);
+    final packages = state.getPackagesForTrainer(coach.id);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF161B22),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+        padding: const EdgeInsets.all(20),
+        child: ListView(
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                  child: Text(coach.name[0], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Coach ${coach.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('⭐ 4.9 Rating • Certified Trainer in India', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(height: 24, color: Colors.white12),
+
+            const Text('Specialties & Expertise', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: specialties.map((s) => Chip(label: Text(s, style: const TextStyle(fontSize: 11)), backgroundColor: const Color(0xFF0D1117))).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            const Text('Personalized Training Packages', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...packages.map((pkg) {
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: const Color(0xFF0D1117),
+                child: ListTile(
+                  title: Text(pkg.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: Text('+${pkg.sessionsCount} PT Credits • ${pkg.durationWeeks} Weeks Access'),
+                  trailing: Text(state.formatPrice(pkg.priceInr), style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              );
+            }),
+            const SizedBox(height: 16),
+
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _openSelectCoachConfirmationModal(context, state, coach);
+                },
+                child: const Text('Select Coach as Primary Trainer 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openCreateWorkoutModal(BuildContext context, MyPtProvider state) {
     final nameCtrl = TextEditingController(text: 'Legs & Core Power Blast');
     final focusCtrl = TextEditingController(text: 'Quads, Hamstrings & Core');
@@ -4625,7 +4933,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         ),
                       );
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎉 Custom workout saved!')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎉 Custom workout routine saved!')));
                     },
                     child: const Text('Save Workout Routine', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
@@ -4638,7 +4946,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- ADD BODY MEASUREMENT MODAL ---
   void _openAddMeasurementModal(BuildContext context, MyPtProvider state) {
     final weightCtrl = TextEditingController(text: state.currentUser?.currentWeight.toString() ?? '64.5');
     final fatCtrl = TextEditingController(text: '18.2');
@@ -4711,7 +5018,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- CREATE TRAINER PACKAGE MODAL ---
   void _openCreateTrainerPackageModal(BuildContext context, MyPtProvider state, {TrainingPackage? existingPackage}) {
     final titleCtrl = TextEditingController(text: existingPackage?.title ?? '8-Week Biomechanics Masterclass');
     final priceCtrl = TextEditingController(text: existingPackage?.priceInr.toStringAsFixed(0) ?? '7999');
@@ -4737,7 +5043,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
               children: [
                 Expanded(child: TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price in INR (₹)', border: OutlineInputBorder()))),
                 const SizedBox(width: 8),
-                Expanded(child: TextField(controller: sessionsCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Sessions Count', border: OutlineInputBorder()))),
+                Expanded(child: TextField(controller: sessionsCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'PT Credits (Sessions)', border: OutlineInputBorder()))),
                 const SizedBox(width: 8),
                 Expanded(child: TextField(controller: weeksCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Weeks', border: OutlineInputBorder()))),
               ],
@@ -4778,7 +5084,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- NOTIFICATION DRAWER / MODAL ---
   void _openNotificationModal(BuildContext context, MyPtProvider state) {
     final notifs = state.currentNotifications;
 
@@ -4836,386 +5141,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- 1-ON-1 CHAT MODAL ---
-  void _openChatModal(BuildContext context, MyPtProvider state, {required String peerName}) {
-    final textCtrl = TextEditingController();
-    final isTrainer = state.currentUser?.role == UserRole.coach;
-    final myName = state.currentUser?.name ?? 'User';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF161B22),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final messages = state.getMessagesBetween(myName, peerName);
-
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              height: MediaQuery.of(ctx).size.height * 0.75,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                        child: Text(peerName.isNotEmpty ? peerName[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(peerName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          const Text('Online • 1-on-1 Direct Chat', style: TextStyle(fontSize: 11, color: Color(0xFF00E676))),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20, color: Colors.white12),
-
-                  Expanded(
-                    child: messages.isEmpty
-                        ? const Center(child: Text('Say hello! Send your first message.', style: TextStyle(color: Colors.white54)))
-                        : ListView.builder(
-                            itemCount: messages.length,
-                            itemBuilder: (context, idx) {
-                              final m = messages[idx];
-                              final isMe = m.senderName.toLowerCase() == myName.toLowerCase();
-                              return Align(
-                                alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isMe ? const Color(0xFFFF5722) : const Color(0xFF21262D),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m.text, style: const TextStyle(fontSize: 13, color: Colors.white)),
-                                      const SizedBox(height: 2),
-                                      Text(DateFormat('hh:mm a').format(m.timestamp), style: const TextStyle(fontSize: 9, color: Colors.white54)),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-
-                  // Message Input
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: textCtrl,
-                          decoration: InputDecoration(
-                            hintText: 'Type a message to $peerName...',
-                            filled: true,
-                            fillColor: const Color(0xFF0D1117),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                          onSubmitted: (val) {
-                            if (val.trim().isNotEmpty) {
-                              state.sendChatMessage(senderName: myName, receiverName: peerName, text: val.trim(), isFromTrainer: isTrainer);
-                              textCtrl.clear();
-                              setModalState(() {});
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFFFF5722),
-                        child: IconButton(
-                          icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                          onPressed: () {
-                            if (textCtrl.text.trim().isNotEmpty) {
-                              state.sendChatMessage(senderName: myName, receiverName: peerName, text: textCtrl.text.trim(), isFromTrainer: isTrainer);
-                              textCtrl.clear();
-                              setModalState(() {});
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // --- COACH PROFILE MODAL ---
-  void _openCoachProfileModal(BuildContext context, MyPtProvider state, UserModel coach) {
-    final specialties = _getTrainerSpecialties(coach);
-    final packages = state.getPackagesForTrainer(coach.id);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF161B22),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
-        padding: const EdgeInsets.all(20),
-        child: ListView(
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                  child: Text(coach.name[0], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Coach ${coach.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('⭐ 4.9 Rating • 8+ Years Coaching in India', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                  ],
-                ),
-              ],
-            ),
-            const Divider(height: 24, color: Colors.white12),
-
-            const Text('Specialties & Expertise', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: specialties.map((s) => Chip(label: Text(s, style: const TextStyle(fontSize: 11)), backgroundColor: const Color(0xFF0D1117))).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            const Text('Personalized Training Packages', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ...packages.map((pkg) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                color: const Color(0xFF0D1117),
-                child: ListTile(
-                  title: Text(pkg.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: Text('+${pkg.sessionsCount} Sessions • ${pkg.durationWeeks} Weeks'),
-                  trailing: Text(state.formatPrice(pkg.priceInr), style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 14)),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _openCoachRequestModal(context, state, coach);
-                },
-                child: const Text('Request Coach Consultation 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- COACH REQUEST MODAL ---
-  void _openCoachRequestModal(BuildContext context, MyPtProvider state, UserModel coach) {
-    final msgCtrl = TextEditingController(text: 'Hi Coach ${coach.name}, I want to achieve my body recomposition and strength goals.');
-    final goalCtrl = TextEditingController(text: 'Hypertrophy & Fat Loss');
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF161B22),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom + 20, left: 20, right: 20, top: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Request Coach ${coach.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            TextField(controller: goalCtrl, decoration: const InputDecoration(labelText: 'Your Fitness Goal', border: OutlineInputBorder())),
-            const SizedBox(height: 8),
-            TextField(controller: msgCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Message for Coach', border: OutlineInputBorder())),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                onPressed: () {
-                  state.requestTrainerConsultation(coach: coach, message: msgCtrl.text.trim(), goal: goalCtrl.text.trim());
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: const Color(0xFF00E676),
-                      content: Text('🎉 Consultation request sent to Coach ${coach.name}!'),
-                    ),
-                  );
-                },
-                child: const Text('Send Request 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- SCHEDULE SESSION MODAL ---
-  void _openScheduleModal(BuildContext context, MyPtProvider state, {UserModel? targetTrainer}) {
-    final user = state.currentUser;
-    if (user == null) return;
-
-    if (user.role == UserRole.client) {
-      if (user.trainerId == null || user.trainerApprovalStatus != TrainerApprovalStatus.approved) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select and get approved by a coach before booking.')));
-        return;
-      }
-      if (user.ptCredits <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please purchase a training package to get PT credits.')));
-        return;
-      }
-    }
-
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-    String selectedSlot = '10:00 AM - 11:00 AM';
-    String focus = 'Hypertrophy & Form';
-
-    final timeSlots = [
-      '05:00 AM - 06:00 AM', '05:30 AM - 06:30 AM', '06:00 AM - 07:00 AM', '06:30 AM - 07:30 AM',
-      '07:00 AM - 08:00 AM', '07:30 AM - 08:30 AM', '08:00 AM - 09:00 AM', '08:30 AM - 09:30 AM',
-      '09:00 AM - 10:00 AM', '09:30 AM - 10:30 AM', '10:00 AM - 11:00 AM', '10:30 AM - 11:30 AM',
-      '11:00 AM - 12:00 PM', '11:30 AM - 12:30 PM', '12:00 PM - 01:00 PM', '12:30 PM - 01:30 PM',
-      '01:00 PM - 02:00 PM', '01:30 PM - 02:30 PM', '02:00 PM - 03:00 PM', '02:30 PM - 03:30 PM',
-      '03:00 PM - 04:00 PM', '03:30 PM - 04:30 PM', '04:00 PM - 05:00 PM', '04:30 PM - 05:30 PM',
-      '05:00 PM - 06:00 PM', '05:30 PM - 06:30 PM', '06:00 PM - 07:00 PM', '06:30 PM - 07:30 PM',
-      '07:00 PM - 08:00 PM', '07:30 PM - 08:30 PM', '08:00 PM - 09:00 PM', '08:30 PM - 09:30 PM',
-      '09:00 PM - 10:00 PM', '09:30 PM - 10:30 PM', '10:00 PM - 11:00 PM',
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF161B22),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Schedule 1-on-1 Training Session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-
-                const Text('Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(5, (i) {
-                      final d = DateTime.now().add(Duration(days: i + 1));
-                      final isSel = selectedDate.day == d.day && selectedDate.month == d.month;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(DateFormat('EEE, dd MMM').format(d)),
-                          selected: isSel,
-                          selectedColor: const Color(0xFFFF5722),
-                          backgroundColor: const Color(0xFF0D1117),
-                          labelStyle: TextStyle(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? Colors.white : Colors.white70),
-                          onSelected: (sel) => setModalState(() => selectedDate = d),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                const Text('Time Slot (1-Hour Duration)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: timeSlots.contains(selectedSlot) ? selectedSlot : timeSlots[10],
-                      dropdownColor: const Color(0xFF161B22),
-                      menuMaxHeight: 300,
-                      items: timeSlots.map((slot) => DropdownMenuItem(value: slot, child: Text(slot, style: const TextStyle(fontSize: 13)))).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => selectedSlot = val);
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                const Text('Workout Focus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                TextFormField(
-                  initialValue: focus,
-                  decoration: const InputDecoration(filled: true, fillColor: Color(0xFF0D1117), border: OutlineInputBorder()),
-                  onChanged: (val) => focus = val.trim(),
-                ),
-                const SizedBox(height: 18),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                    onPressed: () {
-                      final trainerName = targetTrainer?.name ?? 'Alex Rivera';
-                      state.scheduleSession(
-                        SessionItem(
-                          id: 's_${DateTime.now().millisecondsSinceEpoch}',
-                          clientName: user.name,
-                          trainerName: trainerName,
-                          date: selectedDate,
-                          timeSlot: selectedSlot,
-                          focusArea: focus,
-                          status: RequestStatus.pending,
-                        ),
-                      );
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: const Color(0xFF00E676),
-                          content: Text('🎉 Session request submitted to Coach $trainerName!'),
-                        ),
-                      );
-                    },
-                    child: const Text('Confirm Booking (-1 Credit) 📅', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // --- PROFILE MODAL ---
   void _openProfileModal(BuildContext context, MyPtProvider state) {
     final user = state.currentUser;
     if (user == null) return;
@@ -5290,7 +5215,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- WEIGHT LOG DIALOG ---
   void _openWeightLogDialog(BuildContext context, MyPtProvider state) {
     final ctrl = TextEditingController(text: state.currentUser?.currentWeight.toString() ?? '64.5');
     showDialog(
@@ -5352,31 +5276,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
           Text('$current ($change)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00E676), fontSize: 13)),
         ],
       ),
-    );
-  }
-}
-
-// --- HELPER WIDGETS ---
-class _DayDot extends StatelessWidget {
-  final String day;
-  final String label;
-  final bool done;
-
-  const _DayDot(this.day, this.label, this.done);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 14,
-          backgroundColor: done ? const Color(0xFF00E676) : const Color(0xFF21262D),
-          child: Icon(done ? Icons.check : Icons.circle, size: 14, color: done ? Colors.black : Colors.white24),
-        ),
-        const SizedBox(height: 4),
-        Text(day, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
-      ],
     );
   }
 }
