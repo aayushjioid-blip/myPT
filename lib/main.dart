@@ -9370,10 +9370,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       Container(width: 1, height: 28, color: Colors.white12),
                       Column(
                         children: [
-                          const Text('Sets Completed', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const Text('Total Sets', style: TextStyle(fontSize: 10, color: Colors.white60)),
                           const SizedBox(height: 2),
                           Text(
-                            '$totalCompletedSets / $totalSetsCount',
+                            '$totalSetsCount Sets',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                           ),
                         ],
@@ -9407,11 +9407,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         color: const Color(0xFF0D1117),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(
-                            color: sets.every((s) => s.isCompleted) && sets.isNotEmpty
-                                ? const Color(0xFF00E676).withOpacity(0.5)
-                                : Colors.white12,
-                          ),
+                          side: const BorderSide(color: Colors.white12),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
@@ -9427,73 +9423,55 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF00E676).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
-                                    ),
-                                    child: Text(
-                                      '⚡ Sum Product: ${ex.formattedSumProduct}',
-                                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                    ),
-                                  ),
+                                  Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
                               const Divider(height: 14, color: Colors.white12),
 
                               // Set Table Header
                               const Row(
                                 children: [
-                                  SizedBox(width: 32, child: Text('SET', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  Expanded(flex: 3, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 8),
-                                  Expanded(flex: 3, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 8),
-                                  Expanded(flex: 3, child: Text('SUM PRODUCT', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 38, child: Text('DONE', textAlign: TextAlign.center, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 44, child: Text('SET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  Expanded(flex: 5, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 12),
+                                  Expanded(flex: 5, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  SizedBox(width: 36, child: Text('DEL', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
                                 ],
                               ),
                               const SizedBox(height: 6),
 
                               // Set Rows
                               ...sets.asMap().entries.map((entry) {
+                                final sIdx = entry.key;
                                 final setItem = entry.value;
 
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 6),
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-                                  decoration: BoxDecoration(
-                                    color: setItem.isCompleted ? const Color(0xFF00E676).withOpacity(0.08) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
                                   child: Row(
                                     children: [
                                       SizedBox(
-                                        width: 32,
+                                        width: 44,
                                         child: Text(
-                                          '#${setItem.setNumber}',
-                                          style: TextStyle(
-                                            fontSize: 11,
+                                          '#${sIdx + 1}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
                                             fontWeight: FontWeight.bold,
-                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white70,
+                                            color: Colors.white70,
                                           ),
                                         ),
                                       ),
                                       Expanded(
-                                        flex: 3,
+                                        flex: 5,
                                         child: SizedBox(
-                                          height: 32,
+                                          height: 34,
                                           child: TextFormField(
                                             initialValue: setItem.weightKg % 1 == 0 ? setItem.weightKg.toInt().toString() : setItem.weightKg.toString(),
                                             textAlign: TextAlign.center,
                                             keyboardType: TextInputType.number,
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                             decoration: const InputDecoration(
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                                               border: OutlineInputBorder(),
                                               isDense: true,
                                             ),
@@ -9504,18 +9482,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 12),
                                       Expanded(
-                                        flex: 3,
+                                        flex: 5,
                                         child: SizedBox(
-                                          height: 32,
+                                          height: 34,
                                           child: TextFormField(
                                             initialValue: setItem.reps.toString(),
                                             textAlign: TextAlign.center,
                                             keyboardType: TextInputType.number,
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                                             decoration: const InputDecoration(
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                              contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                                               border: OutlineInputBorder(),
                                               isDense: true,
                                             ),
@@ -9526,27 +9504,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        flex: 3,
-                                        child: Text(
-                                          '${setItem.volumeKg.toStringAsFixed(0)} kg',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                        ),
-                                      ),
                                       SizedBox(
-                                        width: 38,
+                                        width: 36,
                                         child: IconButton(
-                                          icon: Icon(
-                                            setItem.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
-                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white38,
-                                            size: 20,
-                                          ),
+                                          icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
+                                          tooltip: 'Delete Set',
                                           onPressed: () {
-                                            setSessionState(() => setItem.isCompleted = !setItem.isCompleted);
+                                            setSessionState(() {
+                                              sets.removeAt(sIdx);
+                                              for (int i = 0; i < sets.length; i++) {
+                                                sets[i].setNumber = i + 1;
+                                              }
+                                            });
                                           },
                                         ),
                                       ),
@@ -9555,13 +9526,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 );
                               }),
 
-                              // Add / Remove Set Row Buttons
+                              const Divider(height: 14, color: Colors.white12),
+
+                              // Bottom Card Controls: Add Set on Left & Calculated Sum Product on Right
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   TextButton.icon(
-                                    icon: const Icon(Icons.add, size: 14),
-                                    label: const Text('Add Set', style: TextStyle(fontSize: 11)),
+                                    icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
+                                    label: const Text('Add Set', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                                     onPressed: () {
                                       setSessionState(() {
                                         final last = sets.isNotEmpty ? sets.last : null;
@@ -9575,13 +9548,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                       });
                                     },
                                   ),
-                                  if (sets.length > 1)
-                                    TextButton(
-                                      onPressed: () {
-                                        setSessionState(() => sets.removeLast());
-                                      },
-                                      child: const Text('Remove Set', style: TextStyle(fontSize: 11, color: Colors.redAccent)),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
                                     ),
+                                    child: Text(
+                                      '⚡ Sum Product: ${ex.formattedSumProduct}',
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
