@@ -1188,7 +1188,10 @@ class MyPtProvider extends ChangeNotifier {
     'strict_headcoach_hierarchy': true,
     'dynamic_currency_converter': true,
     'instant_package_checkout': true,
+    'join_live_session': false,
   };
+
+  bool get isLiveSessionEnabled => globalFlags['join_live_session'] ?? false;
 
   // --- HIERARCHY METHODS ---
   List<UserModel> get allClients => rosterClients;
@@ -4236,24 +4239,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       alignment: WrapAlignment.end,
                       children: [
                         if (isConfirmed) ...[
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00E676),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          if (state.isLiveSessionEnabled)
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00E676),
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                              icon: const Icon(Icons.videocam, size: 14, color: Colors.black),
+                              label: const Text('Join Live 📹', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    content: Text('📹 Opening live meeting room with Coach ${s.trainerName}... (${s.meetingLink ?? 'https://meet.mypt.pro'})'),
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              },
                             ),
-                            icon: const Icon(Icons.videocam, size: 14, color: Colors.black),
-                            label: const Text('Join Live 📹', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF00E676),
-                                  content: Text('📹 Opening live meeting room with Coach ${s.trainerName}... (${s.meetingLink ?? 'https://meet.mypt.pro'})'),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            },
-                          ),
                           OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF29B6F6),
@@ -7028,17 +7032,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ),
                   const SizedBox(width: 6),
                 ] else if (isConfirmed) ...[
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), minimumSize: Size.zero),
-                    icon: const Icon(Icons.videocam, size: 12, color: Colors.black),
-                    label: const Text('Join 📹', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(backgroundColor: const Color(0xFF00E676), content: Text('📹 Opening live meeting with ${s.clientName}...')),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 6),
+                  if (state.isLiveSessionEnabled) ...[
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), minimumSize: Size.zero),
+                      icon: const Icon(Icons.videocam, size: 12, color: Colors.black),
+                      label: const Text('Join 📹', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(backgroundColor: const Color(0xFF00E676), content: Text('📹 Opening live meeting with ${s.clientName}...')),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 6),
+                  ],
                 ],
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
@@ -7229,8 +7235,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       _reviewRow('Time Slot', session.timeSlot),
                       const Divider(height: 14, color: Colors.white12),
                       _reviewRow('Duration', '1 Hour (60 mins)'),
-                      const Divider(height: 14, color: Colors.white12),
-                      _reviewRow('Live Room', session.meetingLink ?? 'https://meet.mypt.pro'),
+                      if (state.isLiveSessionEnabled) ...[
+                        const Divider(height: 14, color: Colors.white12),
+                        _reviewRow('Live Room', session.meetingLink ?? 'https://meet.mypt.pro'),
+                      ],
                     ],
                   ),
                 ),
@@ -8343,6 +8351,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       'strict_headcoach_hierarchy' => 'Strict Head Coach Hierarchy',
       'dynamic_currency_converter' => 'Dynamic Currency Converter',
       'instant_package_checkout' => 'Instant Package Checkout',
+      'join_live_session' => 'Live Video Sessions (Join Live 📹)',
       _ => key.replaceAll('_', ' ').split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
     };
   }
@@ -8354,6 +8363,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       'strict_headcoach_hierarchy' => 'Enforce multi-tier coach supervision, approval gates, and facility squad management.',
       'dynamic_currency_converter' => 'Real-time localized price conversion across INR (₹), USD (\$), EUR (€), GBP (£), and AED.',
       'instant_package_checkout' => 'Direct online payment and instant PT credit deposit for personalized training packages.',
+      'join_live_session' => '1-on-1 live video meeting room integration and "Join Live" button on confirmed sessions.',
       _ => 'Runtime dynamic platform feature toggle.',
     };
   }

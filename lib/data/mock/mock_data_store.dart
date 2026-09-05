@@ -60,6 +60,7 @@ class MockDataStore {
     'online_payments': false,
     'trainer_reviews': true,
     'whatsapp_notifications': false,
+    'join_live_session': false,
   };
 
   void setCurrentUser(UserEntity user) {
@@ -159,23 +160,23 @@ class MockDataStore {
 
     // 2. Trainers
     trainers.addAll([
-      TrainerEntity(
+      const TrainerEntity(
         id: 'trn-alex',
         userId: 'usr-trn-1',
         name: 'Alex Rivera',
         verificationStatus: VerificationStatus.verified,
         bio: 'NASM-certified Elite Performance Coach specializing in hypertrophy, mobility, and fat loss.',
         experienceYears: 8,
-        certifications: const ['NASM-CPT', 'CSCS', 'Precision Nutrition L1'],
-        specializations: const ['Hypertrophy', 'Fat Loss', 'Mobility', 'Strength'],
-        skills: const ['Barbell Mastery', 'Postural Restoration', 'Kettlebell Flow'],
-        services: const ['1-on-1 PT', 'Nutrition Consulting', 'Custom Programming'],
-        languages: const ['English', 'Spanish'],
+        certifications: ['NASM-CPT', 'CSCS', 'Precision Nutrition L1'],
+        specializations: ['Hypertrophy', 'Fat Loss', 'Mobility', 'Strength'],
+        skills: ['Barbell Mastery', 'Postural Restoration', 'Kettlebell Flow'],
+        services: ['1-on-1 PT', 'Nutrition Consulting', 'Custom Programming'],
+        languages: ['English', 'Spanish'],
         location: 'Downtown Athletic Club / Hybrid Online',
         trainerCode: 'TRN001',
         upiId: 'alex.rivera@upi',
         mobilePaymentNumber: '+1-555-8822',
-        cancellationPolicy: const CancellationPolicyEntity(
+        cancellationPolicy: CancellationPolicyEntity(
           policyType: CancellationPolicyType.fourHourPolicy,
           gracePeriodHours: 4,
           creditsDeducted: 1,
@@ -183,18 +184,18 @@ class MockDataStore {
         rating: 4.9,
         reviewCount: 38,
       ),
-      TrainerEntity(
+      const TrainerEntity(
         id: 'trn-maya',
         userId: 'usr-trn-2',
         name: 'Maya Lin',
         verificationStatus: VerificationStatus.verified,
         bio: 'Yoga, Calisthenics, and Athletic Functional Conditioning Coach with Olympic lifting background.',
         experienceYears: 6,
-        certifications: const ['ACE-CPT', 'RYT-500 Yoga', 'USAW L1'],
-        specializations: const ['Mobility', 'Functional Training', 'Calisthenics'],
-        skills: const ['Bodyweight Acrobatics', 'Flexibility Training', 'Breathwork'],
-        services: const ['Movement Screen', 'Small Group Calisthenics', '1-on-1 PT'],
-        languages: const ['English', 'Mandarin'],
+        certifications: ['ACE-CPT', 'RYT-500 Yoga', 'USAW L1'],
+        specializations: ['Mobility', 'Functional Training', 'Calisthenics'],
+        skills: ['Bodyweight Acrobatics', 'Flexibility Training', 'Breathwork'],
+        services: ['Movement Screen', 'Small Group Calisthenics', '1-on-1 PT'],
+        languages: ['English', 'Mandarin'],
         location: 'IronCore Fitness Center',
         trainerCode: 'MAYA02',
         upiId: 'maya.lin@upi',
@@ -202,23 +203,23 @@ class MockDataStore {
         rating: 4.95,
         reviewCount: 24,
       ),
-      TrainerEntity(
+      const TrainerEntity(
         id: 'trn-leo',
         userId: 'usr-trn-unverified',
         name: 'Leo Novak',
         verificationStatus: VerificationStatus.unverified, // Hidden from public discovery
         bio: 'Independent boxing and HIIT coach.',
         experienceYears: 3,
-        certifications: const ['Boxing Fundamentals'],
-        specializations: const ['Boxing', 'Conditioning'],
-        skills: const ['Pad Work', 'Heavy Bag Conditioning'],
-        services: const ['Boxing 1-on-1', 'HIIT Cardio'],
-        languages: const ['English'],
+        certifications: ['Boxing Fundamentals'],
+        specializations: ['Boxing', 'Conditioning'],
+        skills: ['Pad Work', 'Heavy Bag Conditioning'],
+        services: ['Boxing 1-on-1', 'HIIT Cardio'],
+        languages: ['English'],
         location: 'Metro Boxing Studio',
         trainerCode: 'LEO007',
         upiId: 'leo.boxing@upi',
         mobilePaymentNumber: '+1-555-3344',
-        cancellationPolicy: const CancellationPolicyEntity(
+        cancellationPolicy: CancellationPolicyEntity(
           policyType: CancellationPolicyType.noPenalty,
           penaltyEnabled: false,
           gracePeriodHours: 0,
