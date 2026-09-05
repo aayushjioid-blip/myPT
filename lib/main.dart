@@ -9752,11 +9752,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const SizedBox(width: 24),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFFF5722),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () {
+                        state.setHasSeenOnboarding(true);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Skip', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFFF5722))),
+                    ),
                     Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-                      onPressed: () => Navigator.pop(ctx),
+                      onPressed: () {
+                        state.setHasSeenOnboarding(true);
+                        Navigator.pop(ctx);
+                      },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -9819,15 +9834,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         child: const Text('Back'),
                       ),
                       const SizedBox(width: 8),
-                    ] else ...[
-                      TextButton(
-                        onPressed: () {
-                          state.setHasSeenOnboarding(true);
-                          Navigator.pop(ctx);
-                        },
-                        child: const Text('Skip Tour', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                      ),
                     ],
+                    TextButton(
+                      onPressed: () {
+                        state.setHasSeenOnboarding(true);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Skip Tour', style: TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w600)),
+                    ),
                     const Spacer(),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
