@@ -4089,22 +4089,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(routine.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF5722).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4), width: 0.8),
-                        ),
-                        child: Text('⚡ Vol: ${routine.formattedTotalVolume}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                      ),
-                    ],
+                  Text(
+                    routine.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
                   ),
                   const SizedBox(height: 2),
                   Row(
@@ -4123,32 +4110,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '${exIdx + 1}. ${ex.name}',
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0D1117),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
-                                ),
-                                child: Text(
-                                  '⚡ Total Weight Lifted: ${ex.formattedSumProduct}',
-                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            '${exIdx + 1}. ${ex.name}',
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             '${ex.sets} Sets x ${ex.reps} Reps${(state.enableExerciseTargetWeight && ex.hasTargetWeight) ? ' • Target: ${ex.weight}' : ''} • Rest: ${ex.restSeconds}',
                             style: const TextStyle(color: Colors.white60, fontSize: 11),
@@ -9376,11 +9346,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(child: Text(ex.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-                                    child: Text('⚡ Target Volume: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
-                                  ),
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
                                     padding: EdgeInsets.zero,
