@@ -3632,7 +3632,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     final hasCoach = assignedTrainer != null && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
     final isPendingCoach = user.trainerApprovalStatus == TrainerApprovalStatus.pending;
-    final trainerPackages = state.getPackagesForTrainer(user.trainerId);
 
     // Accurate dynamic weight delta calculations
     final double weightDiff = user.startingWeight - user.currentWeight;
@@ -3768,134 +3767,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         const SizedBox(height: 16),
 
-        // 3. PACKAGES SECTION (DIRECTLY BELOW PT CREDITS)
-        if (hasCoach) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Packages by Coach ${assignedTrainer.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const Text('Direct personal training packages with custom pricing', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF5722).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '${user.ptCredits} Credits',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          ...trainerPackages.map((p) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: p.sessionsCount == 12 ? const Color(0xFFFF5722).withOpacity(0.6) : Colors.white12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(p.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
-                        Text(state.formatPrice(p.priceInr), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text('+${p.sessionsCount} x 1-on-1 Sessions • Expiry in ${p.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
-                    const SizedBox(height: 4),
-                    Text(p.description, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: p.perks.map((perk) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(6)),
-                        child: Text(perk, style: const TextStyle(fontSize: 9.5, color: Colors.white70)),
-                      )).toList(),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 40,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5722),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () => _openPurchaseOptionsModal(context, state, p),
-                        child: Text('Purchase Package (${state.formatPrice(p.priceInr)}) 💳', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 8),
-        ] else ...[
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF5722).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFFF5722), size: 22),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Personal Trainer Packages', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                      SizedBox(height: 2),
-                      Text('Select a coach in Discover to view customized 1-on-1 PT packages and pricing.', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF5722),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                  ),
-                  onPressed: () => setState(() => _tabIndex = 1),
-                  child: const Text('Discover', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-        ],
-
-        // 4. Primary Hero Section: Active Trainer & Next Steps
+        // 3. Primary Hero Section: Active Trainer & Next Steps
         if (hasCoach) ...[
           // --- ACTIVE PERSONAL TRAINER CARD ---
           Container(
