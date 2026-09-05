@@ -703,7 +703,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 3999.0,
       sessionsCount: 4,
       durationWeeks: 4,
-      perks: ['4 1-on-1 Private Sessions', 'Personalized Macro Blueprint', 'Weekly Body Stat Scan', 'Form Correction Videos'],
+      perks: ['4 x 1-on-1 Private Sessions', 'Personalized Macro Blueprint', 'Weekly Body Stat Scan', 'Form Correction Videos'],
       description: 'Perfect intro to biomechanics and strength foundations with Coach Rincy.',
     ),
     TrainingPackage(
@@ -714,7 +714,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 10999.0,
       sessionsCount: 12,
       durationWeeks: 12,
-      perks: ['12 1-on-1 Private Sessions', 'Priority WhatsApp Access', '24/7 Form Guard Audits', 'Custom Nutrition & Supplementation'],
+      perks: ['12 x 1-on-1 Private Sessions', 'Priority WhatsApp Access', '24/7 Form Guard Audits', 'Custom Nutrition & Supplementation'],
       description: 'Comprehensive transformation covering periodized hypertrophy & posture mastery.',
     ),
 
@@ -727,7 +727,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 4499.0,
       sessionsCount: 4,
       durationWeeks: 4,
-      perks: ['4 1-on-1 Coaching Sessions', 'Custom AI Meal Plan', 'Weekly Body Composition Scan'],
+      perks: ['4 x 1-on-1 Coaching Sessions', 'Custom AI Meal Plan', 'Weekly Body Composition Scan'],
       description: 'Targeted muscle activation & lifting fundamentals with Coach Alex.',
     ),
     TrainingPackage(
@@ -738,7 +738,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 11999.0,
       sessionsCount: 12,
       durationWeeks: 12,
-      perks: ['12 1-on-1 Coaching Sessions', 'Direct Coach Chat', '24/7 Form Feedback', 'Full Macro Adjustments'],
+      perks: ['12 x 1-on-1 Coaching Sessions', 'Direct Coach Chat', '24/7 Form Feedback', 'Full Macro Adjustments'],
       description: 'Aggressive fat loss and muscle building routine tailored to your physique.',
     ),
 
@@ -751,7 +751,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 3499.0,
       sessionsCount: 4,
       durationWeeks: 4,
-      perks: ['4 1-on-1 Powerlifting Sessions', 'Deadlift & Squat Form Check', 'Mobility Warmup Protocols'],
+      perks: ['4 x 1-on-1 Powerlifting Sessions', 'Deadlift & Squat Form Check', 'Mobility Warmup Protocols'],
       description: 'Lifting mechanics and raw strength building with Coach Kumar.',
     ),
     TrainingPackage(
@@ -762,7 +762,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 9999.0,
       sessionsCount: 12,
       durationWeeks: 12,
-      perks: ['12 1-on-1 Powerlifting Sessions', 'Custom RPE Training Splits', 'Joint Health Protocols'],
+      perks: ['12 x 1-on-1 Powerlifting Sessions', 'Custom RPE Training Splits', 'Joint Health Protocols'],
       description: 'Overcome strength plateaus and master squat, bench, and deadlift.',
     ),
 
@@ -775,7 +775,7 @@ class MyPtProvider extends ChangeNotifier {
       priceInr: 3799.0,
       sessionsCount: 4,
       durationWeeks: 4,
-      perks: ['4 1-on-1 Conditioning Sessions', 'Cardio Conditioning Plan', 'Body Fat Tracking'],
+      perks: ['4 x 1-on-1 Conditioning Sessions', 'Cardio Conditioning Plan', 'Body Fat Tracking'],
       description: 'High-energy fat burning and mobility conditioning with Coach Khushboo.',
     ),
   ];
@@ -4260,7 +4260,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('+${p.sessionsCount} 1-on-1 Sessions • ${p.durationWeeks} Weeks Access', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text('+${p.sessionsCount} x 1-on-1 Sessions • Expiry in ${p.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 6),
                     Text(p.description, style: const TextStyle(color: Colors.white54, fontSize: 11)),
                     const SizedBox(height: 12),
@@ -6811,7 +6811,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('${pkg.sessionsCount} 1-on-1 Sessions • Expiry in ${pkg.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    Text('${pkg.sessionsCount} x 1-on-1 Sessions • Expiry in ${pkg.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -9424,7 +9424,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       priceInr: pInr,
                       sessionsCount: count,
                       durationWeeks: wks,
-                      perks: ['$count 1-on-1 Sessions', 'Direct Coach Support', 'Weekly Form Audits', 'Valid for $wks weeks'],
+                      perks: ['$count x 1-on-1 Sessions', 'Direct Coach Support', 'Weekly Form Audits', 'Expiry in $wks weeks'],
                     ),
                   );
                   Navigator.pop(ctx);
