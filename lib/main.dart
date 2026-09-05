@@ -249,6 +249,16 @@ class WorkoutExercise {
     }
     return '${val.toStringAsFixed(0)} kg';
   }
+
+  bool get hasTargetWeight {
+    final w = weight.trim();
+    if (w.isEmpty) return false;
+    final lower = w.toLowerCase();
+    if (lower == 'none' || lower == 'n/a' || lower == '-' || lower == '0' || lower == '0 kg' || lower == '0kg') {
+      return false;
+    }
+    return true;
+  }
 }
 
 class CustomWorkoutRoutine {
@@ -1554,6 +1564,14 @@ class MyPtProvider extends ChangeNotifier {
 
   void setHasSeenOnboarding(bool val) {
     hasSeenOnboarding = val;
+    notifyListeners();
+  }
+
+  // --- FEATURE FLAGS (SUPER ADMIN) ---
+  bool enableExerciseTargetWeight = true;
+
+  void setEnableExerciseTargetWeight(bool val) {
+    enableExerciseTargetWeight = val;
     notifyListeners();
   }
 
@@ -4131,9 +4149,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
                           Text(
-                            '${ex.sets} Sets x ${ex.reps} Reps • Target: ${ex.weight} • Rest: ${ex.restSeconds}',
+                            '${ex.sets} Sets x ${ex.reps} Reps${(state.enableExerciseTargetWeight && ex.hasTargetWeight) ? ' • Target: ${ex.weight}' : ''} • Rest: ${ex.restSeconds}',
                             style: const TextStyle(color: Colors.white60, fontSize: 11),
                           ),
                         ],
@@ -7890,7 +7907,54 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+
+                // Super Admin Governance & Feature Flags Card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D1117),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF5722).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.tune, color: Color(0xFFFF5722), size: 16),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Target Weight Feature Flag',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            Text(
+                              'Display target weights configured by coaches/clients',
+                              style: TextStyle(fontSize: 10, color: Colors.white54),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: state.enableExerciseTargetWeight,
+                        activeColor: const Color(0xFF00E676),
+                        onChanged: (val) {
+                          state.setEnableExerciseTargetWeight(val);
+                          setModalState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Search Bar
                 TextField(
@@ -9315,7 +9379,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-                                    child: Text('⚡ Total Weight Lifted: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                    child: Text('⚡ Target Volume: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
@@ -9329,6 +9393,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               Row(
                                 children: [
                                   Expanded(
+                                    flex: 2,
                                     child: TextFormField(
                                       initialValue: ex.sets,
                                       decoration: const InputDecoration(labelText: 'Sets', isDense: true, border: OutlineInputBorder()),
@@ -9338,6 +9403,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
+                                    flex: 2,
                                     child: TextFormField(
                                       initialValue: ex.reps,
                                       decoration: const InputDecoration(labelText: 'Reps', isDense: true, border: OutlineInputBorder()),
@@ -9346,6 +9412,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
+                                    flex: 3,
                                     child: TextFormField(
                                       initialValue: ex.weight,
                                       decoration: const InputDecoration(labelText: 'Weight', isDense: true, border: OutlineInputBorder()),
@@ -9697,8 +9764,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                           '${exIdx + 1}. ${ex.name}',
                                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                                         ),
-                                        const SizedBox(height: 2),
-                                        Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                                        Text(
+                                          'Rest: ${ex.restSeconds}${(state.enableExerciseTargetWeight && ex.hasTargetWeight) ? ' • Target: ${ex.weight}' : ''}',
+                                          style: const TextStyle(color: Colors.white38, fontSize: 10.5),
+                                        ),
                                       ],
                                     ),
                                   ),
