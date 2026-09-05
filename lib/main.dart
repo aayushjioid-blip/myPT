@@ -371,6 +371,34 @@ class ClientRequestItem {
   });
 }
 
+class MealLogAttachment {
+  final String mealType; // 'Breakfast', 'Lunch', 'Snacks', 'Dinner', 'Extra Meal'
+  final String description;
+  final String? photoUrl;
+  final DateTime mealDate;
+  final int? caloriesKcal;
+  final int? proteinGrams;
+
+  MealLogAttachment({
+    required this.mealType,
+    required this.description,
+    this.photoUrl,
+    required this.mealDate,
+    this.caloriesKcal,
+    this.proteinGrams,
+  });
+
+  String get emoji {
+    final lower = mealType.toLowerCase();
+    if (lower.contains('breakfast')) return '🍳';
+    if (lower.contains('lunch')) return '🥗';
+    if (lower.contains('snack')) return '🥪';
+    if (lower.contains('dinner')) return '🍲';
+    if (lower.contains('extra')) return '🍱';
+    return '🍽️';
+  }
+}
+
 class ChatMessageItem {
   final String id;
   final String senderName;
@@ -378,6 +406,7 @@ class ChatMessageItem {
   final String text;
   final DateTime timestamp;
   final bool isFromTrainer;
+  final MealLogAttachment? mealAttachment;
 
   ChatMessageItem({
     required this.id,
@@ -386,6 +415,7 @@ class ChatMessageItem {
     required this.text,
     required this.timestamp,
     required this.isFromTrainer,
+    this.mealAttachment,
   });
 }
 
@@ -2006,23 +2036,27 @@ class MyPtProvider extends ChangeNotifier {
     required String receiverName,
     required String text,
     required bool isFromTrainer,
+    MealLogAttachment? mealAttachment,
   }) {
     final clean = text.trim();
-    if (clean.isEmpty) return;
+    if (clean.isEmpty && mealAttachment == null) return;
 
     final msg = ChatMessageItem(
       id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
       senderName: senderName,
       receiverName: receiverName,
-      text: clean,
+      text: clean.isEmpty && mealAttachment != null ? '${mealAttachment.emoji} ${mealAttachment.mealType}: ${mealAttachment.description}' : clean,
       timestamp: DateTime.now(),
       isFromTrainer: isFromTrainer,
+      mealAttachment: mealAttachment,
     );
     chatMessages.add(msg);
 
     addNotification(
-      title: '💬 New Message from $senderName',
-      message: clean.length > 60 ? '${clean.substring(0, 60)}...' : clean,
+      title: mealAttachment != null ? '🍽️ Meal Log from $senderName' : '💬 New Message from $senderName',
+      message: clean.isNotEmpty
+          ? (clean.length > 60 ? '${clean.substring(0, 60)}...' : clean)
+          : '${mealAttachment?.emoji} ${mealAttachment?.mealType} picture & log submitted',
       recipientName: receiverName,
       type: 'chat',
     );
@@ -9202,7 +9236,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- CHAT MODAL (HONEST PRESENCE & PROPER INPUT HANDLING) ---
+  // --- CHAT MODAL (WITH MEAL PICTURE & NUTRITION LOGGING) ---
   void _openChatModal(BuildContext context, MyPtProvider state, {required String peerName}) {
     final textCtrl = TextEditingController();
     final isTrainer = state.currentUser?.role == UserRole.coach;
@@ -9222,7 +9256,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
             child: Container(
-              height: MediaQuery.of(ctx).size.height * 0.75,
+              height: MediaQuery.of(ctx).size.height * 0.82,
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
@@ -9238,7 +9272,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Coach $peerName', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            const Text('1-on-1 Direct Chat • Message your coach', style: TextStyle(fontSize: 11, color: Colors.white60)),
+                            const Text('1-on-1 Direct Chat • Nutrition & Workout Tracking', style: TextStyle(fontSize: 11, color: Colors.white60)),
                           ],
                         ),
                       ),
@@ -9254,12 +9288,151 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                   Expanded(
                     child: messages.isEmpty
-                        ? const Center(child: Text('Say hello! Send a message to your coach.', style: TextStyle(color: Colors.white54)))
+                        ? const Center(child: Text('Say hello or log your daily meals for coach review!', style: TextStyle(color: Colors.white54, fontSize: 13)))
                         : ListView.builder(
                             itemCount: messages.length,
                             itemBuilder: (context, idx) {
                               final m = messages[idx];
                               final isMe = m.senderName.toLowerCase() == myName.toLowerCase();
+                              final meal = m.mealAttachment;
+
+                              if (meal != null) {
+                                return Align(
+                                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width * 0.78,
+                                    margin: const EdgeInsets.symmetric(vertical: 6),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: isMe ? const Color(0xFF1E2632) : const Color(0xFF161B22),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isMe ? const Color(0xFFFF5722).withOpacity(0.6) : const Color(0xFF00E676).withOpacity(0.4),
+                                        width: 1.2,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Header with Meal Type Tag & Date
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFFF5722).withOpacity(0.15),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(meal.emoji, style: const TextStyle(fontSize: 12)),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    meal.mealType.toUpperCase(),
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Text(
+                                              DateFormat('dd MMM • hh:mm a').format(meal.mealDate),
+                                              style: const TextStyle(fontSize: 10, color: Colors.white54),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+
+                                        // Meal Photo
+                                        if (meal.photoUrl != null && meal.photoUrl!.isNotEmpty) ...[
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(10),
+                                            child: Container(
+                                              height: 140,
+                                              width: double.infinity,
+                                              color: const Color(0xFF0D1117),
+                                              child: Image.network(
+                                                meal.photoUrl!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: const Color(0xFF0D1117),
+                                                  child: Center(
+                                                    child: Column(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(meal.emoji, style: const TextStyle(fontSize: 32)),
+                                                        const SizedBox(height: 4),
+                                                        Text('${meal.mealType} Photo Log', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                        ],
+
+                                        // Meal Description
+                                        Text(
+                                          meal.description,
+                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                                        ),
+
+                                        // Macros / Calories Pills (if available)
+                                        if (meal.caloriesKcal != null || meal.proteinGrams != null) ...[
+                                          const SizedBox(height: 8),
+                                          Wrap(
+                                            spacing: 6,
+                                            children: [
+                                              if (meal.caloriesKcal != null)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFFF9800).withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    '🔥 ${meal.caloriesKcal} kcal',
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF9800)),
+                                                  ),
+                                                ),
+                                              if (meal.proteinGrams != null)
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF00E676).withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    '💪 ${meal.proteinGrams}g Protein',
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+
+                                        const SizedBox(height: 6),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            const Icon(Icons.done_all, size: 12, color: Color(0xFF00E676)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Logged for Coach Review',
+                                              style: TextStyle(fontSize: 9.5, color: Colors.white.withOpacity(0.4), fontStyle: FontStyle.italic),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
                               return Align(
                                 alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                                 child: Container(
@@ -9285,6 +9458,28 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                   Row(
                     children: [
+                      // Camera / Meal Picture Upload Button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt_rounded, color: Color(0xFF00E676), size: 20),
+                          tooltip: 'Upload Meal Picture & Log',
+                          onPressed: () {
+                            _openMealUploadModal(
+                              context,
+                              state,
+                              peerName: peerName,
+                              isFromTrainer: isTrainer,
+                              onMealSent: () => setModalState(() {}),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: textCtrl,
@@ -9322,6 +9517,421 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ),
                 ],
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- POPUP MODAL: UPLOAD MEAL PICTURE & DAILY NUTRITION LOG ---
+  void _openMealUploadModal(
+    BuildContext context,
+    MyPtProvider state, {
+    required String peerName,
+    required bool isFromTrainer,
+    required VoidCallback onMealSent,
+  }) {
+    final myName = state.currentUser?.name ?? 'User';
+    String selectedMealType = 'Breakfast';
+    DateTime selectedDate = DateTime.now();
+    final descCtrl = TextEditingController();
+    final caloriesCtrl = TextEditingController();
+    final proteinCtrl = TextEditingController();
+
+    // Curated high quality fitness meal photos
+    final presetMealPhotos = [
+      (
+        'Avocado Toast & Eggs',
+        'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=500&q=80',
+        '2 poached eggs on sourdough toast with sliced avocado & chili flakes',
+        380,
+        22,
+      ),
+      (
+        'Grilled Chicken Bowl',
+        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80',
+        '200g grilled chicken breast with quinoa, steamed broccoli & olive oil',
+        520,
+        48,
+      ),
+      (
+        'Salmon & Sweet Potato',
+        'https://images.unsplash.com/photo-1546069901-d419b4cfb028?w=500&q=80',
+        'Pan-seared salmon fillet with roasted sweet potato & asparagus',
+        560,
+        42,
+      ),
+      (
+        'Protein Oatmeal & Berries',
+        'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?w=500&q=80',
+        'Rolled oats with whey protein isolate, blueberries & chia seeds',
+        410,
+        32,
+      ),
+      (
+        'Greek Yogurt & Almonds',
+        'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=500&q=80',
+        'Non-fat Greek yogurt with raw almonds, honey drizzle & berries',
+        280,
+        25,
+      ),
+      (
+        'Steak & Rice Bowl',
+        'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&q=80',
+        'Sirloin steak slices with jasmine rice and sautéed bell peppers',
+        640,
+        50,
+      ),
+    ];
+
+    int selectedPhotoIdx = 0;
+    String selectedPhotoUrl = presetMealPhotos[0].$2;
+    descCtrl.text = presetMealPhotos[0].$3;
+    caloriesCtrl.text = '${presetMealPhotos[0].$4}';
+    proteinCtrl.text = '${presetMealPhotos[0].$5}';
+
+    final mealCategories = [
+      ('Breakfast', '🍳'),
+      ('Lunch', '🥗'),
+      ('Snacks', '🥪'),
+      ('Dinner', '🍲'),
+      ('Extra Meal', '🍱'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(modalCtx).size.height * 0.90),
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 20,
+            ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF161B22),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: Color(0xFF00E676), width: 1.5)),
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                // Top Action Bar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00E676).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.restaurant, size: 12, color: Color(0xFF00E676)),
+                          SizedBox(width: 4),
+                          Text('NUTRITION & MEAL TRACKING', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                      onPressed: () => Navigator.pop(modalCtx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                const Text('Log & Share Meal Picture 📸', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('Upload photo and description for Coach $peerName to review', style: const TextStyle(color: Colors.white60, fontSize: 11.5)),
+                const SizedBox(height: 16),
+
+                // 1. Meal Category Selection (5 Categories)
+                const Text('SELECT MEAL CATEGORY', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: mealCategories.map((cat) {
+                      final isSelected = selectedMealType == cat.$1;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          avatar: Text(cat.$2, style: const TextStyle(fontSize: 13)),
+                          label: Text(cat.$1, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFFFF5722),
+                          backgroundColor: const Color(0xFF0D1117),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+                          ),
+                          onSelected: (val) {
+                            if (val) setSheetState(() => selectedMealType = cat.$1);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 2. Day / Date Selector
+                const Text('MEAL LOG DATE / DAY', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                      lastDate: DateTime.now().add(const Duration(days: 1)),
+                    );
+                    if (picked != null) {
+                      setSheetState(() => selectedDate = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D1117),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today, size: 14, color: Color(0xFFFF5722)),
+                            const SizedBox(width: 8),
+                            Text(DateFormat('EEEE, dd MMMM yyyy').format(selectedDate), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.white)),
+                          ],
+                        ),
+                        const Icon(Icons.edit_calendar, size: 14, color: Colors.white54),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 3. Meal Photo Selection & Preview
+                const Text('MEAL PICTURE / PHOTO PROOF', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 150,
+                    width: double.infinity,
+                    color: const Color(0xFF0D1117),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          selectedPhotoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Center(
+                            child: Icon(Icons.broken_image, color: Colors.white38, size: 40),
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          left: 12,
+                          right: 12,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                presetMealPhotos[selectedPhotoIdx].$1,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: const Color(0xFF00E676), borderRadius: BorderRadius.circular(4)),
+                                child: const Text('PHOTO ATTACHED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Preset Meal Photo Carousel
+                SizedBox(
+                  height: 60,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: presetMealPhotos.length,
+                    itemBuilder: (context, idx) {
+                      final item = presetMealPhotos[idx];
+                      final isSelected = selectedPhotoIdx == idx;
+                      return GestureDetector(
+                        onTap: () {
+                          setSheetState(() {
+                            selectedPhotoIdx = idx;
+                            selectedPhotoUrl = item.$2;
+                            descCtrl.text = item.$3;
+                            caloriesCtrl.text = '${item.$4}';
+                            proteinCtrl.text = '${item.$5}';
+                          });
+                        },
+                        child: Container(
+                          width: 60,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: isSelected ? const Color(0xFF00E676) : Colors.white12, width: isSelected ? 2 : 1),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(7),
+                            child: Image.network(item.$2, fit: BoxFit.cover),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 4. Description Input
+                const Text('MEAL DESCRIPTION & INGREDIENTS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+                const SizedBox(height: 6),
+                TextFormField(
+                  controller: descCtrl,
+                  maxLines: 2,
+                  style: const TextStyle(fontSize: 13, color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'e.g., 200g Grilled chicken breast with quinoa and steamed veggies...',
+                    filled: true,
+                    fillColor: const Color(0xFF0D1117),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // 5. Optional Macros (Calories & Protein)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('CALORIES (KCAL)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            controller: caloriesCtrl,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. 520',
+                              filled: true,
+                              fillColor: const Color(0xFF0D1117),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              isDense: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('PROTEIN (GRAMS)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                          const SizedBox(height: 4),
+                          TextFormField(
+                            controller: proteinCtrl,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. 45',
+                              filled: true,
+                              fillColor: const Color(0xFF0D1117),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              isDense: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: Text('Send $selectedMealType to Coach 📤', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                    onPressed: () {
+                      final desc = descCtrl.text.trim();
+                      if (desc.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a brief meal description')));
+                        return;
+                      }
+                      final cal = int.tryParse(caloriesCtrl.text.trim());
+                      final pro = int.tryParse(proteinCtrl.text.trim());
+
+                      final attachment = MealLogAttachment(
+                        mealType: selectedMealType,
+                        description: desc,
+                        photoUrl: selectedPhotoUrl,
+                        mealDate: selectedDate,
+                        caloriesKcal: cal,
+                        proteinGrams: pro,
+                      );
+
+                      state.sendChatMessage(
+                        senderName: myName,
+                        receiverName: peerName,
+                        text: '',
+                        isFromTrainer: isFromTrainer,
+                        mealAttachment: attachment,
+                      );
+
+                      Navigator.pop(modalCtx);
+                      onMealSent();
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF00E676),
+                          content: Text('🥗 $selectedMealType logged and sent to Coach $peerName!'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           );
         },
