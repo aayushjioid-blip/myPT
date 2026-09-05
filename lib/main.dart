@@ -12,6 +12,16 @@ enum UserRole { client, coach, headCoach, gymMgr, superAdmin }
 enum RequestStatus { pending, confirmed, completed, cancelled }
 enum TrainerApprovalStatus { none, pending, approved, rejected }
 
+const List<String> kStandardFitnessGoals = [
+  'Fat Loss & Hypertrophy',
+  'Lean Muscle & Core',
+  'Strength & Power',
+  'Hypertrophy & Mobility',
+  'General Fitness & Muscle Gain',
+  'Athletic Conditioning & Endurance',
+  'Post-Rehab & Posture Correction',
+];
+
 class UserModel {
   final String id;
   String name;
@@ -1583,7 +1593,13 @@ class MyPtProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void register({required String name, required String email, required String pass, required UserRole role}) {
+  void register({
+    required String name,
+    required String email,
+    required String pass,
+    required UserRole role,
+    String goal = 'Fat Loss & Hypertrophy',
+  }) {
     final cleanEmail = email.trim().toLowerCase();
     originalMasterUser = null;
     final newUser = UserModel(
@@ -1591,6 +1607,7 @@ class MyPtProvider extends ChangeNotifier {
       name: name,
       email: cleanEmail,
       role: role,
+      goal: goal,
       ptCredits: role == UserRole.client ? 4 : 0,
     );
     demoAccounts[cleanEmail] = newUser;
@@ -1601,6 +1618,13 @@ class MyPtProvider extends ChangeNotifier {
     }
     currentUser = newUser;
     notifyListeners();
+  }
+
+  void updateUserGoal(String newGoal) {
+    if (currentUser != null && newGoal.isNotEmpty) {
+      currentUser!.goal = newGoal;
+      notifyListeners();
+    }
   }
 
   void logout() {
@@ -1803,6 +1827,8 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
+  String selectedGoal = kStandardFitnessGoals.first;
+
   @override
   void dispose() {
     _emailFocus.dispose();
@@ -1929,6 +1955,21 @@ class _AuthScreenState extends State<AuthScreen> {
                     onChanged: (val) => setState(() => selectedRole = val!),
                   ),
                   const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    value: kStandardFitnessGoals.contains(selectedGoal) ? selectedGoal : kStandardFitnessGoals.first,
+                    decoration: const InputDecoration(
+                      labelText: 'Primary Fitness Goal',
+                      prefixIcon: Icon(Icons.flag_outlined),
+                      filled: true,
+                      fillColor: Color(0xFF161B22),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: kStandardFitnessGoals.map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 13)))).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => selectedGoal = val);
+                    },
+                  ),
+                  const SizedBox(height: 14),
                 ],
 
                 TextFormField(
@@ -2001,6 +2042,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           email: emailCtrl.text.trim(),
                           pass: passCtrl.text,
                           role: selectedRole,
+                          goal: selectedGoal,
                         );
                       } else {
                         state.login(emailCtrl.text.trim(), passCtrl.text);
@@ -7261,114 +7303,151 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   void _openPurchaseOptionsModal(BuildContext context, MyPtProvider state, TrainingPackage pkg) {
+    final user = state.currentUser;
+    String selectedGoal = (user != null && kStandardFitnessGoals.contains(user.goal)) ? user.goal : kStandardFitnessGoals.first;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF161B22),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 14),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setPurchaseState) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(pkg.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
-                Text(state.formatPrice(pkg.priceInr), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(pkg.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold))),
+                    Text(state.formatPrice(pkg.priceInr), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('+${pkg.sessionsCount} PT Credits • Coach ${pkg.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                const Divider(height: 18, color: Colors.white12),
+
+                // Primary Fitness Goal Selector
+                const Row(
+                  children: [
+                    Icon(Icons.flag_circle, size: 14, color: Color(0xFFFF5722)),
+                    SizedBox(width: 6),
+                    Text('Target Fitness Goal for this Package', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: kStandardFitnessGoals.contains(selectedGoal) ? selectedGoal : kStandardFitnessGoals.first,
+                      dropdownColor: const Color(0xFF161B22),
+                      items: kStandardFitnessGoals.map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 13, color: Colors.white)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setPurchaseState(() => selectedGoal = val);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                const Text('Choose Payment Method', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                const SizedBox(height: 10),
+
+                InkWell(
+                  onTap: () {
+                    state.updateUserGoal(selectedGoal);
+                    state.requestPackagePurchase(pkg, 'offline');
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFFFF9800),
+                        content: Text('⏳ Offline payment request sent to Coach ${pkg.trainerName} for "$selectedGoal". Once approved, +${pkg.sessionsCount} PT Credits will be added.'),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D1117),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.5)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.handshake, color: Color(0xFFFF9800), size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('💵 Payment Taken Offline (Cash / Direct UPI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                              SizedBox(height: 2),
+                              Text('Pay trainer directly. Coach confirms receipt to activate PT credits.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                InkWell(
+                  onTap: () {
+                    state.updateUserGoal(selectedGoal);
+                    state.requestPackagePurchase(pkg, 'online');
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFF00E676),
+                        content: Text('🎉 Instant Online Payment Successful! +${pkg.sessionsCount} PT Credits added for "$selectedGoal".'),
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D1117),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF00E676).withOpacity(0.5)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.credit_card, color: Color(0xFF00E676), size: 22),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('⚡ Instant Online / UPI Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                              SizedBox(height: 2),
+                              Text('Immediate activation and PT credit deposit.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text('+${pkg.sessionsCount} PT Credits • Coach ${pkg.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
-            const Divider(height: 20, color: Colors.white12),
-
-            const Text('Choose Payment Method', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-            const SizedBox(height: 10),
-
-            InkWell(
-              onTap: () {
-                state.requestPackagePurchase(pkg, 'offline');
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: const Color(0xFFFF9800),
-                    content: Text('⏳ Offline payment request sent to Coach ${pkg.trainerName}. Once approved, +${pkg.sessionsCount} PT Credits will be added.'),
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D1117),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.5)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.handshake, color: Color(0xFFFF9800), size: 22),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('💵 Payment Taken Offline (Cash / Direct UPI)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
-                          SizedBox(height: 2),
-                          Text('Pay trainer directly. Coach confirms receipt to activate PT credits.', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            InkWell(
-              onTap: () {
-                state.requestPackagePurchase(pkg, 'online');
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: const Color(0xFF00E676),
-                    content: Text('🎉 Instant Online Payment Successful! +${pkg.sessionsCount} PT Credits added.'),
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D1117),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.5)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.credit_card, color: Color(0xFF00E676), size: 22),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('⚡ Instant Online / UPI Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
-                          SizedBox(height: 2),
-                          Text('Immediate activation and PT credit deposit.', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -7553,7 +7632,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
     String selectedSlot = '10:00 AM - 11:00 AM';
+    String selectedGoal = (kStandardFitnessGoals.contains(user.goal)) ? user.goal : kStandardFitnessGoals.first;
     String focus = 'Hypertrophy & Form';
+    final focusCtrl = TextEditingController(text: focus);
 
     final timeSlots = [
       '05:00 AM - 06:00 AM', '05:30 AM - 06:30 AM', '06:00 AM - 07:00 AM', '06:30 AM - 07:30 AM',
@@ -7577,135 +7658,217 @@ class _MainShellScreenState extends State<MainShellScreen> {
           final coachName = trainer?.name ?? 'Alex Rivera';
 
           return Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Schedule with Coach $coachName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: const Color(0xFFFF5722).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                      child: Text('${user.ptCredits} PT Credits Left', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              left: 20,
+              right: 20,
+              top: 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Schedule with Coach $coachName', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFFF5722).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                        child: Text('${user.ptCredits} PT Credits Left', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
 
-                // Date Selection with 14-day horizontal scroll + Calendar Picker Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Select Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 90)),
+                  // Date Selection with 14-day horizontal scroll + Calendar Picker Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Select Date', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 90)),
+                          );
+                          if (picked != null) {
+                            setModalState(() => selectedDate = picked);
+                          }
+                        },
+                        child: const Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 12, color: Color(0xFFFF5722)),
+                            SizedBox(width: 4),
+                            Text('Pick Calendar Date 📅', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(21, (i) {
+                        final now = DateTime.now();
+                        final d = DateTime(now.year, now.month, now.day).add(Duration(days: i));
+                        final isSel = selectedDate.year == d.year && selectedDate.month == d.month && selectedDate.day == d.day;
+                        final isToday = i == 0;
+                        final labelText = isToday ? 'Today, ${DateFormat('dd MMM').format(d)}' : DateFormat('EEE, dd MMM').format(d);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(labelText),
+                            selected: isSel,
+                            selectedColor: const Color(0xFFFF5722),
+                            backgroundColor: const Color(0xFF0D1117),
+                            labelStyle: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                              color: isSel ? Colors.white : Colors.white70,
+                            ),
+                            onSelected: (sel) => setModalState(() => selectedDate = d),
+                          ),
                         );
-                        if (picked != null) {
-                          setModalState(() => selectedDate = picked);
-                        }
-                      },
-                      child: const Row(
-                        children: [
-                          Icon(Icons.calendar_today, size: 12, color: Color(0xFFFF5722)),
-                          SizedBox(width: 4),
-                          Text('Pick Calendar Date 📅', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
-                        ],
+                      }),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Time Slot Selector
+                  const Text('Select Time Slot (1-Hour Duration)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: timeSlots.contains(selectedSlot) ? selectedSlot : timeSlots[10],
+                        dropdownColor: const Color(0xFF161B22),
+                        menuMaxHeight: 300,
+                        items: timeSlots.map((slot) => DropdownMenuItem(value: slot, child: Text(slot, style: const TextStyle(fontSize: 13)))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedSlot = val);
+                        },
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(21, (i) {
-                      final now = DateTime.now();
-                      final d = DateTime(now.year, now.month, now.day).add(Duration(days: i));
-                      final isSel = selectedDate.year == d.year && selectedDate.month == d.month && selectedDate.day == d.day;
-                      final isToday = i == 0;
-                      final labelText = isToday ? 'Today, ${DateFormat('dd MMM').format(d)}' : DateFormat('EEE, dd MMM').format(d);
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: ChoiceChip(
-                          label: Text(labelText),
-                          selected: isSel,
-                          selectedColor: const Color(0xFFFF5722),
-                          backgroundColor: const Color(0xFF0D1117),
-                          labelStyle: TextStyle(
-                            fontSize: 11,
-                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                            color: isSel ? Colors.white : Colors.white70,
-                          ),
-                          onSelected: (sel) => setModalState(() => selectedDate = d),
-                        ),
-                      );
-                    }),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Time Slot Selector
-                const Text('Select Time Slot (1-Hour Duration)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: timeSlots.contains(selectedSlot) ? selectedSlot : timeSlots[10],
-                      dropdownColor: const Color(0xFF161B22),
-                      menuMaxHeight: 300,
-                      items: timeSlots.map((slot) => DropdownMenuItem(value: slot, child: Text(slot, style: const TextStyle(fontSize: 13)))).toList(),
-                      onChanged: (val) {
-                        if (val != null) setModalState(() => selectedSlot = val);
-                      },
+                  // 1. Primary Fitness Goal Selector
+                  const Row(
+                    children: [
+                      Icon(Icons.flag_circle, size: 14, color: Color(0xFFFF5722)),
+                      SizedBox(width: 6),
+                      Text('Primary Fitness Goal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: kStandardFitnessGoals.contains(selectedGoal) ? selectedGoal : kStandardFitnessGoals.first,
+                        dropdownColor: const Color(0xFF161B22),
+                        items: kStandardFitnessGoals.map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 13, color: Colors.white)))).toList(),
+                        onChanged: (val) {
+                          if (val != null) setModalState(() => selectedGoal = val);
+                        },
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
+                  const SizedBox(height: 14),
 
-                // Workout Focus
-                const Text('Workout Focus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                TextFormField(
-                  initialValue: focus,
-                  decoration: const InputDecoration(filled: true, fillColor: Color(0xFF0D1117), border: OutlineInputBorder()),
-                  onChanged: (val) => focus = val.trim(),
-                ),
-                const SizedBox(height: 18),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      _openBookingReviewModal(
-                        context,
-                        state,
-                        coachName: coachName,
-                        date: selectedDate,
-                        timeSlot: selectedSlot,
-                        focusArea: focus,
-                      );
-                    },
-                    child: const Text('Review & Confirm Booking 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+                  // 2. Custom Workout Focus Field
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.fitness_center, size: 14, color: Color(0xFF29B6F6)),
+                          SizedBox(width: 6),
+                          Text('Workout Focus (Custom)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                        ],
+                      ),
+                      Text('Type custom focus', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.4))),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    controller: focusCtrl,
+                    decoration: const InputDecoration(
+                      filled: true,
+                      fillColor: Color(0xFF0D1117),
+                      hintText: 'e.g. Hypertrophy & Form, Chest & Triceps, Deadlift PR...',
+                      hintStyle: TextStyle(fontSize: 12, color: Colors.white30),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (val) => focus = val.trim(),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Quick suggested tags that populate the custom focus
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        'Hypertrophy & Form',
+                        'Upper Body Power',
+                        'Squats & Leg Drive',
+                        'Core & Conditioning',
+                        'Mobility & Form Check',
+                      ].map((sug) => Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: ActionChip(
+                          label: Text(sug, style: const TextStyle(fontSize: 10)),
+                          backgroundColor: const Color(0xFF0D1117),
+                          side: const BorderSide(color: Colors.white12),
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                          onPressed: () {
+                            setModalState(() {
+                              focusCtrl.text = sug;
+                              focus = sug;
+                            });
+                          },
+                        ),
+                      )).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                      onPressed: () {
+                        final customFocus = focusCtrl.text.trim().isNotEmpty ? focusCtrl.text.trim() : focus;
+                        Navigator.pop(ctx);
+                        _openBookingReviewModal(
+                          context,
+                          state,
+                          coachName: coachName,
+                          date: selectedDate,
+                          timeSlot: selectedSlot,
+                          goal: selectedGoal,
+                          focusArea: customFocus,
+                        );
+                      },
+                      child: const Text('Review & Confirm Booking 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -7720,6 +7883,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     required String coachName,
     required DateTime date,
     required String timeSlot,
+    required String goal,
     required String focusArea,
   }) {
     final user = state.currentUser;
@@ -7755,6 +7919,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       _reviewRow('Date', formattedDate),
                       const Divider(height: 14, color: Colors.white12),
                       _reviewRow('Time', timeSlot),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Primary Goal', goal),
                       const Divider(height: 14, color: Colors.white12),
                       _reviewRow('Workout Focus', focusArea),
                       const Divider(height: 14, color: Colors.white12),
@@ -7792,6 +7958,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             ? null
                             : () {
                                 setReviewState(() => isProcessing = true);
+                                state.updateUserGoal(goal);
                                 state.scheduleSession(
                                   SessionItem(
                                     id: 's_${DateTime.now().millisecondsSinceEpoch}',
@@ -8588,12 +8755,28 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         ),
                         child: Column(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Primary Fitness Goal', style: TextStyle(color: Colors.white60, fontSize: 12)),
-                                Text(user.goal, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
-                              ],
+                            InkWell(
+                              onTap: () {
+                                _showChangeGoalDialog(context, state);
+                                setModalState(() {});
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Text('Primary Fitness Goal', style: TextStyle(color: Colors.white60, fontSize: 12)),
+                                        SizedBox(width: 4),
+                                        Icon(Icons.edit, size: 12, color: Color(0xFFFF5722)),
+                                      ],
+                                    ),
+                                    Text(user.goal, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFFF5722))),
+                                  ],
+                                ),
+                              ),
                             ),
                             const Divider(height: 16, color: Colors.white10),
                             Row(
@@ -8796,6 +8979,78 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  void _showChangeGoalDialog(BuildContext context, MyPtProvider state) {
+    final user = state.currentUser;
+    if (user == null) return;
+    String selected = (kStandardFitnessGoals.contains(user.goal)) ? user.goal : kStandardFitnessGoals.first;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
+          title: const Row(
+            children: [
+              Icon(Icons.flag_circle, color: Color(0xFFFF5722), size: 22),
+              SizedBox(width: 8),
+              Text('Select Primary Fitness Goal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: kStandardFitnessGoals.map((g) {
+              final isSel = selected == g;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: isSel ? const Color(0xFFFF5722).withOpacity(0.15) : const Color(0xFF0D1117),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isSel ? const Color(0xFFFF5722) : Colors.white10),
+                ),
+                child: ListTile(
+                  dense: true,
+                  title: Text(
+                    g,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                      color: isSel ? const Color(0xFFFF5722) : Colors.white,
+                    ),
+                  ),
+                  trailing: isSel ? const Icon(Icons.check_circle, color: Color(0xFFFF5722), size: 18) : null,
+                  onTap: () {
+                    setDialogState(() => selected = g);
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+              onPressed: () {
+                state.updateUserGoal(selected);
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: const Color(0xFF00E676),
+                    content: Text('✓ Primary Fitness Goal updated to "$selected"'),
+                  ),
+                );
+              },
+              child: const Text('Save Goal', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openWeightLogDialog(BuildContext context, MyPtProvider state) {
     final user = state.currentUser;
     final currentW = user?.currentWeight ?? 64.5;
@@ -8900,6 +9155,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   // --- CONSULTATION REQUEST MODAL (FREE INQUIRY / 0 PT CREDITS) ---
   void _openRequestConsultationModal(BuildContext context, MyPtProvider state, UserModel coach) {
+    final user = state.currentUser;
+    String selectedGoal = (user != null && kStandardFitnessGoals.contains(user.goal)) ? user.goal : kStandardFitnessGoals.first;
     String selectedTopic = 'Initial PT Consultation';
     String selectedAvailability = 'Morning (06:00 AM - 10:00 AM)';
     final msgCtrl = TextEditingController(
@@ -8962,6 +9219,32 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ],
                 ),
                 const Divider(height: 20, color: Colors.white12),
+
+                // Primary Fitness Goal Selector
+                const Row(
+                  children: [
+                    Icon(Icons.flag_circle, size: 14, color: Color(0xFFFF5722)),
+                    SizedBox(width: 6),
+                    Text('Primary Fitness Goal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.white12)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: kStandardFitnessGoals.contains(selectedGoal) ? selectedGoal : kStandardFitnessGoals.first,
+                      dropdownColor: const Color(0xFF161B22),
+                      items: kStandardFitnessGoals.map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 13, color: Colors.white)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) setModalState(() => selectedGoal = val);
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 const Text('Consultation Topic', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
                 const SizedBox(height: 6),
@@ -9032,7 +9315,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
                     onPressed: () {
-                      final fullMessage = '${msgCtrl.text.trim()}\nPreferred Slot: $selectedAvailability';
+                      state.updateUserGoal(selectedGoal);
+                      final fullMessage = 'Goal: $selectedGoal\n${msgCtrl.text.trim()}\nPreferred Slot: $selectedAvailability';
                       state.sendConsultationRequest(
                         coach: coach,
                         requestType: selectedTopic,
