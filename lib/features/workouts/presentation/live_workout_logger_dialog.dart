@@ -478,7 +478,7 @@ class _LiveWorkoutLoggerDialogState extends State<LiveWorkoutLoggerDialog> {
             children: [
               Column(
                 children: [
-                  const Text('Total Lifted (Sumproduct)', style: TextStyle(fontSize: 10, color: AppColors.darkTextMuted)),
+                  const Text('Total Weight Lifted', style: TextStyle(fontSize: 10, color: AppColors.darkTextMuted)),
                   const SizedBox(height: 2),
                   Text(
                     '${currentVolume.toStringAsFixed(0)} kg',

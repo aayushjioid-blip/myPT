@@ -1319,7 +1319,216 @@ class MyPtProvider extends ChangeNotifier {
   }
 
   // --- WORKOUTS ---
-  List<WorkoutSessionLog> workoutHistory = [];
+  List<WorkoutSessionLog> workoutHistory = [
+    WorkoutSessionLog(
+      id: 'sess_prev_1',
+      routineName: 'Upper Body Hypertrophy (Push Focus)',
+      focusArea: 'Chest, Shoulders & Triceps',
+      completedAt: DateTime.now().subtract(const Duration(days: 3, hours: 2)),
+      durationMinutes: 48,
+      totalVolumeKg: 8520,
+      loggedBy: 'You',
+      exercises: [
+        WorkoutExercise(
+          name: 'Barbell Bench Press',
+          sets: '4',
+          reps: '8',
+          weight: '70 kg',
+          restSeconds: '90s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 70, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 70, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 70, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 70, reps: 8, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Incline DB Press',
+          sets: '3',
+          reps: '10',
+          weight: '24 kg',
+          restSeconds: '60s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 24, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 24, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 24, reps: 10, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Standing Overhead Press',
+          sets: '3',
+          reps: '8',
+          weight: '42.5 kg',
+          restSeconds: '90s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 42.5, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 42.5, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 42.5, reps: 8, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Cable Tricep Pushdowns',
+          sets: '4',
+          reps: '15',
+          weight: '28 kg',
+          restSeconds: '45s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 28, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 28, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 28, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 28, reps: 15, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Hanging Leg Raises',
+          sets: '3',
+          reps: '15',
+          weight: 'Bodyweight',
+          restSeconds: '45s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 70, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 70, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 70, reps: 15, isCompleted: true),
+          ],
+        ),
+      ],
+    ),
+    WorkoutSessionLog(
+      id: 'sess_prev_2',
+      routineName: 'Upper Body Hypertrophy (Push Focus)',
+      focusArea: 'Chest, Shoulders & Triceps',
+      completedAt: DateTime.now().subtract(const Duration(days: 7, hours: 3)),
+      durationMinutes: 45,
+      totalVolumeKg: 7920,
+      loggedBy: 'You',
+      exercises: [
+        WorkoutExercise(
+          name: 'Barbell Bench Press',
+          sets: '4',
+          reps: '8',
+          weight: '67.5 kg',
+          restSeconds: '90s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 67.5, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 67.5, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 67.5, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 67.5, reps: 8, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Incline DB Press',
+          sets: '3',
+          reps: '10',
+          weight: '22 kg',
+          restSeconds: '60s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 22, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 22, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 22, reps: 10, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Standing Overhead Press',
+          sets: '3',
+          reps: '8',
+          weight: '40 kg',
+          restSeconds: '90s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 40, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 40, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 40, reps: 8, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Cable Tricep Pushdowns',
+          sets: '4',
+          reps: '15',
+          weight: '25 kg',
+          restSeconds: '45s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 25, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 25, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 25, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 25, reps: 15, isCompleted: true),
+          ],
+        ),
+      ],
+    ),
+    WorkoutSessionLog(
+      id: 'sess_prev_3',
+      routineName: 'Lower Body & Squat Biomechanics',
+      focusArea: 'Quads, Hamstrings & Glutes',
+      completedAt: DateTime.now().subtract(const Duration(days: 5, hours: 4)),
+      durationMinutes: 52,
+      totalVolumeKg: 7506,
+      loggedBy: 'You',
+      exercises: [
+        WorkoutExercise(
+          name: 'Barbell Back Squat',
+          sets: '4',
+          reps: '8',
+          weight: '90 kg',
+          restSeconds: '120s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 90, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 90, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 90, reps: 8, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 90, reps: 8, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Romanian Deadlift (RDL)',
+          sets: '3',
+          reps: '10',
+          weight: '65 kg',
+          restSeconds: '90s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 65, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 65, reps: 10, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 65, reps: 10, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Bulgarian Split Squats',
+          sets: '3',
+          reps: '12',
+          weight: '16 kg',
+          restSeconds: '60s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 16, reps: 12, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 16, reps: 12, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 16, reps: 12, isCompleted: true),
+          ],
+        ),
+        WorkoutExercise(
+          name: 'Standing Calf Raises',
+          sets: '4',
+          reps: '15',
+          weight: '35 kg',
+          restSeconds: '45s',
+          isCompleted: true,
+          setDetails: [
+            SetDetail(setNumber: 1, weightKg: 35, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 2, weightKg: 35, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 3, weightKg: 35, reps: 15, isCompleted: true),
+            SetDetail(setNumber: 4, weightKg: 35, reps: 15, isCompleted: true),
+          ],
+        ),
+      ],
+    ),
+  ];
 
   void addCustomWorkout(CustomWorkoutRoutine routine) {
     customWorkouts.insert(0, routine);
@@ -3916,7 +4125,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
                                 ),
                                 child: Text(
-                                  '⚡ Sum Product: ${ex.formattedSumProduct}',
+                                  '⚡ Total Weight Lifted: ${ex.formattedSumProduct}',
                                   style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
                                 ),
                               ),
@@ -9106,7 +9315,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
-                                    child: Text('⚡ Sum Product: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                    child: Text('⚡ Total Weight Lifted: ${ex.formattedSumProduct}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.redAccent, size: 18),
@@ -9179,8 +9388,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- INTERACTIVE LIVE WORKOUT SESSION LOGGER WITH SUM PRODUCT & 3-OPTION EXIT FLOW ---
+  // --- INTERACTIVE LIVE WORKOUT SESSION LOGGER WITH TOTAL WEIGHT LIFTED, HISTORY & COMPARISON ---
   void _openLiveWorkoutSessionModal(BuildContext context, MyPtProvider state, CustomWorkoutRoutine routine) {
+    // Track selected tab per exercise (0 = Sets, 1 = History)
+    final activeExerciseTabs = <int, int>{};
+
     // Build set tracking items for each exercise
     final activeExercises = routine.exercises.map((ex) {
       final sCount = int.tryParse(ex.sets) ?? 3;
@@ -9238,7 +9450,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'You logged $totalCompletedSets of $totalSetsCount sets with a Total Sum Product Volume of ${totalVolumeKg.toStringAsFixed(0)} kg.',
+                      'You logged $totalCompletedSets of $totalSetsCount sets with a Total Weight Lifted of ${totalVolumeKg.toStringAsFixed(0)} kg.',
                       style: const TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     const SizedBox(height: 14),
@@ -9293,7 +9505,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: const Color(0xFF00E676),
-                          content: Text('🎉 "${routine.name}" completed! Total Volume: ${totalVolumeKg.toStringAsFixed(0)} kg saved to history.'),
+                          content: Text('🎉 "${routine.name}" completed! Total Weight Lifted: ${totalVolumeKg.toStringAsFixed(0)} kg saved to history.'),
                         ),
                       );
                     },
@@ -9359,7 +9571,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     children: [
                       Column(
                         children: [
-                          const Text('Total Volume (Sum Product)', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                          const Text('Total Weight Lifted', style: TextStyle(fontSize: 10, color: Colors.white60)),
                           const SizedBox(height: 2),
                           Text(
                             '⚡ ${totalVolumeKg.toStringAsFixed(0)} kg',
@@ -9401,6 +9613,60 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     itemBuilder: (context, exIdx) {
                       final ex = activeExercises[exIdx];
                       final sets = ex.setDetails ?? [];
+                      final selectedTab = activeExerciseTabs[exIdx] ?? 0;
+
+                      // Query historical records for this exercise from state.workoutHistory
+                      final pastRecords = <Map<String, dynamic>>[];
+                      for (final pastSession in state.workoutHistory) {
+                        for (final pastEx in pastSession.exercises) {
+                          if (pastEx.name.trim().toLowerCase() == ex.name.trim().toLowerCase()) {
+                            pastRecords.add({
+                              'session': pastSession,
+                              'exercise': pastEx,
+                              'date': pastSession.completedAt,
+                              'volume': pastEx.sumProductKg,
+                              'sets': pastEx.setDetails ?? [],
+                            });
+                          }
+                        }
+                      }
+
+                      final prevRecord = pastRecords.isNotEmpty ? pastRecords.first : null;
+                      final prevVolume = (prevRecord?['volume'] as double?) ?? 0.0;
+                      final currentCompletedVolume = ex.sumProductKg;
+
+                      // Comparison calculation vs previous session
+                      String comparisonText = '';
+                      Color badgeColor = Colors.white54;
+                      IconData badgeIcon = Icons.info_outline;
+
+                      if (prevVolume > 0) {
+                        if (currentCompletedVolume > 0) {
+                          final diff = currentCompletedVolume - prevVolume;
+                          final pct = (diff / prevVolume) * 100.0;
+                          if (diff > 0) {
+                            comparisonText = 'Lifted ${pct.toStringAsFixed(1)}% more than previous session (${prevVolume.toStringAsFixed(0)} kg)';
+                            badgeColor = const Color(0xFF00E676);
+                            badgeIcon = Icons.trending_up_rounded;
+                          } else if (diff < 0) {
+                            comparisonText = 'Lifted ${pct.abs().toStringAsFixed(1)}% less than previous session (${prevVolume.toStringAsFixed(0)} kg)';
+                            badgeColor = const Color(0xFFFF9100);
+                            badgeIcon = Icons.trending_down_rounded;
+                          } else {
+                            comparisonText = 'Matched previous session total (${prevVolume.toStringAsFixed(0)} kg)';
+                            badgeColor = const Color(0xFF29B6F6);
+                            badgeIcon = Icons.horizontal_rule_rounded;
+                          }
+                        } else {
+                          comparisonText = 'Target: Prev session was ${prevVolume.toStringAsFixed(0)} kg (${prevRecord?['exercise']?.sets ?? '4'} sets) • Check off DONE sets to compare';
+                          badgeColor = Colors.white54;
+                          badgeIcon = Icons.flag_outlined;
+                        }
+                      } else {
+                        comparisonText = 'Baseline Session • No prior history recorded';
+                        badgeColor = Colors.white54;
+                        badgeIcon = Icons.star_border_rounded;
+                      }
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -9418,177 +9684,400 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // Exercise Header & Sets/History Tab Switcher
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
-                                    child: Text(
-                                      '${exIdx + 1}. ${ex.name}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${exIdx + 1}. ${ex.name}',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                                      ],
                                     ),
                                   ),
-                                  Text('Rest: ${ex.restSeconds} • Target: ${ex.weight}', style: const TextStyle(color: Colors.white38, fontSize: 10.5)),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF161B22),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    padding: const EdgeInsets.all(2),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: () => setSessionState(() => activeExerciseTabs[exIdx] = 0),
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                                            decoration: BoxDecoration(
+                                              color: selectedTab == 0 ? const Color(0xFFFF5722) : Colors.transparent,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'Sets',
+                                              style: TextStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: selectedTab == 0 ? Colors.white : Colors.white60,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: () => setSessionState(() => activeExerciseTabs[exIdx] = 1),
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                                            decoration: BoxDecoration(
+                                              color: selectedTab == 1 ? const Color(0xFFFF5722) : Colors.transparent,
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.history,
+                                                  size: 12,
+                                                  color: selectedTab == 1 ? Colors.white : Colors.white60,
+                                                ),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  'History${pastRecords.isNotEmpty ? ' (${pastRecords.length})' : ''}',
+                                                  style: TextStyle(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: selectedTab == 1 ? Colors.white : Colors.white60,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ),
-                              const Divider(height: 14, color: Colors.white12),
 
-                              // Set Table Header (SET, WEIGHT, REPS, DONE, DELETE)
-                              const Row(
-                                children: [
-                                  SizedBox(width: 36, child: Text('SET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  Expanded(flex: 4, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 8),
-                                  Expanded(flex: 4, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 8),
-                                  SizedBox(width: 38, child: Text('DONE', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                  SizedBox(width: 34, child: Text('DEL', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
+                              // TAB CONTENT: SETS LOGGER vs HISTORY RECORDS
+                              if (selectedTab == 0) ...[
+                                const Divider(height: 14, color: Colors.white12),
 
-                              // Set Rows
-                              ...sets.asMap().entries.map((entry) {
-                                final sIdx = entry.key;
-                                final setItem = entry.value;
+                                // Set Table Header (SET, WEIGHT, REPS, DONE, DELETE)
+                                const Row(
+                                  children: [
+                                    SizedBox(width: 36, child: Text('SET', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                    Expanded(flex: 4, child: Text('WEIGHT (KG)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                    SizedBox(width: 8),
+                                    Expanded(flex: 4, child: Text('REPS', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                    SizedBox(width: 8),
+                                    SizedBox(width: 38, child: Text('DONE', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                    SizedBox(width: 34, child: Text('DEL', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54))),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
 
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 6),
-                                  padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                                // Set Rows
+                                ...sets.asMap().entries.map((entry) {
+                                  final sIdx = entry.key;
+                                  final setItem = entry.value;
+
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                                    decoration: BoxDecoration(
+                                      color: setItem.isCompleted ? const Color(0xFF00E676).withOpacity(0.08) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 36,
+                                          child: Text(
+                                            '#${sIdx + 1}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white70,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 4,
+                                          child: SizedBox(
+                                            height: 34,
+                                            child: TextFormField(
+                                              initialValue: setItem.weightKg % 1 == 0 ? setItem.weightKg.toInt().toString() : setItem.weightKg.toString(),
+                                              textAlign: TextAlign.center,
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                              decoration: const InputDecoration(
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                                border: OutlineInputBorder(),
+                                                isDense: true,
+                                              ),
+                                              onChanged: (v) {
+                                                final parsed = double.tryParse(v) ?? setItem.weightKg;
+                                                setSessionState(() => setItem.weightKg = parsed);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          flex: 4,
+                                          child: SizedBox(
+                                            height: 34,
+                                            child: TextFormField(
+                                              initialValue: setItem.reps.toString(),
+                                              textAlign: TextAlign.center,
+                                              keyboardType: TextInputType.number,
+                                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                              decoration: const InputDecoration(
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                                                border: OutlineInputBorder(),
+                                                isDense: true,
+                                              ),
+                                              onChanged: (v) {
+                                                final parsed = int.tryParse(v) ?? setItem.reps;
+                                                setSessionState(() => setItem.reps = parsed);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          width: 38,
+                                          child: IconButton(
+                                            icon: Icon(
+                                              setItem.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
+                                              color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white38,
+                                              size: 20,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: 'Mark Done',
+                                            onPressed: () {
+                                              setSessionState(() => setItem.isCompleted = !setItem.isCompleted);
+                                            },
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 34,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: 'Delete Set',
+                                            onPressed: () {
+                                              setSessionState(() {
+                                                sets.removeAt(sIdx);
+                                                for (int i = 0; i < sets.length; i++) {
+                                                  sets[i].setNumber = i + 1;
+                                                }
+                                              });
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+
+                                const Divider(height: 14, color: Colors.white12),
+
+                                // Bottom Card Controls: Add Set on Left & Total Weight Lifted on Right
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
+                                      label: const Text('Add Set', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                                      onPressed: () {
+                                        setSessionState(() {
+                                          final last = sets.isNotEmpty ? sets.last : null;
+                                          sets.add(
+                                            SetDetail(
+                                              setNumber: sets.length + 1,
+                                              weightKg: last?.weightKg ?? 60.0,
+                                              reps: last?.reps ?? 10,
+                                            ),
+                                          );
+                                        });
+                                      },
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF00E676).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
+                                      ),
+                                      child: Text(
+                                        '⚡ Total Weight Lifted: ${ex.formattedSumProduct}',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Progression vs Previous Session Banner
+                                Container(
+                                  margin: const EdgeInsets.only(top: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
-                                    color: setItem.isCompleted ? const Color(0xFF00E676).withOpacity(0.08) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(6),
+                                    color: badgeColor.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: badgeColor.withOpacity(0.25)),
                                   ),
                                   child: Row(
                                     children: [
-                                      SizedBox(
-                                        width: 36,
+                                      Icon(badgeIcon, size: 14, color: badgeColor),
+                                      const SizedBox(width: 6),
+                                      Expanded(
                                         child: Text(
-                                          '#${sIdx + 1}',
+                                          comparisonText,
                                           style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white70,
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: badgeColor == Colors.white54 ? Colors.white70 : badgeColor,
                                           ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 4,
-                                        child: SizedBox(
-                                          height: 34,
-                                          child: TextFormField(
-                                            initialValue: setItem.weightKg % 1 == 0 ? setItem.weightKg.toInt().toString() : setItem.weightKg.toString(),
-                                            textAlign: TextAlign.center,
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                            decoration: const InputDecoration(
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                                              border: OutlineInputBorder(),
-                                              isDense: true,
-                                            ),
-                                            onChanged: (v) {
-                                              final parsed = double.tryParse(v) ?? setItem.weightKg;
-                                              setSessionState(() => setItem.weightKg = parsed);
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        flex: 4,
-                                        child: SizedBox(
-                                          height: 34,
-                                          child: TextFormField(
-                                            initialValue: setItem.reps.toString(),
-                                            textAlign: TextAlign.center,
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                            decoration: const InputDecoration(
-                                              contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                                              border: OutlineInputBorder(),
-                                              isDense: true,
-                                            ),
-                                            onChanged: (v) {
-                                              final parsed = int.tryParse(v) ?? setItem.reps;
-                                              setSessionState(() => setItem.reps = parsed);
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      SizedBox(
-                                        width: 38,
-                                        child: IconButton(
-                                          icon: Icon(
-                                            setItem.isCompleted ? Icons.check_box : Icons.check_box_outline_blank,
-                                            color: setItem.isCompleted ? const Color(0xFF00E676) : Colors.white38,
-                                            size: 20,
-                                          ),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          tooltip: 'Mark Done',
-                                          onPressed: () {
-                                            setSessionState(() => setItem.isCompleted = !setItem.isCompleted);
-                                          },
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 34,
-                                        child: IconButton(
-                                          icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
-                                          padding: EdgeInsets.zero,
-                                          constraints: const BoxConstraints(),
-                                          tooltip: 'Delete Set',
-                                          onPressed: () {
-                                            setSessionState(() {
-                                              sets.removeAt(sIdx);
-                                              for (int i = 0; i < sets.length; i++) {
-                                                sets[i].setNumber = i + 1;
-                                              }
-                                            });
-                                          },
                                         ),
                                       ),
                                     ],
                                   ),
-                                );
-                              }),
-
-                              const Divider(height: 14, color: Colors.white12),
-
-                              // Bottom Card Controls: Add Set on Left & Calculated Sum Product on Right
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  TextButton.icon(
-                                    icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
-                                    label: const Text('Add Set', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                                    onPressed: () {
-                                      setSessionState(() {
-                                        final last = sets.isNotEmpty ? sets.last : null;
-                                        sets.add(
-                                          SetDetail(
-                                            setNumber: sets.length + 1,
-                                            weightKg: last?.weightKg ?? 60.0,
-                                            reps: last?.reps ?? 10,
-                                          ),
-                                        );
-                                      });
-                                    },
-                                  ),
+                                ),
+                              ] else ...[
+                                // HISTORY TAB: PAST EXERCISE RECORDS
+                                const Divider(height: 14, color: Colors.white12),
+                                if (pastRecords.isEmpty)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF00E676).withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
+                                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                                    alignment: Alignment.center,
+                                    child: Column(
+                                      children: [
+                                        const Icon(Icons.history_toggle_off, size: 28, color: Colors.white24),
+                                        const SizedBox(height: 6),
+                                        const Text(
+                                          'No Past Records Yet',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Complete sets for ${ex.name} in this session to start your history log.',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(fontSize: 10.5, color: Colors.white38),
+                                        ),
+                                      ],
                                     ),
-                                    child: Text(
-                                      '⚡ Sum Product: ${ex.formattedSumProduct}',
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
-                                    ),
+                                  )
+                                else
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: pastRecords.asMap().entries.map((pEntry) {
+                                      final pIdx = pEntry.key;
+                                      final record = pEntry.value;
+                                      final pastSession = record['session'] as WorkoutSessionLog;
+                                      final pastEx = record['exercise'] as WorkoutExercise;
+                                      final dateStr = DateFormat('EEE, dd MMM yyyy').format(record['date'] as DateTime);
+                                      final vol = record['volume'] as double;
+                                      final setDetails = record['sets'] as List<SetDetail>;
+
+                                      String? deltaVsOlder;
+                                      if (pIdx + 1 < pastRecords.length) {
+                                        final olderVol = pastRecords[pIdx + 1]['volume'] as double;
+                                        if (olderVol > 0) {
+                                          final d = vol - olderVol;
+                                          final p = (d / olderVol) * 100.0;
+                                          deltaVsOlder = d >= 0 ? '▲ Lifted +${p.toStringAsFixed(1)}% vs prior session' : '▼ Lifted -${p.abs().toStringAsFixed(1)}% vs prior session';
+                                        }
+                                      }
+
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 8),
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF161B22),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: Colors.white12),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(
+                                                  dateStr,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Colors.white),
+                                                ),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF00E676).withOpacity(0.12),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                    border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
+                                                  ),
+                                                  child: Text(
+                                                    'Lifted: ${vol.toStringAsFixed(0)} kg',
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              'Routine: ${pastSession.routineName}',
+                                              style: const TextStyle(fontSize: 10, color: Colors.white54),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            if (setDetails.isNotEmpty)
+                                              Wrap(
+                                                spacing: 4,
+                                                runSpacing: 4,
+                                                children: setDetails.map((s) {
+                                                  return Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white.withOpacity(0.06),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      '#${s.setNumber}: ${s.weightKg.toStringAsFixed(s.weightKg % 1 == 0 ? 0 : 1)}kg × ${s.reps}',
+                                                      style: const TextStyle(fontSize: 9.5, color: Colors.white70),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              )
+                                            else
+                                              Text(
+                                                '${pastEx.sets} Sets x ${pastEx.reps} Reps @ ${pastEx.weight}',
+                                                style: const TextStyle(fontSize: 10, color: Colors.white70),
+                                              ),
+                                            if (deltaVsOlder != null) ...[
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                deltaVsOlder,
+                                                style: TextStyle(
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: deltaVsOlder.startsWith('▲') ? const Color(0xFF00E676) : const Color(0xFFFF9100),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
-                                ],
-                              ),
+                              ],
                             ],
                           ),
                         ),
