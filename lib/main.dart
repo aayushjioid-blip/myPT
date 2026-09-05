@@ -165,13 +165,28 @@ class MovementItem {
   final String category;
   final String defaultSetsReps;
   final String equipment;
+  final String primaryMuscle;
+  final String secondaryMuscles;
+  final String difficulty;
+  final String movementPattern;
+  final String trackingType;
 
   MovementItem({
     required this.name,
-    required this.category,
+    String? category,
     required this.defaultSetsReps,
     required this.equipment,
-  });
+    String? primaryMuscle,
+    String? secondaryMuscles,
+    String? difficulty,
+    String? movementPattern,
+    String? trackingType,
+  })  : category = category ?? primaryMuscle ?? 'Strength',
+        primaryMuscle = primaryMuscle ?? category ?? 'General',
+        secondaryMuscles = secondaryMuscles ?? 'None',
+        difficulty = difficulty ?? 'Beginner',
+        movementPattern = movementPattern ?? 'Standard',
+        trackingType = trackingType ?? 'Weight + Reps';
 }
 
 class WorkoutExercise {
@@ -921,12 +936,110 @@ class MyPtProvider extends ChangeNotifier {
   ];
 
   List<MovementItem> movementLibrary = [
-    MovementItem(name: 'Barbell Back Squat', category: 'Legs / Quads', defaultSetsReps: '4 sets x 8 reps @ RPE 8', equipment: 'Barbell & Squat Rack'),
-    MovementItem(name: 'Incline Dumbbell Bench Press', category: 'Chest / Push', defaultSetsReps: '3 sets x 10-12 reps', equipment: 'Adjustable Bench & Dumbbells'),
-    MovementItem(name: 'Conventional Deadlift', category: 'Posterior Chain', defaultSetsReps: '3 sets x 5 reps @ RPE 8.5', equipment: 'Olympic Barbell & Plates'),
-    MovementItem(name: 'Lat Pulldown (Neutral Grip)', category: 'Back / Pull', defaultSetsReps: '4 sets x 12 reps', equipment: 'Cable Station'),
-    MovementItem(name: 'Romanian Deadlift (RDL)', category: 'Hamstrings & Glutes', defaultSetsReps: '3 sets x 10 reps', equipment: 'Barbell or Dumbbells'),
-    MovementItem(name: 'Standing Overhead Press (OHP)', category: 'Shoulders', defaultSetsReps: '4 sets x 6 reps', equipment: 'Olympic Barbell'),
+    MovementItem(name: 'Barbell Bench Press', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Barbell, Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 6-8 reps'),
+    MovementItem(name: 'Dumbbell Bench Press', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Dumbbells, Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Incline Barbell Bench Press', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders, Triceps', equipment: 'Barbell, Incline Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 6-8 reps'),
+    MovementItem(name: 'Incline Dumbbell Press', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders, Triceps', equipment: 'Dumbbells, Incline Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Decline Bench Press', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Barbell, Decline Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'Chest Press Machine', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Machine', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Incline Chest Press Machine', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders, Triceps', equipment: 'Machine', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Dumbbell Fly', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders', equipment: 'Dumbbells, Bench', category: 'Strength', movementPattern: 'Fly', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Cable Fly', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Fly', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Pec Deck Fly', primaryMuscle: 'Chest', secondaryMuscles: 'Shoulders', equipment: 'Machine', category: 'Strength', movementPattern: 'Fly', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Push-Up', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 12-20 reps'),
+    MovementItem(name: 'Chest Dips', primaryMuscle: 'Chest', secondaryMuscles: 'Triceps, Shoulders', equipment: 'Dip Station', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Intermediate', trackingType: 'Reps / Added Weight', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Pull-Up', primaryMuscle: 'Back', secondaryMuscles: 'Biceps, Shoulders', equipment: 'Pull-Up Bar', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Intermediate', trackingType: 'Reps / Added Weight', defaultSetsReps: '3-4 sets x 6-10 reps'),
+    MovementItem(name: 'Chin-Up', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Pull-Up Bar', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Intermediate', trackingType: 'Reps / Added Weight', defaultSetsReps: '3-4 sets x 6-10 reps'),
+    MovementItem(name: 'Lat Pulldown', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Close-Grip Lat Pulldown', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Seated Cable Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Barbell Bent-Over Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps, Lower Back', equipment: 'Barbell', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 6-8 reps'),
+    MovementItem(name: 'Single-Arm Dumbbell Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Dumbbell, Bench', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'T-Bar Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'T-Bar Machine', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'Chest-Supported Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Machine or Bench', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Machine Row', primaryMuscle: 'Back', secondaryMuscles: 'Biceps', equipment: 'Machine', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Straight-Arm Pulldown', primaryMuscle: 'Back', secondaryMuscles: 'Triceps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Back Extension', primaryMuscle: 'Lower Back', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Back Extension Bench', category: 'Strength', movementPattern: 'Hip Extension', difficulty: 'Beginner', trackingType: 'Reps / Added Weight', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Deadlift', primaryMuscle: 'Back', secondaryMuscles: 'Glutes, Hamstrings, Core', equipment: 'Barbell', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Advanced', trackingType: 'Weight + Reps', defaultSetsReps: '3-5 sets x 3-5 reps @ RPE 8.5'),
+    MovementItem(name: 'Rack Pull', primaryMuscle: 'Back', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Barbell, Rack', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Advanced', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 4-6 reps'),
+    MovementItem(name: 'Barbell Overhead Press', primaryMuscle: 'Shoulders', secondaryMuscles: 'Triceps, Core', equipment: 'Barbell', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 5-8 reps'),
+    MovementItem(name: 'Dumbbell Shoulder Press', primaryMuscle: 'Shoulders', secondaryMuscles: 'Triceps', equipment: 'Dumbbells, Bench', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Arnold Press', primaryMuscle: 'Shoulders', secondaryMuscles: 'Triceps', equipment: 'Dumbbells, Bench', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Machine Shoulder Press', primaryMuscle: 'Shoulders', secondaryMuscles: 'Triceps', equipment: 'Machine', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Dumbbell Lateral Raise', primaryMuscle: 'Shoulders', secondaryMuscles: 'Traps', equipment: 'Dumbbells', category: 'Strength', movementPattern: 'Isolation', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Cable Lateral Raise', primaryMuscle: 'Shoulders', secondaryMuscles: 'Traps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Isolation', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Dumbbell Front Raise', primaryMuscle: 'Shoulders', secondaryMuscles: 'Chest', equipment: 'Dumbbells', category: 'Strength', movementPattern: 'Isolation', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Rear Delt Fly', primaryMuscle: 'Shoulders', secondaryMuscles: 'Upper Back', equipment: 'Dumbbells or Machine', category: 'Strength', movementPattern: 'Isolation', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Reverse Pec Deck', primaryMuscle: 'Shoulders', secondaryMuscles: 'Upper Back', equipment: 'Machine', category: 'Strength', movementPattern: 'Isolation', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Face Pull', primaryMuscle: 'Shoulders', secondaryMuscles: 'Upper Back, Biceps', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Horizontal Pull', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 15-20 reps'),
+    MovementItem(name: 'Upright Row', primaryMuscle: 'Shoulders', secondaryMuscles: 'Traps, Biceps', equipment: 'Barbell or Cable', category: 'Strength', movementPattern: 'Vertical Pull', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Barbell Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Barbell', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'EZ Bar Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'EZ Bar', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Dumbbell Bicep Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Dumbbells', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Alternating Dumbbell Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Dumbbells', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Hammer Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Dumbbells', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Incline Dumbbell Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Dumbbells, Incline Bench', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Concentration Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Dumbbell', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Preacher Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'EZ Bar or Machine', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Cable Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Rope Hammer Curl', primaryMuscle: 'Biceps', secondaryMuscles: 'Forearms', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Elbow Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Tricep Pushdown', primaryMuscle: 'Triceps', secondaryMuscles: 'Forearms', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Rope Tricep Pushdown', primaryMuscle: 'Triceps', secondaryMuscles: 'Forearms', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Overhead Cable Tricep Extension', primaryMuscle: 'Triceps', secondaryMuscles: 'Shoulders', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Dumbbell Overhead Tricep Extension', primaryMuscle: 'Triceps', secondaryMuscles: 'Shoulders', equipment: 'Dumbbell', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Skull Crusher', primaryMuscle: 'Triceps', secondaryMuscles: 'Forearms', equipment: 'EZ Bar or Dumbbells', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Close-Grip Bench Press', primaryMuscle: 'Triceps', secondaryMuscles: 'Chest, Shoulders', equipment: 'Barbell, Bench', category: 'Strength', movementPattern: 'Horizontal Push', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 6-8 reps'),
+    MovementItem(name: 'Bench Dip', primaryMuscle: 'Triceps', secondaryMuscles: 'Shoulders', equipment: 'Bench', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Tricep Dip', primaryMuscle: 'Triceps', secondaryMuscles: 'Chest, Shoulders', equipment: 'Dip Station', category: 'Strength', movementPattern: 'Vertical Push', difficulty: 'Intermediate', trackingType: 'Reps / Added Weight', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Dumbbell Tricep Kickback', primaryMuscle: 'Triceps', secondaryMuscles: 'Shoulders', equipment: 'Dumbbell', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Machine Tricep Extension', primaryMuscle: 'Triceps', secondaryMuscles: 'Forearms', equipment: 'Machine', category: 'Strength', movementPattern: 'Elbow Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Barbell Back Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings, Core', equipment: 'Barbell, Rack', category: 'Strength', movementPattern: 'Squat', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 6-8 reps @ RPE 8'),
+    MovementItem(name: 'Front Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Core', equipment: 'Barbell', category: 'Strength', movementPattern: 'Squat', difficulty: 'Advanced', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 5-8 reps'),
+    MovementItem(name: 'Goblet Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Core', equipment: 'Dumbbell or Kettlebell', category: 'Strength', movementPattern: 'Squat', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Leg Press', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Machine', category: 'Strength', movementPattern: 'Squat', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Hack Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes', equipment: 'Machine', category: 'Strength', movementPattern: 'Squat', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Leg Extension', primaryMuscle: 'Quadriceps', secondaryMuscles: 'None', equipment: 'Machine', category: 'Strength', movementPattern: 'Knee Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Bulgarian Split Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Dumbbells, Bench', category: 'Strength', movementPattern: 'Single-Leg Squat', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 8-10 reps / leg'),
+    MovementItem(name: 'Walking Lunge', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Bodyweight or Dumbbells', category: 'Strength', movementPattern: 'Lunge', difficulty: 'Beginner', trackingType: 'Reps / Weight', defaultSetsReps: '3 sets x 10-12 steps / leg'),
+    MovementItem(name: 'Reverse Lunge', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Bodyweight or Dumbbells', category: 'Strength', movementPattern: 'Lunge', difficulty: 'Beginner', trackingType: 'Reps / Weight', defaultSetsReps: '3 sets x 10-12 reps / leg'),
+    MovementItem(name: 'Step-Up', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes, Hamstrings', equipment: 'Bench, Dumbbells', category: 'Strength', movementPattern: 'Single-Leg', difficulty: 'Beginner', trackingType: 'Reps / Weight', defaultSetsReps: '3 sets x 10-12 reps / leg'),
+    MovementItem(name: 'Smith Machine Squat', primaryMuscle: 'Quadriceps', secondaryMuscles: 'Glutes', equipment: 'Smith Machine', category: 'Strength', movementPattern: 'Squat', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'Romanian Deadlift', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Glutes, Lower Back', equipment: 'Barbell or Dumbbells', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'Stiff-Leg Deadlift', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Glutes, Lower Back', equipment: 'Barbell', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-10 reps'),
+    MovementItem(name: 'Lying Leg Curl', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Calves', equipment: 'Machine', category: 'Strength', movementPattern: 'Knee Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Seated Leg Curl', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Calves', equipment: 'Machine', category: 'Strength', movementPattern: 'Knee Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 10-12 reps'),
+    MovementItem(name: 'Nordic Hamstring Curl', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Glutes', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Knee Flexion', difficulty: 'Advanced', trackingType: 'Reps', defaultSetsReps: '3 sets x 5-8 reps'),
+    MovementItem(name: 'Good Morning', primaryMuscle: 'Hamstrings', secondaryMuscles: 'Glutes, Lower Back', equipment: 'Barbell', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Intermediate', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 8-10 reps'),
+    MovementItem(name: 'Barbell Hip Thrust', primaryMuscle: 'Glutes', secondaryMuscles: 'Hamstrings, Quadriceps', equipment: 'Barbell, Bench', category: 'Strength', movementPattern: 'Hip Thrust', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 8-12 reps'),
+    MovementItem(name: 'Glute Bridge', primaryMuscle: 'Glutes', secondaryMuscles: 'Hamstrings', equipment: 'Bodyweight or Barbell', category: 'Strength', movementPattern: 'Hip Thrust', difficulty: 'Beginner', trackingType: 'Reps / Weight', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Cable Glute Kickback', primaryMuscle: 'Glutes', secondaryMuscles: 'Hamstrings', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Hip Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3 sets x 12-15 reps / leg'),
+    MovementItem(name: 'Cable Pull-Through', primaryMuscle: 'Glutes', secondaryMuscles: 'Hamstrings', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Hip Hinge', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Hip Abduction Machine', primaryMuscle: 'Glutes', secondaryMuscles: 'Hip Abductors', equipment: 'Machine', category: 'Strength', movementPattern: 'Hip Abduction', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 15-20 reps'),
+    MovementItem(name: 'Standing Calf Raise', primaryMuscle: 'Calves', secondaryMuscles: 'None', equipment: 'Machine or Bodyweight', category: 'Strength', movementPattern: 'Ankle Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Seated Calf Raise', primaryMuscle: 'Calves', secondaryMuscles: 'None', equipment: 'Machine', category: 'Strength', movementPattern: 'Ankle Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 15-20 reps'),
+    MovementItem(name: 'Leg Press Calf Raise', primaryMuscle: 'Calves', secondaryMuscles: 'None', equipment: 'Leg Press Machine', category: 'Strength', movementPattern: 'Ankle Extension', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Single-Leg Calf Raise', primaryMuscle: 'Calves', secondaryMuscles: 'None', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Ankle Extension', difficulty: 'Beginner', trackingType: 'Reps / Added Weight', defaultSetsReps: '3 sets x 15 reps / leg'),
+    MovementItem(name: 'Crunch', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Trunk Flexion', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 15-20 reps'),
+    MovementItem(name: 'Cable Crunch', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors', equipment: 'Cable Machine', category: 'Strength', movementPattern: 'Trunk Flexion', difficulty: 'Beginner', trackingType: 'Weight + Reps', defaultSetsReps: '3-4 sets x 12-15 reps'),
+    MovementItem(name: 'Decline Crunch', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors', equipment: 'Decline Bench', category: 'Strength', movementPattern: 'Trunk Flexion', difficulty: 'Intermediate', trackingType: 'Reps / Added Weight', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Hanging Leg Raise', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors, Forearms', equipment: 'Pull-Up Bar', category: 'Strength', movementPattern: 'Hip Flexion', difficulty: 'Intermediate', trackingType: 'Reps', defaultSetsReps: '3-4 sets x 10-15 reps'),
+    MovementItem(name: 'Lying Leg Raise', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Hip Flexion', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 12-15 reps'),
+    MovementItem(name: 'Plank', primaryMuscle: 'Abdominals', secondaryMuscles: 'Shoulders, Glutes', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Anti-Extension', difficulty: 'Beginner', trackingType: 'Duration', defaultSetsReps: '3 sets x 45-60 sec'),
+    MovementItem(name: 'Side Plank', primaryMuscle: 'Obliques', secondaryMuscles: 'Shoulders, Glutes', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Anti-Lateral Flexion', difficulty: 'Beginner', trackingType: 'Duration', defaultSetsReps: '3 sets x 30-45 sec / side'),
+    MovementItem(name: 'Russian Twist', primaryMuscle: 'Obliques', secondaryMuscles: 'Abdominals, Hip Flexors', equipment: 'Bodyweight or Weight', category: 'Strength', movementPattern: 'Rotation', difficulty: 'Beginner', trackingType: 'Reps / Weight', defaultSetsReps: '3 sets x 20 total reps'),
+    MovementItem(name: 'Bicycle Crunch', primaryMuscle: 'Abdominals', secondaryMuscles: 'Obliques, Hip Flexors', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Trunk Flexion', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 20 total reps'),
+    MovementItem(name: 'Ab Wheel Rollout', primaryMuscle: 'Abdominals', secondaryMuscles: 'Shoulders, Lats', equipment: 'Ab Wheel', category: 'Strength', movementPattern: 'Anti-Extension', difficulty: 'Intermediate', trackingType: 'Reps', defaultSetsReps: '3 sets x 8-12 reps'),
+    MovementItem(name: 'Dead Bug', primaryMuscle: 'Abdominals', secondaryMuscles: 'Hip Flexors', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Core Stability', difficulty: 'Beginner', trackingType: 'Reps', defaultSetsReps: '3 sets x 10-12 reps / side'),
+    MovementItem(name: 'Mountain Climber', primaryMuscle: 'Abdominals', secondaryMuscles: 'Shoulders, Hip Flexors', equipment: 'Bodyweight', category: 'Strength', movementPattern: 'Core Stability', difficulty: 'Beginner', trackingType: 'Reps / Duration', defaultSetsReps: '3 sets x 30-45 sec'),
+    MovementItem(name: 'Treadmill Walk', primaryMuscle: 'Full Body', secondaryMuscles: 'Legs', equipment: 'Treadmill', category: 'Cardio', movementPattern: 'Walking', difficulty: 'Beginner', trackingType: 'Duration + Distance', defaultSetsReps: '20-30 mins @ Incline 4-8%'),
+    MovementItem(name: 'Treadmill Run', primaryMuscle: 'Full Body', secondaryMuscles: 'Legs', equipment: 'Treadmill', category: 'Cardio', movementPattern: 'Running', difficulty: 'Intermediate', trackingType: 'Duration + Distance', defaultSetsReps: '15-25 mins (Intervals or Steady)'),
+    MovementItem(name: 'Stationary Bike', primaryMuscle: 'Legs', secondaryMuscles: 'Glutes, Calves', equipment: 'Stationary Bike', category: 'Cardio', movementPattern: 'Cycling', difficulty: 'Beginner', trackingType: 'Duration + Distance', defaultSetsReps: '20-30 mins @ Moderate Resistance'),
+    MovementItem(name: 'Elliptical', primaryMuscle: 'Full Body', secondaryMuscles: 'Legs, Arms', equipment: 'Elliptical Machine', category: 'Cardio', movementPattern: 'Cross Training', difficulty: 'Beginner', trackingType: 'Duration + Distance', defaultSetsReps: '20-30 mins @ Zone 2 Heart Rate'),
+    MovementItem(name: 'Stair Climber', primaryMuscle: 'Legs', secondaryMuscles: 'Glutes, Calves', equipment: 'Stair Climber', category: 'Cardio', movementPattern: 'Climbing', difficulty: 'Intermediate', trackingType: 'Duration + Floors', defaultSetsReps: '15-20 mins (Level 5-8)'),
+    MovementItem(name: 'Rowing Machine', primaryMuscle: 'Back', secondaryMuscles: 'Legs, Arms, Core', equipment: 'Rowing Machine', category: 'Cardio', movementPattern: 'Rowing', difficulty: 'Beginner', trackingType: 'Duration + Distance', defaultSetsReps: '15-20 mins (500m Splits)'),
+    MovementItem(name: 'Jump Rope', primaryMuscle: 'Full Body', secondaryMuscles: 'Calves, Shoulders', equipment: 'Jump Rope', category: 'Cardio', movementPattern: 'Jumping', difficulty: 'Intermediate', trackingType: 'Duration / Reps', defaultSetsReps: '5 rounds x 1-2 mins'),
+    MovementItem(name: 'Burpee', primaryMuscle: 'Full Body', secondaryMuscles: 'Chest, Legs, Shoulders', equipment: 'Bodyweight', category: 'Conditioning', movementPattern: 'Full Body', difficulty: 'Intermediate', trackingType: 'Reps', defaultSetsReps: '3-4 sets x 10-15 reps'),
+    MovementItem(name: 'Battle Rope', primaryMuscle: 'Shoulders', secondaryMuscles: 'Arms, Core', equipment: 'Battle Ropes', category: 'Conditioning', movementPattern: 'Full Body', difficulty: 'Intermediate', trackingType: 'Duration', defaultSetsReps: '4-6 rounds x 30 sec work / 30 sec rest'),
   ];
 
   void addMovementItem(MovementItem item) {
@@ -2200,6 +2313,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
   DateTime _calendarFocusedDate = DateTime.now();
   DateTime _calendarSelectedDate = DateTime.now();
   String _calendarStatusFilter = 'All'; // 'All', 'Confirmed', 'Pending'
+
+  // --- EXERCISE MOVEMENT LIBRARY FILTER STATE ---
+  String _exerciseSearchQuery = '';
+  String _selectedMuscleFilter = 'All';
+  final List<String> _muscleFilterCategories = const [
+    'All',
+    'Chest',
+    'Back',
+    'Shoulders',
+    'Biceps',
+    'Triceps',
+    'Quadriceps',
+    'Hamstrings',
+    'Glutes',
+    'Calves',
+    'Abdominals',
+    'Obliques',
+    'Lower Back',
+    'Full Body',
+    'Legs',
+  ];
 
   @override
   void initState() {
@@ -6319,15 +6453,97 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
+  Widget _buildDifficultyBadge(String difficulty) {
+    Color color;
+    Color bgColor;
+    switch (difficulty.toLowerCase()) {
+      case 'beginner':
+        color = const Color(0xFF00E676);
+        bgColor = const Color(0xFF00E676).withOpacity(0.14);
+        break;
+      case 'advanced':
+        color = const Color(0xFFFF5252);
+        bgColor = const Color(0xFFFF5252).withOpacity(0.14);
+        break;
+      case 'intermediate':
+      default:
+        color = const Color(0xFFFFB74D);
+        bgColor = const Color(0xFFFFB74D).withOpacity(0.14);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4), width: 1),
+      ),
+      child: Text(
+        difficulty,
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _exerciseInfoItem({required IconData icon, required Color iconColor, required String label, required String value}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: iconColor),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _coachLibraryTab(MyPtProvider state) {
+    final searchLower = _exerciseSearchQuery.trim().toLowerCase();
+    final filtered = state.movementLibrary.where((m) {
+      // Muscle filter match
+      if (_selectedMuscleFilter != 'All') {
+        final matchesPrimary = m.primaryMuscle.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+        final matchesSecondary = m.secondaryMuscles.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+        final matchesCategory = m.category.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+        if (!matchesPrimary && !matchesSecondary && !matchesCategory) {
+          return false;
+        }
+      }
+
+      // Search text match
+      if (searchLower.isNotEmpty) {
+        final matchesName = m.name.toLowerCase().contains(searchLower);
+        final matchesMuscle = m.primaryMuscle.toLowerCase().contains(searchLower) || m.secondaryMuscles.toLowerCase().contains(searchLower);
+        final matchesEquip = m.equipment.toLowerCase().contains(searchLower);
+        final matchesDiff = m.difficulty.toLowerCase().contains(searchLower);
+        return matchesName || matchesMuscle || matchesEquip || matchesDiff;
+      }
+      return true;
+    }).toList();
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
       children: [
+        // Title row with count and Create button
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
-              child: Text('Exercise Movement Library', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Exercise Movement Library', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('${state.movementLibrary.length} Exercises Cataloged', style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
             ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -6341,93 +6557,206 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        const Text('Catalog custom movements, biomechanics cues, and target rep protocols.', style: TextStyle(color: Colors.white60, fontSize: 12)),
         const SizedBox(height: 14),
-        if (state.movementLibrary.isEmpty)
+
+        // Search Bar
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: TextField(
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Search exercise, muscle target, equipment...',
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+              prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+              suffixIcon: _exerciseSearchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white54, size: 16),
+                      onPressed: () => setState(() => _exerciseSearchQuery = ''),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            onChanged: (val) => setState(() => _exerciseSearchQuery = val),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Muscle filter chips
+        SizedBox(
+          height: 34,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _muscleFilterCategories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (ctx, idx) {
+              final cat = _muscleFilterCategories[idx];
+              final isSelected = cat == _selectedMuscleFilter;
+              return ChoiceChip(
+                label: Text(cat, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.white70)),
+                selected: isSelected,
+                selectedColor: const Color(0xFFFF5722),
+                backgroundColor: const Color(0xFF161B22),
+                side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() => _selectedMuscleFilter = cat);
+                  }
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Empty state or list of cards
+        if (filtered.isEmpty)
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
             child: Center(
               child: Column(
                 children: [
-                  const Icon(Icons.fitness_center, color: Colors.white30, size: 40),
-                  const SizedBox(height: 10),
-                  const Text('No exercises in library yet.', style: TextStyle(color: Colors.white54, fontSize: 14)),
+                  const Icon(Icons.fitness_center, color: Colors.white30, size: 42),
                   const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Create First Exercise'),
-                    onPressed: () => _openCreateExerciseModal(context, state),
+                  Text(
+                    _exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All'
+                        ? 'No exercises match your search filters.'
+                        : 'No exercises in library yet.',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
+                  const SizedBox(height: 12),
+                  if (_exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All')
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white70, side: const BorderSide(color: Colors.white24)),
+                      onPressed: () => setState(() {
+                        _exerciseSearchQuery = '';
+                        _selectedMuscleFilter = 'All';
+                      }),
+                      child: const Text('Reset Filters'),
+                    )
+                  else
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Create First Exercise'),
+                      onPressed: () => _openCreateExerciseModal(context, state),
+                    ),
                 ],
               ),
             ),
           )
         else
-          ...state.movementLibrary.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final m = entry.value;
+          ...filtered.map((m) {
+            final idx = state.movementLibrary.indexOf(m);
             return Card(
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.only(bottom: 10),
               color: const Color(0xFF161B22),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.white.withOpacity(0.06)),
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: Colors.white.withOpacity(0.08)),
               ),
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF5722).withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.fitness_center, color: Color(0xFFFF5722), size: 20),
-                ),
-                title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text('${m.category} • ${m.equipment}\n${m.defaultSetsReps}', style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.3)),
-                ),
-                trailing: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
-                  color: const Color(0xFF1C2128),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  onSelected: (val) {
-                    if (val == 'edit') {
-                      _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx);
-                    } else if (val == 'delete') {
-                      state.deleteMovementItem(idx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Removed "${m.name}" from library')),
-                      );
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit, size: 16, color: Colors.blueAccent),
-                          SizedBox(width: 8),
-                          Text('Edit Exercise', style: TextStyle(color: Colors.white, fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
-                          SizedBox(width: 8),
-                          Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: InkWell(
                 onTap: () => _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx),
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Row: Exercise Name, Difficulty Pill & More Actions
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              m.name,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildDifficultyBadge(m.difficulty),
+                          const SizedBox(width: 4),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, color: Colors.white54, size: 18),
+                            color: const Color(0xFF1C2128),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onSelected: (val) {
+                              if (val == 'edit') {
+                                _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx);
+                              } else if (val == 'delete') {
+                                state.deleteMovementItem(idx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Removed "${m.name}" from library')),
+                                );
+                              }
+                            },
+                            itemBuilder: (ctx) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit, size: 16, color: Colors.blueAccent),
+                                    SizedBox(width: 8),
+                                    Text('Edit Exercise', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                                    SizedBox(width: 8),
+                                    Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(height: 1, color: Colors.white10),
+                      const SizedBox(height: 10),
+
+                      // 1. Muscle Targetted
+                      _exerciseInfoItem(
+                        icon: Icons.track_changes,
+                        iconColor: const Color(0xFFFF5722),
+                        label: 'Muscle Targetted',
+                        value: (m.secondaryMuscles.isNotEmpty && m.secondaryMuscles != 'None')
+                            ? '${m.primaryMuscle} (${m.secondaryMuscles})'
+                            : m.primaryMuscle,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // 2. Equipments
+                      _exerciseInfoItem(
+                        icon: Icons.fitness_center,
+                        iconColor: const Color(0xFF00E676),
+                        label: 'Equipments',
+                        value: m.equipment,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // 3. Suggested Sets and Reps
+                      _exerciseInfoItem(
+                        icon: Icons.repeat,
+                        iconColor: const Color(0xFF40C4FF),
+                        label: 'Suggested Sets & Reps',
+                        value: m.defaultSetsReps,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             );
           }),
@@ -8741,33 +9070,48 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   void _openCreateExerciseModal(BuildContext context, MyPtProvider state, {MovementItem? existingItem, int? existingIndex}) {
     final nameCtrl = TextEditingController(text: existingItem?.name ?? '');
-    final categoryCtrl = TextEditingController(text: existingItem?.category ?? 'Chest / Push');
-    final equipmentCtrl = TextEditingController(text: existingItem?.equipment ?? 'Dumbbells');
-    final setsRepsCtrl = TextEditingController(text: existingItem?.defaultSetsReps ?? '3 sets x 10-12 reps');
+    final primaryMuscleCtrl = TextEditingController(text: existingItem?.primaryMuscle ?? 'Chest');
+    final secondaryMusclesCtrl = TextEditingController(text: existingItem?.secondaryMuscles ?? '');
+    final equipmentCtrl = TextEditingController(text: existingItem?.equipment ?? 'Barbell, Bench');
+    final setsRepsCtrl = TextEditingController(text: existingItem?.defaultSetsReps ?? '3-4 sets x 8-12 reps');
+    String selectedDifficulty = existingItem?.difficulty ?? 'Beginner';
 
-    final categories = [
-      'Chest / Push',
-      'Back / Pull',
-      'Legs / Quads',
-      'Hamstrings & Glutes',
-      'Posterior Chain',
+    final primaryMuscles = [
+      'Chest',
+      'Back',
       'Shoulders',
-      'Arms / Biceps / Triceps',
-      'Core & Abs',
-      'Full Body / Conditioning',
+      'Biceps',
+      'Triceps',
+      'Quadriceps',
+      'Hamstrings',
+      'Glutes',
+      'Calves',
+      'Abdominals',
+      'Obliques',
+      'Lower Back',
+      'Full Body',
+      'Legs',
     ];
 
     final equipments = [
-      'Barbell & Squat Rack',
-      'Olympic Barbell & Plates',
-      'Olympic Barbell',
-      'Adjustable Bench & Dumbbells',
+      'Barbell, Bench',
+      'Dumbbells, Bench',
+      'Barbell, Incline Bench',
+      'Dumbbells, Incline Bench',
+      'Barbell, Rack',
       'Dumbbells',
-      'Cable Station',
-      'Kettlebell',
-      'Bodyweight / Pull-up Bar',
-      'Resistance Bands',
-      'Machine / Lever',
+      'Cable Machine',
+      'Machine',
+      'Bodyweight',
+      'Pull-Up Bar',
+      'Dip Station',
+      'EZ Bar',
+      'Treadmill',
+      'Stationary Bike',
+      'Elliptical Machine',
+      'Rowing Machine',
+      'Jump Rope',
+      'Battle Ropes',
     ];
 
     showModalBottomSheet(
@@ -8803,39 +9147,96 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
+
+                // 1. Exercise Name
                 TextField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Exercise Name *',
-                    hintText: 'e.g., Bulgarian Split Squat',
+                    hintText: 'e.g., Incline Dumbbell Bench Press',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.fitness_center, color: Color(0xFFFF5722), size: 20),
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                // 2. Difficulty Level Selector
+                const Text('Difficulty Level', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Row(
+                  children: ['Beginner', 'Intermediate', 'Advanced'].map((diff) {
+                    final isSelected = selectedDifficulty.toLowerCase() == diff.toLowerCase();
+                    Color diffColor;
+                    if (diff == 'Beginner') {
+                      diffColor = const Color(0xFF00E676);
+                    } else if (diff == 'Advanced') {
+                      diffColor = const Color(0xFFFF5252);
+                    } else {
+                      diffColor = const Color(0xFFFFB74D);
+                    }
+
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: ChoiceChip(
+                          label: Text(
+                            diff,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.white : Colors.white70,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: diffColor.withOpacity(0.3),
+                          backgroundColor: const Color(0xFF21262D),
+                          side: BorderSide(color: isSelected ? diffColor : Colors.white12),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setModalState(() => selectedDifficulty = diff);
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
                 
-                // Category Selector
-                const Text('Muscle Group / Category', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+                // 3. Primary Muscle Target Selector
+                const Text('Primary Muscle Target', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: categories.contains(categoryCtrl.text) ? categoryCtrl.text : categories.first,
-                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.category, color: Colors.white54, size: 20)),
+                  value: primaryMuscles.contains(primaryMuscleCtrl.text) ? primaryMuscleCtrl.text : primaryMuscles.first,
+                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.track_changes, color: Color(0xFFFF5722), size: 20)),
                   dropdownColor: const Color(0xFF1C2128),
-                  items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat, style: const TextStyle(fontSize: 13)))).toList(),
+                  items: primaryMuscles.map((cat) => DropdownMenuItem(value: cat, child: Text(cat, style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (val) {
                     if (val != null) {
-                      setModalState(() => categoryCtrl.text = val);
+                      setModalState(() => primaryMuscleCtrl.text = val);
                     }
                   },
                 ),
                 const SizedBox(height: 12),
 
-                // Equipment Selector
+                // 4. Secondary Muscles (Optional)
+                TextField(
+                  controller: secondaryMusclesCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Secondary Muscles Targetted (Optional)',
+                    hintText: 'e.g., Triceps, Shoulders',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category, color: Colors.white54, size: 20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 5. Equipment Selector
                 const Text('Required Equipment', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   value: equipments.contains(equipmentCtrl.text) ? equipmentCtrl.text : equipments.first,
-                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.sports_gymnastics, color: Colors.white54, size: 20)),
+                  decoration: const InputDecoration(border: OutlineInputBorder(), prefixIcon: Icon(Icons.fitness_center, color: Color(0xFF00E676), size: 20)),
                   dropdownColor: const Color(0xFF1C2128),
                   items: equipments.map((eq) => DropdownMenuItem(value: eq, child: Text(eq, style: const TextStyle(fontSize: 13)))).toList(),
                   onChanged: (val) {
@@ -8846,14 +9247,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Sets & Reps Target
+                // 6. Suggested Sets and Reps
                 TextField(
                   controller: setsRepsCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Default Sets & Reps / Target Protocol',
-                    hintText: 'e.g., 3 sets x 10-12 reps @ RPE 8',
+                    labelText: 'Suggested Sets & Reps / Target Protocol',
+                    hintText: 'e.g., 3-4 sets x 8-12 reps',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.repeat, color: Colors.white54, size: 20),
+                    prefixIcon: Icon(Icons.repeat, color: Color(0xFF40C4FF), size: 20),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -8875,9 +9276,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
                       final newItem = MovementItem(
                         name: name,
-                        category: categoryCtrl.text.trim().isEmpty ? 'General' : categoryCtrl.text.trim(),
-                        defaultSetsReps: setsRepsCtrl.text.trim().isEmpty ? '3 sets x 10 reps' : setsRepsCtrl.text.trim(),
+                        primaryMuscle: primaryMuscleCtrl.text.trim().isEmpty ? 'Chest' : primaryMuscleCtrl.text.trim(),
+                        secondaryMuscles: secondaryMusclesCtrl.text.trim().isEmpty ? 'None' : secondaryMusclesCtrl.text.trim(),
                         equipment: equipmentCtrl.text.trim().isEmpty ? 'Standard Gym Equipment' : equipmentCtrl.text.trim(),
+                        defaultSetsReps: setsRepsCtrl.text.trim().isEmpty ? '3-4 sets x 10 reps' : setsRepsCtrl.text.trim(),
+                        difficulty: selectedDifficulty,
+                        category: 'Strength',
                       );
 
                       if (existingIndex != null && existingIndex >= 0) {
