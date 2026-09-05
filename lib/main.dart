@@ -3118,6 +3118,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   String _calendarStatusFilter = 'All'; // 'All', 'Confirmed', 'Pending'
 
   // --- EXERCISE MOVEMENT LIBRARY FILTER STATE ---
+  int _coachDashboardSectionTab = 0; // 0: Upcoming Sessions, 1: Messages
   String _exerciseSearchQuery = '';
   String _selectedMuscleFilter = 'All';
   final List<String> _muscleFilterCategories = const [
@@ -3188,8 +3189,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
         (Icons.trending_up, 'Progress'),
       ],
       UserRole.coach => const [
-        (Icons.calendar_month_rounded, 'Upcoming Sessions'),
-        (Icons.chat_bubble_outline_rounded, 'Messages'),
+        (Icons.dashboard, 'Dashboard'),
+        (Icons.inbox, 'Requests'),
+        (Icons.calendar_month, 'Schedule'),
+        (Icons.people, 'Clients'),
+        (Icons.post_add, 'Build Chart'),
+        (Icons.fitness_center, 'Library'),
+        (Icons.inventory_2, 'Packages'),
       ],
       UserRole.headCoach => const [
         (Icons.dashboard, 'Overview'),
@@ -5346,12 +5352,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   // ============================================================================
-  // 7. COACH VIEWS (2 TABS: Upcoming Sessions, Messages)
+  // 7. COACH VIEWS (7 TABS: Dashboard, Requests, Schedule, Clients, Build Chart, Library, Packages)
   // ============================================================================
   Widget _buildCoachView(MyPtProvider state, int tab) {
     return switch (tab) {
       0 => _coachDashboardTab(state),
-      1 => _coachMessagesTab(state),
+      1 => _coachRequestsTab(state),
+      2 => _coachScheduleTab(state),
+      3 => _coachClientsTab(state),
+      4 => _coachBuildChartTab(),
+      5 => _coachLibraryTab(state),
+      6 => _coachPackagesTab(state),
       _ => _coachDashboardTab(state),
     };
   }
@@ -5478,256 +5489,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _coachMessagesTab(MyPtProvider state) {
-    final coach = state.currentUser!;
-    final myClients = state.getClientsForTrainer(coach.id);
-
-    // Find all users who either are assigned clients or have sent/received messages to this coach
-    final allConversationPeers = <String>{};
-    for (final c in myClients) {
-      allConversationPeers.add(c.name);
-    }
-    for (final m in state.chatMessages) {
-      if (m.senderName.toLowerCase() == coach.name.toLowerCase()) {
-        allConversationPeers.add(m.receiverName);
-      } else if (m.receiverName.toLowerCase() == coach.name.toLowerCase()) {
-        allConversationPeers.add(m.senderName);
-      }
-    }
-
-    final peerList = allConversationPeers.toList();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Client Communication', style: TextStyle(color: Colors.white60, fontSize: 13)),
-                Text('Messages & Nutrition', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF5722).withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.chat_bubble, size: 12, color: Color(0xFFFF5722)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${peerList.length} Active',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Quick Active Clients Avatars Strip
-        if (myClients.isNotEmpty) ...[
-          const Text('Assigned Trainees', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 84,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: myClients.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final client = myClients[index];
-                final msgs = state.getMessagesBetween(coach.name, client.name);
-                final hasUnread = msgs.isNotEmpty;
-
-                return GestureDetector(
-                  onTap: () => _openChatModal(context, state, peerName: client.name),
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                            child: Text(
-                              client.name.isNotEmpty ? client.name[0] : '?',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFFFF5722)),
-                            ),
-                          ),
-                          if (hasUnread)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF00E676),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: const Color(0xFF0D1117), width: 2),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      SizedBox(
-                        width: 60,
-                        child: Text(
-                          client.name.split(' ').first,
-                          style: const TextStyle(fontSize: 11, color: Colors.white),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // Conversations List
-        const Text('Recent Conversations', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 10),
-
-        if (peerList.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: const Column(
-              children: [
-                Icon(Icons.chat_bubble_outline, size: 40, color: Colors.white38),
-                SizedBox(height: 12),
-                Text('No message history yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                SizedBox(height: 6),
-                Text('Messages and logged nutrition meals from your trainees will appear here.', style: TextStyle(color: Colors.white54, fontSize: 12), textAlign: TextAlign.center),
-              ],
-            ),
-          )
-        else
-          ...peerList.map((peer) {
-            final msgs = state.getMessagesBetween(coach.name, peer);
-            final lastMsg = msgs.isNotEmpty ? msgs.last : null;
-            final isClientAssigned = myClients.any((c) => c.name.toLowerCase() == peer.toLowerCase());
-
-            String previewText = 'Tap to start conversation or review daily meals';
-            String timeText = '';
-            bool isMeal = false;
-
-            if (lastMsg != null) {
-              if (lastMsg.mealAttachment != null) {
-                previewText = '${lastMsg.mealAttachment!.emoji} ${lastMsg.mealAttachment!.mealType}: ${lastMsg.mealAttachment!.description}';
-                isMeal = true;
-              } else {
-                previewText = lastMsg.text;
-              }
-              timeText = DateFormat('hh:mm a').format(lastMsg.timestamp);
-            }
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: isMeal ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white12),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => _openChatModal(context, state, peerName: peer),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                        child: Text(
-                          peer.isNotEmpty ? peer[0] : '?',
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(peer, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                                if (timeText.isNotEmpty)
-                                  Text(timeText, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                if (isClientAssigned) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                    margin: const EdgeInsets.only(right: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF00E676).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text('1-on-1 Assigned', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
-                                  ),
-                                ],
-                                if (isMeal) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                    margin: const EdgeInsets.only(right: 6),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFF9800).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text('Meal Log', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              previewText,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isMeal ? const Color(0xFF00E676) : Colors.white70,
-                                fontWeight: isMeal ? FontWeight.w600 : FontWeight.normal,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white38),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-      ],
     );
   }
 
@@ -5875,144 +5636,456 @@ class _MainShellScreenState extends State<MainShellScreen> {
           const SizedBox(height: 16),
         ],
 
+        // Dashboard Section Tabs (Upcoming Sessions | Messages)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Upcoming Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            TextButton(
-              onPressed: () => _openScheduleModal(context, state),
-              child: const Text('+ Schedule Session', style: TextStyle(color: Color(0xFFFF5722))),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _coachDashboardSectionTab = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _coachDashboardSectionTab == 0 ? const Color(0xFFFF5722) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_month, size: 14, color: _coachDashboardSectionTab == 0 ? Colors.white : Colors.white60),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Upcoming Sessions',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: _coachDashboardSectionTab == 0 ? Colors.white : Colors.white60,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  GestureDetector(
+                    onTap: () => setState(() => _coachDashboardSectionTab = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _coachDashboardSectionTab == 1 ? const Color(0xFFFF5722) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.chat_bubble_outline, size: 14, color: _coachDashboardSectionTab == 1 ? Colors.white : Colors.white60),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Messages',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: _coachDashboardSectionTab == 1 ? Colors.white : Colors.white60,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            if (_coachDashboardSectionTab == 0)
+              TextButton(
+                onPressed: () => _openScheduleModal(context, state),
+                child: const Text('+ Schedule Session', style: TextStyle(color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+              ),
           ],
         ),
-        if (mySessions.isEmpty)
+        const SizedBox(height: 12),
+
+        if (_coachDashboardSectionTab == 0) ...[
+          if (mySessions.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
+              child: const Center(child: Text('No upcoming sessions scheduled.', style: TextStyle(color: Colors.white54))),
+            )
+          else
+            ...mySessions.map((s) {
+              final isPending = s.status == RequestStatus.pending;
+              final isConfirmed = s.status == RequestStatus.confirmed;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: isPending
+                        ? const Color(0xFFFF9800)
+                        : isConfirmed
+                            ? const Color(0xFF00E676).withOpacity(0.3)
+                            : Colors.white12,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : const Color(0xFFFF5722).withOpacity(0.15),
+                            child: Icon(
+                              isPending ? Icons.hourglass_top_rounded : Icons.event,
+                              color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(s.clientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                Text('${DateFormat('EEE, dd MMM yyyy').format(s.date)} • ${s.timeSlot}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                Text('Focus: ${s.focusArea}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? const Color(0xFFFF9800).withOpacity(0.15)
+                                  : isConfirmed
+                                      ? const Color(0xFF00E676).withOpacity(0.15)
+                                      : Colors.white10,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isPending
+                                  ? 'PENDING'
+                                  : isConfirmed
+                                      ? '✓ CONFIRMED'
+                                      : s.status.name.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isPending
+                                    ? const Color(0xFFFF9800)
+                                    : isConfirmed
+                                        ? const Color(0xFF00E676)
+                                        : Colors.white54,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (isPending) ...[
+                            TextButton(
+                              style: TextButton.styleFrom(foregroundColor: Colors.redAccent, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                              child: const Text('Reject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (dCtx) => AlertDialog(
+                                    backgroundColor: const Color(0xFF161B22),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.redAccent, width: 1.2)),
+                                    title: const Text('Decline Session & Refund Credit?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                    content: Text('Are you sure you want to decline this session request for ${s.clientName}? 1 PT Credit will be automatically refunded back to the client’s balance.', style: const TextStyle(color: Colors.white70)),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(dCtx),
+                                        child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                        onPressed: () {
+                                          Navigator.pop(dCtx);
+                                          state.rejectSession(s);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: Colors.redAccent,
+                                              content: Text('❌ Declined booking. 1 PT Credit refunded to ${s.clientName}.'),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text('Decline & Refund Credit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
+                              icon: const Icon(Icons.check, size: 14, color: Colors.black),
+                              label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                state.approveSession(s);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF00E676),
+                                    content: Text('✓ Approved 1-on-1 session for ${s.clientName}!'),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          TextButton.icon(
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
+                            icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
+                            label: const Text('Reschedule', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
+                            onPressed: () => _openRescheduleModal(context, state, s),
+                          ),
+                          const SizedBox(width: 8),
+                          InkWell(
+                            onTap: () => _openChatModal(context, state, peerName: s.clientName),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFF21262D), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.white24)),
+                              child: const Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        ] else ...[
+          _buildCoachDashboardMessagesSection(context, state, coach, myClients),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCoachDashboardMessagesSection(BuildContext context, MyPtProvider state, UserModel coach, List<UserModel> myClients) {
+    final allConversationPeers = <String>{};
+    for (final c in myClients) {
+      allConversationPeers.add(c.name);
+    }
+    for (final m in state.chatMessages) {
+      if (m.senderName.toLowerCase() == coach.name.toLowerCase()) {
+        allConversationPeers.add(m.receiverName);
+      } else if (m.receiverName.toLowerCase() == coach.name.toLowerCase()) {
+        allConversationPeers.add(m.senderName);
+      }
+    }
+
+    final peerList = allConversationPeers.toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (myClients.isNotEmpty) ...[
+          const Text('Assigned Trainees', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: myClients.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final client = myClients[index];
+                final msgs = state.getMessagesBetween(coach.name, client.name);
+                final hasUnread = msgs.isNotEmpty;
+
+                return GestureDetector(
+                  onTap: () => _openChatModal(context, state, peerName: client.name),
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 24,
+                            backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                            child: Text(
+                              client.name.isNotEmpty ? client.name[0] : '?',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFFFF5722)),
+                            ),
+                          ),
+                          if (hasUnread)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF00E676),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: const Color(0xFF0D1117), width: 2),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      SizedBox(
+                        width: 60,
+                        child: Text(
+                          client.name.split(' ').first,
+                          style: const TextStyle(fontSize: 11, color: Colors.white),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        const Text('Recent Conversations & Meal Logs', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+        const SizedBox(height: 8),
+
+        if (peerList.isEmpty)
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
-            child: const Center(child: Text('No upcoming sessions scheduled.', style: TextStyle(color: Colors.white54))),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: const Center(
+              child: Column(
+                children: [
+                  Icon(Icons.chat_bubble_outline, size: 36, color: Colors.white38),
+                  SizedBox(height: 8),
+                  Text('No message history yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                  SizedBox(height: 4),
+                  Text('Messages and logged nutrition meals from your trainees will appear here.', style: TextStyle(color: Colors.white54, fontSize: 11), textAlign: TextAlign.center),
+                ],
+              ),
+            ),
           )
         else
-          ...mySessions.map((s) {
-            final isPending = s.status == RequestStatus.pending;
-            final isConfirmed = s.status == RequestStatus.confirmed;
+          ...peerList.map((peer) {
+            final msgs = state.getMessagesBetween(coach.name, peer);
+            final lastMsg = msgs.isNotEmpty ? msgs.last : null;
+            final isClientAssigned = myClients.any((c) => c.name.toLowerCase() == peer.toLowerCase());
+
+            String previewText = 'Tap to start conversation or review daily meals';
+            String timeText = '';
+            bool isMeal = false;
+
+            if (lastMsg != null) {
+              if (lastMsg.mealAttachment != null) {
+                previewText = '${lastMsg.mealAttachment!.emoji} ${lastMsg.mealAttachment!.mealType}: ${lastMsg.mealAttachment!.description}';
+                isMeal = true;
+              } else {
+                previewText = lastMsg.text;
+              }
+              timeText = DateFormat('hh:mm a').format(lastMsg.timestamp);
+            }
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF161B22),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white12),
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: isMeal ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : const Color(0xFFFF5722).withOpacity(0.15),
-                          child: Icon(isPending ? Icons.hourglass_top_rounded : Icons.event, color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722), size: 18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _openChatModal(context, state, peerName: peer),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                        child: Text(
+                          peer.isNotEmpty ? peer[0] : '?',
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.clientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              Text('${DateFormat('EEE, dd MMM yyyy').format(s.date)} • ${s.timeSlot}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                              Text('Focus: ${s.focusArea}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFF21262D),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (isPending) ...[
-                          TextButton.icon(
-                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                            icon: const Icon(Icons.close, size: 14),
-                            label: const Text('Reject', style: TextStyle(fontSize: 12)),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (dCtx) => AlertDialog(
-                                  backgroundColor: const Color(0xFF161B22),
-                                  title: const Text('Decline Session Booking?', style: TextStyle(color: Colors.white)),
-                                  content: Text('Decline ${s.clientName}\'s session on ${DateFormat("EEE, dd MMM").format(s.date)} at ${s.timeSlot}?\n\n1 PT Credit will be immediately refunded to ${s.clientName}.', style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(dCtx),
-                                      child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(peer, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                                if (timeText.isNotEmpty)
+                                  Text(timeText, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Row(
+                              children: [
+                                if (isClientAssigned) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                      onPressed: () {
-                                        Navigator.pop(dCtx);
-                                        state.rejectSession(s);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            backgroundColor: Colors.redAccent,
-                                            content: Text('❌ Declined booking. 1 PT Credit refunded to ${s.clientName}.'),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text('Decline & Refund Credit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    child: const Text('1-on-1 Assigned', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  ),
+                                ],
+                                if (isMeal) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF9800).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
-                            icon: const Icon(Icons.check, size: 14, color: Colors.black),
-                            label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            onPressed: () {
-                              state.approveSession(s);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF00E676),
-                                  content: Text('✓ Approved 1-on-1 session for ${s.clientName}!'),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        TextButton.icon(
-                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                          icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
-                          label: const Text('Reschedule', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
-                          onPressed: () => _openRescheduleModal(context, state, s),
+                                    child: const Text('Meal Log', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFFFF9800))),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              previewText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isMeal ? const Color(0xFF00E676) : Colors.white70,
+                                fontWeight: isMeal ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: () => _openChatModal(context, state, peerName: s.clientName),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: const Color(0xFF21262D), borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.white24)),
-                            child: const Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.white38),
+                    ],
+                  ),
                 ),
               ),
             );
