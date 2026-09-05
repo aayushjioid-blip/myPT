@@ -2517,9 +2517,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFF5722).withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.35)),
                                   ),
                                   child: Text(
-                                    '${allAccounts.length} Total Users',
+                                    'DEV ONLY • ${allAccounts.length} Users',
                                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                                   ),
                                 ),
