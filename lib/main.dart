@@ -2377,6 +2377,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   String selectedGoal = kStandardFitnessGoals.first;
+  String _personaRoleFilter = 'All';
 
   @override
   void dispose() {
@@ -2470,39 +2471,114 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 24),
 
                 if (!kReleaseMode) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF161B22),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
+                  Builder(
+                    builder: (context) {
+                      final allAccounts = state.demoAccounts.entries.toList();
+                      final clientAccounts = allAccounts.where((e) => e.value.role == UserRole.client).toList();
+                      final coachAccounts = allAccounts.where((e) => e.value.role == UserRole.coach).toList();
+                      final headCoachAccounts = allAccounts.where((e) => e.value.role == UserRole.headCoach).toList();
+                      final managerAccounts = allAccounts.where((e) => e.value.role == UserRole.gymMgr).toList();
+                      final adminAccounts = allAccounts.where((e) => e.value.role == UserRole.superAdmin).toList();
+
+                      final displayedAccounts = switch (_personaRoleFilter) {
+                        'Clients' => clientAccounts,
+                        'Coaches' => coachAccounts,
+                        'Head Coaches' => headCoachAccounts,
+                        'Managers' => managerAccounts,
+                        'Admins' => adminAccounts,
+                        _ => allAccounts,
+                      };
+
+                      return Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161B22),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.35)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.bolt, color: Color(0xFFFF5722), size: 16),
-                            SizedBox(width: 6),
-                            Text('QUICK TEST PERSONAS (TAP TO LOGIN)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.bolt, color: Color(0xFFFF5722), size: 18),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'QUICK TEST PERSONAS (TAP TO LOGIN)',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722), letterSpacing: 0.5),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF5722).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${allAccounts.length} Total Users',
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Role Filter Tabs
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _loginFilterChip('All (${allAccounts.length})', 'All'),
+                                  const SizedBox(width: 5),
+                                  _loginFilterChip('Clients 👤 (${clientAccounts.length})', 'Clients'),
+                                  const SizedBox(width: 5),
+                                  _loginFilterChip('Coaches 🏋️ (${coachAccounts.length})', 'Coaches'),
+                                  const SizedBox(width: 5),
+                                  _loginFilterChip('Head Coaches 🥇 (${headCoachAccounts.length})', 'Head Coaches'),
+                                  const SizedBox(width: 5),
+                                  _loginFilterChip('Managers 🏢 (${managerAccounts.length})', 'Managers'),
+                                  const SizedBox(width: 5),
+                                  _loginFilterChip('Admins 👑 (${adminAccounts.length})', 'Admins'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Dynamic Persona Buttons for All Users
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: displayedAccounts.map((entry) {
+                                final email = entry.key;
+                                final user = entry.value;
+                                final pass = state.demoPasswords[email] ?? 'client123';
+                                final prefix = switch (user.role) {
+                                  UserRole.superAdmin => '👑',
+                                  UserRole.headCoach => '🥇',
+                                  UserRole.gymMgr => '🏢',
+                                  UserRole.coach => '🏋️',
+                                  UserRole.client => '👤',
+                                };
+                                final roleTag = switch (user.role) {
+                                  UserRole.superAdmin => 'Admin',
+                                  UserRole.headCoach => 'Head Coach',
+                                  UserRole.gymMgr => 'Manager',
+                                  UserRole.coach => 'Coach',
+                                  UserRole.client => 'Client',
+                                };
+                                final shortName = user.name.split(' ').first;
+                                final displayName = '$prefix $shortName ($roleTag)';
+                                return _demoButton(displayName, email, pass, state, user.role);
+                              }).toList(),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            _demoButton('👤 Sarah (Client)', 'sarah@mypt.com', 'client123', state),
-                            _demoButton('👤 Sourabh (Client)', 'sourabh@mypt.com', 'client123', state),
-                            _demoButton('👤 New Trainee', 'newclient@mypt.com', 'client123', state),
-                            _demoButton('⚡ Rincy (Coach)', 'rincy@mypt.com', 'trainer123', state),
-                            _demoButton('🏋️ Alex (Coach)', 'alex@mypt.com', 'coach123', state),
-                            _demoButton('🏋️ Kumar (Coach)', 'kumar@mypt.com', 'trainer123', state),
-                            _demoButton('👑 Neeli (Head Coach)', 'neeli@mypt.com', 'lead123', state),
-                          ],
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
                 ],
@@ -2945,13 +3021,49 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  Widget _demoButton(String title, String email, String pass, MyPtProvider state) {
+  Widget _loginFilterChip(String label, String value) {
+    final isSelected = _personaRoleFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _personaRoleFilter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : Colors.white70,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _demoButton(String title, String email, String pass, MyPtProvider state, [UserRole? role]) {
+    final borderColor = switch (role) {
+      UserRole.superAdmin => const Color(0xFF00E676).withOpacity(0.4),
+      UserRole.headCoach => const Color(0xFFFFD54F).withOpacity(0.4),
+      UserRole.gymMgr => const Color(0xFFAB47BC).withOpacity(0.4),
+      UserRole.coach => const Color(0xFFFF5722).withOpacity(0.4),
+      UserRole.client => const Color(0xFF29B6F6).withOpacity(0.3),
+      null => Colors.white12,
+    };
+
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF21262D),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        textStyle: const TextStyle(fontSize: 11),
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: borderColor),
+        ),
       ),
       onPressed: () {
         setState(() {
