@@ -11101,6 +11101,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
   void _openCoachProfileModal(BuildContext context, MyPtProvider state, UserModel coach) {
     final specialties = _getTrainerSpecialties(coach);
     final packages = state.getPackagesForTrainer(coach.id);
+    final user = state.currentUser;
+    final isAlreadyPrimary = user != null && user.trainerId == coach.id && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
+    final isPending = user != null && user.trainerId == coach.id && user.trainerApprovalStatus == TrainerApprovalStatus.pending;
+    final isOnlyOneTrainer = state.allTrainers.length <= 1;
 
     showModalBottomSheet(
       context: context,
@@ -11121,7 +11125,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                  child: Text(coach.name[0], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                  child: Text(coach.name.isNotEmpty ? coach.name[0] : '?', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -11158,27 +11162,89 @@ class _MainShellScreenState extends State<MainShellScreen> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 color: const Color(0xFF0D1117),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: Colors.white10),
+                ),
                 child: ListTile(
-                  title: Text(pkg.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: Text('+${pkg.sessionsCount} PT Credits • ${pkg.durationWeeks} Weeks Access'),
-                  trailing: Text(state.formatPrice(pkg.priceInr), style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 14)),
+                  title: Text(pkg.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                  subtitle: Text('+${pkg.sessionsCount} PT Credits • ${pkg.durationWeeks} Weeks Access', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(state.formatPrice(pkg.priceInr), style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white38),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openPurchaseOptionsModal(context, state, pkg);
+                  },
                 ),
               );
             }),
             const SizedBox(height: 16),
 
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _openSelectCoachConfirmationModal(context, state, coach);
-                },
-                child: const Text('Select Coach as Primary Trainer 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+            if (isAlreadyPrimary) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E676).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF00E676).withOpacity(0.35)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.verified, color: Color(0xFF00E676), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Your Assigned Primary Coach ✓',
+                      style: TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ] else if (isPending) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9800).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.35)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.hourglass_top, color: Color(0xFFFF9800), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Consultation Request Pending ⏳',
+                      style: TextStyle(color: Color(0xFFFF9800), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (!isOnlyOneTrainer) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5722),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _openSelectCoachConfirmationModal(context, state, coach);
+                  },
+                  child: const Text('Select Coach as Primary Trainer 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ],
         ),
       ),
