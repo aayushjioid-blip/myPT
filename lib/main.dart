@@ -282,6 +282,7 @@ class AppNotificationItem {
   bool isRead;
   final String? recipientName;
   final UserRole? recipientRole;
+  final String? sessionId;
 
   AppNotificationItem({
     required this.id,
@@ -292,6 +293,7 @@ class AppNotificationItem {
     this.isRead = false,
     this.recipientName,
     this.recipientRole,
+    this.sessionId,
   });
 }
 
@@ -1150,21 +1152,23 @@ class MyPtProvider extends ChangeNotifier {
       recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'booking',
+      sessionId: session.id,
     );
 
     addNotification(
-      title: '🔄 Session Rescheduled',
+      title: '🔄 Session Rescheduled: ${session.clientName}',
       message: 'Session with ${session.clientName} was rescheduled to $formatted from $newTimeSlot.',
       recipientName: session.trainerName,
       recipientRole: UserRole.coach,
       type: 'booking',
+      sessionId: session.id,
     );
 
     notifyListeners();
   }
 
   void scheduleSession(SessionItem session) {
-    session.status = RequestStatus.confirmed;
+    session.status = RequestStatus.pending;
     sessions.insert(0, session);
 
     if (currentUser?.role == UserRole.client && currentUser != null && currentUser!.ptCredits > 0) {
@@ -1173,19 +1177,21 @@ class MyPtProvider extends ChangeNotifier {
 
     final formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(session.date);
     addNotification(
-      title: '✓ Session Booked with Coach ${session.trainerName}',
-      message: 'Your 1-on-1 session ("${session.focusArea}") is confirmed for $formattedDate from ${session.timeSlot}. Cost: 1 PT Credit.',
+      title: '⏳ Session Request Sent (Pending Coach Approval)',
+      message: 'Your 1-on-1 session request ("${session.focusArea}") for $formattedDate from ${session.timeSlot} was sent to Coach ${session.trainerName}. Waiting for coach approval.',
       recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'booking',
+      sessionId: session.id,
     );
 
     addNotification(
-      title: '📅 New Session Booked: ${session.clientName}',
-      message: '${session.clientName} booked a 1-on-1 session for $formattedDate from ${session.timeSlot} (Focus: ${session.focusArea}).',
+      title: '📅 New Session Request: ${session.clientName}',
+      message: '${session.clientName} requested a 1-on-1 session for $formattedDate from ${session.timeSlot} (Focus: ${session.focusArea}). Please accept, reject, or reschedule.',
       recipientName: session.trainerName,
       recipientRole: UserRole.coach,
       type: 'booking',
+      sessionId: session.id,
     );
 
     notifyListeners();
@@ -1193,11 +1199,65 @@ class MyPtProvider extends ChangeNotifier {
 
   void approveSession(SessionItem session) {
     session.status = RequestStatus.confirmed;
+
+    final formattedDate = DateFormat('EEEE, dd MMMM yyyy').format(session.date);
+    addNotification(
+      title: '✓ Session Approved by Coach ${session.trainerName}',
+      message: 'Coach ${session.trainerName} has accepted and confirmed your 1-on-1 session for $formattedDate from ${session.timeSlot} (Focus: ${session.focusArea})!',
+      recipientName: session.clientName,
+      recipientRole: UserRole.client,
+      type: 'booking',
+      sessionId: session.id,
+    );
+
+    addNotification(
+      title: '✓ Session Confirmed with ${session.clientName}',
+      message: 'You confirmed ${session.clientName}\'s 1-on-1 session for $formattedDate from ${session.timeSlot}.',
+      recipientName: session.trainerName,
+      recipientRole: UserRole.coach,
+      type: 'booking',
+      sessionId: session.id,
+    );
+
     notifyListeners();
   }
 
-  void rejectSession(SessionItem session) {
-    cancelSession(session);
+  void rejectSession(SessionItem session, {String? reason}) {
+    session.status = RequestStatus.cancelled;
+
+    UserModel? client;
+    for (final c in rosterClients) {
+      if (c.id == session.clientId || c.name.toLowerCase() == session.clientName.toLowerCase()) {
+        client = c;
+        break;
+      }
+    }
+    if (client != null) {
+      client.ptCredits += 1;
+    } else if (currentUser?.name.toLowerCase() == session.clientName.toLowerCase() || currentUser?.id == session.clientId) {
+      currentUser?.ptCredits += 1;
+    }
+
+    final formattedDate = DateFormat('EEE, dd MMM yyyy').format(session.date);
+    addNotification(
+      title: '❌ Session Declined by Coach ${session.trainerName} (Credit Refunded)',
+      message: 'Coach ${session.trainerName} was unable to accept your booking for $formattedDate at ${session.timeSlot}${reason != null && reason.isNotEmpty ? " (Reason: $reason)" : ""}. 1 PT Credit has been refunded to your balance.',
+      recipientName: session.clientName,
+      recipientRole: UserRole.client,
+      type: 'warning',
+      sessionId: session.id,
+    );
+
+    addNotification(
+      title: '❌ Session Request Declined',
+      message: 'You declined ${session.clientName}\'s booking for $formattedDate at ${session.timeSlot}. 1 PT Credit was refunded to the client.',
+      recipientName: session.trainerName,
+      recipientRole: UserRole.coach,
+      type: 'warning',
+      sessionId: session.id,
+    );
+
+    notifyListeners();
   }
 
   void cancelSession(SessionItem session) {
@@ -1223,14 +1283,16 @@ class MyPtProvider extends ChangeNotifier {
       recipientName: session.clientName,
       recipientRole: UserRole.client,
       type: 'warning',
+      sessionId: session.id,
     );
 
     addNotification(
-      title: '❌ Session Cancelled by Client',
+      title: '❌ Session Cancelled: ${session.clientName}',
       message: '${session.clientName} cancelled their session for $formattedDate at ${session.timeSlot}.',
       recipientName: session.trainerName,
       recipientRole: UserRole.coach,
       type: 'warning',
+      sessionId: session.id,
     );
 
     notifyListeners();
@@ -1419,11 +1481,12 @@ class MyPtProvider extends ChangeNotifier {
     required String type,
     String? recipientName,
     UserRole? recipientRole,
+    String? sessionId,
   }) {
     notifications.insert(
       0,
       AppNotificationItem(
-        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+        id: 'notif_${DateTime.now().millisecondsSinceEpoch}_${notifications.length}',
         title: title,
         message: message,
         timestamp: DateTime.now(),
@@ -1431,6 +1494,7 @@ class MyPtProvider extends ChangeNotifier {
         isRead: false,
         recipientName: recipientName,
         recipientRole: recipientRole,
+        sessionId: sessionId,
       ),
     );
     notifyListeners();
@@ -2681,15 +2745,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
         ] else if (hasCoach && userSessions.isNotEmpty) ...[
-          // State D: Upcoming Confirmed Session Exists
+          // State D: Upcoming Session Exists (Pending or Confirmed)
           () {
             final nextSession = userSessions.first;
+            final isPending = nextSession.status == RequestStatus.pending;
+            final isConfirmed = nextSession.status == RequestStatus.confirmed;
+            final statusColor = isPending ? const Color(0xFFFF9800) : (isConfirmed ? const Color(0xFF00E676) : Colors.white60);
+            final statusText = isPending ? '⏳ PENDING APPROVAL' : (isConfirmed ? '✓ CONFIRMED' : nextSession.status.name.toUpperCase());
+
             return Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: const Color(0xFF161B22),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
+                border: Border.all(color: statusColor.withOpacity(0.4), width: 1.2),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2697,14 +2766,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Your Next Upcoming Session', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white70)),
+                      Text(
+                        isPending ? 'Your Requested Session' : 'Your Next Upcoming Session',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white70),
+                      ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00E676).withOpacity(0.15),
+                          color: statusColor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: statusColor.withOpacity(0.4), width: 0.8),
                         ),
-                        child: const Text('✓ CONFIRMED', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        child: Text(statusText, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor)),
                       ),
                     ],
                   ),
@@ -2715,7 +2788,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     '${DateFormat('EEEE, dd MMMM yyyy').format(nextSession.date)} • ${nextSession.timeSlot}',
                     style: const TextStyle(color: Color(0xFFFF5722), fontSize: 13, fontWeight: FontWeight.w600),
                   ),
-                  Text('Trainer: Coach ${nextSession.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                  Text(
+                    isPending
+                        ? 'Trainer: Coach ${nextSession.trainerName} (Awaiting coach approval)'
+                        : 'Trainer: Coach ${nextSession.trainerName}',
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  ),
                   const Divider(height: 20, color: Colors.white12),
                   Row(
                     children: [
@@ -2810,10 +2888,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           decoration: BoxDecoration(
                             color: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFF21262D),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isPending ? const Color(0xFFFF9800).withOpacity(0.4) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.4) : Colors.white12,
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
-                            isPending ? '⏳ PENDING' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
-                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
+                            isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
                           ),
                         ),
                       ],
@@ -4030,7 +4112,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             final statusLabel = isConfirmed
                 ? '✓ CONFIRMED'
                 : isPending
-                    ? '⏳ PENDING REVIEW'
+                    ? '⏳ PENDING APPROVAL'
                     : isCompleted
                         ? '✓ COMPLETED'
                         : '❌ CANCELLED';
@@ -4498,7 +4580,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            isPending ? '⏳ PENDING' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
+                            isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
                             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
                           ),
                         ),
@@ -4513,14 +4595,51 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
                             icon: const Icon(Icons.close, size: 14),
                             label: const Text('Reject', style: TextStyle(fontSize: 12)),
-                            onPressed: () => state.rejectSession(s),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (dCtx) => AlertDialog(
+                                  backgroundColor: const Color(0xFF161B22),
+                                  title: const Text('Decline Session Booking?', style: TextStyle(color: Colors.white)),
+                                  content: Text('Decline ${s.clientName}\'s session on ${DateFormat("EEE, dd MMM").format(s.date)} at ${s.timeSlot}?\n\n1 PT Credit will be immediately refunded to ${s.clientName}.', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(dCtx),
+                                      child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                      onPressed: () {
+                                        Navigator.pop(dCtx);
+                                        state.rejectSession(s);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            backgroundColor: Colors.redAccent,
+                                            content: Text('❌ Declined booking. 1 PT Credit refunded to ${s.clientName}.'),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Decline & Refund Credit', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
                             icon: const Icon(Icons.check, size: 14, color: Colors.black),
                             label: const Text('Approve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            onPressed: () => state.approveSession(s),
+                            onPressed: () {
+                              state.approveSession(s);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  content: Text('✓ Approved 1-on-1 session for ${s.clientName}!'),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(width: 8),
                         ],
@@ -6319,7 +6438,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       const Divider(height: 14, color: Colors.white12),
                       _reviewRow('Duration', '1 Hour (60 mins)'),
                       const Divider(height: 14, color: Colors.white12),
-                      _reviewRow('Cost', '1 PT Credit (${user.ptCredits - 1} PT Credits remaining after booking)', isHighlight: true),
+                      _reviewRow('Approval Status', 'Pending Coach Acceptance', isHighlight: true),
+                      const Divider(height: 14, color: Colors.white12),
+                      _reviewRow('Cost', '1 PT Credit (${user.ptCredits - 1} PT Credits balance after request)'),
                     ],
                   ),
                 ),
@@ -6352,25 +6473,26 @@ class _MainShellScreenState extends State<MainShellScreen> {
                                 state.scheduleSession(
                                   SessionItem(
                                     id: 's_${DateTime.now().millisecondsSinceEpoch}',
+                                    clientId: user.id,
                                     clientName: user.name,
                                     trainerName: coachName,
                                     date: date,
                                     timeSlot: timeSlot,
                                     focusArea: focusArea,
-                                    status: RequestStatus.confirmed,
+                                    status: RequestStatus.pending,
                                   ),
                                 );
                                 Navigator.pop(ctx);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    backgroundColor: const Color(0xFF00E676),
-                                    content: Text('🎉 1-on-1 session confirmed with Coach $coachName for $formattedDate from $timeSlot!'),
+                                    backgroundColor: const Color(0xFFFF9800),
+                                    content: Text('⏳ Session booking requested! Waiting for Coach $coachName to approve.'),
                                     duration: const Duration(seconds: 4),
                                   ),
                                 );
                               },
                         child: Text(
-                          isProcessing ? 'Confirming...' : 'Confirm Booking ✓',
+                          isProcessing ? 'Submitting...' : 'Request Booking ⏳',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -6832,6 +6954,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   void _openNotificationModal(BuildContext context, MyPtProvider state) {
     final notifs = state.currentNotifications;
+    final isCoach = state.currentUser?.role == UserRole.coach;
 
     showModalBottomSheet(
       context: context,
@@ -6869,13 +6992,137 @@ class _MainShellScreenState extends State<MainShellScreen> {
                   itemCount: notifs.length,
                   itemBuilder: (context, idx) {
                     final n = notifs[idx];
+
+                    // Match associated session if any
+                    SessionItem? linkedSession;
+                    if (n.sessionId != null) {
+                      for (final s in state.sessions) {
+                        if (s.id == n.sessionId) {
+                          linkedSession = s;
+                          break;
+                        }
+                      }
+                    }
+
+                    final showTrainerSessionActions = isCoach &&
+                        linkedSession != null &&
+                        linkedSession.status == RequestStatus.pending;
+
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: const EdgeInsets.only(bottom: 10),
                       color: n.isRead ? const Color(0xFF0D1117) : const Color(0xFF21262D),
-                      child: ListTile(
-                        title: Text(n.title, style: TextStyle(fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold, fontSize: 13)),
-                        subtitle: Text('${DateFormat('dd MMM, hh:mm a').format(n.timestamp)}\n${n.message}', style: const TextStyle(fontSize: 11, color: Colors.white70)),
-                        isThreeLine: true,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: showTrainerSessionActions ? const Color(0xFFFF9800).withOpacity(0.5) : Colors.white10,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ListTile(
+                            dense: true,
+                            contentPadding: const EdgeInsets.fromLTRB(14, 8, 14, 2),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    n.title,
+                                    style: TextStyle(
+                                      fontWeight: n.isRead ? FontWeight.w600 : FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                if (showTrainerSessionActions)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF9800).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'ACTION REQUIRED',
+                                      style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFFFF9800)),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${DateFormat('dd MMM, hh:mm a').format(n.timestamp)}\n${n.message}',
+                                style: const TextStyle(fontSize: 11.5, color: Colors.white70, height: 1.3),
+                              ),
+                            ),
+                            isThreeLine: true,
+                          ),
+                          if (showTrainerSessionActions) ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.redAccent,
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('Reject ❌', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      state.rejectSession(linkedSession!);
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: Colors.redAccent,
+                                          content: Text('❌ Declined booking. 1 PT Credit refunded to ${linkedSession.clientName}.'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF29B6F6),
+                                      side: const BorderSide(color: Color(0xFF29B6F6)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('Reschedule 🔄', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      Navigator.pop(ctx);
+                                      _openRescheduleModal(context, state, linkedSession!);
+                                    },
+                                  ),
+                                  const SizedBox(width: 6),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF00E676),
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      minimumSize: Size.zero,
+                                    ),
+                                    child: const Text('Accept ✓', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      state.approveSession(linkedSession!);
+                                      Navigator.pop(ctx);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          backgroundColor: const Color(0xFF00E676),
+                                          content: Text('✓ Session confirmed with ${linkedSession.clientName}!'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 6),
+                          ],
+                        ],
                       ),
                     );
                   },
