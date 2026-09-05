@@ -5287,14 +5287,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- ACTIVE MASTER IMPERSONATION BANNER ---
+  // --- ACTIVE MASTER IMPERSONATION BANNER (RESPONSIVE ZERO-OVERFLOW) ---
   Widget _buildImpersonationBanner(BuildContext context, MyPtProvider state) {
     final user = state.currentUser!;
     final origMaster = state.originalMasterUser?.name ?? 'Master Admin';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFE65100), Color(0xFFFF5722)],
@@ -5304,8 +5304,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -5326,19 +5326,23 @@ class _MainShellScreenState extends State<MainShellScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '👑 Master Impersonating: ${user.name}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    Flexible(
+                      child: Text(
+                        '👑 Master: ${user.name}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.black38,
                         borderRadius: BorderRadius.circular(4),
@@ -5346,7 +5350,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                       child: Text(
                         user.role.name.toUpperCase(),
                         style: const TextStyle(
-                          fontSize: 9,
+                          fontSize: 8.5,
                           fontWeight: FontWeight.w900,
                           color: Colors.amberAccent,
                         ),
@@ -5354,16 +5358,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 1),
                 Text(
-                  '${user.email} • Session anchored to $origMaster',
-                  style: const TextStyle(fontSize: 10, color: Colors.white70),
+                  '${user.email} • Via $origMaster',
+                  style: const TextStyle(fontSize: 9.5, color: Colors.white70),
                   overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
+          const SizedBox(width: 6),
+          ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF161B22),
               foregroundColor: Colors.white,
@@ -5372,12 +5378,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
-            icon: const Icon(Icons.swap_horiz, size: 13, color: Color(0xFFFF5722)),
-            label: const Text('Switch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             onPressed: () => _openMasterUserSwitcherModal(context, state),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swap_horiz, size: 12, color: Color(0xFFFF5722)),
+                SizedBox(width: 3),
+                Text('Switch', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
-          const SizedBox(width: 6),
-          ElevatedButton.icon(
+          const SizedBox(width: 5),
+          ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFFE65100),
@@ -5386,8 +5398,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
-            icon: const Icon(Icons.arrow_back, size: 13, color: Color(0xFFE65100)),
-            label: const Text('Exit', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
             onPressed: () {
               state.returnToMasterAdmin();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -5397,6 +5407,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               );
             },
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_back, size: 12, color: Color(0xFFE65100)),
+                SizedBox(width: 3),
+                Text('Exit', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         ],
       ),
