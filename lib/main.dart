@@ -2095,21 +2095,19 @@ class MyPtProvider extends ChangeNotifier {
     return map.values.toList();
   }
 
-  void login(String email, String pass) {
+  bool login(String email, String pass) {
     final cleanEmail = email.trim().toLowerCase();
     originalMasterUser = null;
-    if (demoAccounts.containsKey(cleanEmail)) {
-      currentUser = demoAccounts[cleanEmail];
-    } else {
-      currentUser = UserModel(
-        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-        name: cleanEmail.split('@').first.toUpperCase(),
-        email: cleanEmail,
-        role: UserRole.client,
-        ptCredits: 4,
-      );
+    if (!demoAccounts.containsKey(cleanEmail)) {
+      return false;
     }
+    final expectedPass = demoPasswords[cleanEmail];
+    if (expectedPass == null || expectedPass != pass) {
+      return false;
+    }
+    currentUser = demoAccounts[cleanEmail];
     notifyListeners();
+    return true;
   }
 
   void register({
@@ -2130,6 +2128,7 @@ class MyPtProvider extends ChangeNotifier {
       ptCredits: role == UserRole.client ? 4 : 0,
     );
     demoAccounts[cleanEmail] = newUser;
+    demoPasswords[cleanEmail] = pass;
     if (role == UserRole.coach) {
       allTrainers.add(newUser);
     } else if (role == UserRole.client) {
@@ -2137,6 +2136,16 @@ class MyPtProvider extends ChangeNotifier {
     }
     currentUser = newUser;
     notifyListeners();
+  }
+
+  bool resetPassword(String email, String newPassword) {
+    final cleanEmail = email.trim().toLowerCase();
+    if (!demoAccounts.containsKey(cleanEmail)) {
+      return false;
+    }
+    demoPasswords[cleanEmail] = newPassword;
+    notifyListeners();
+    return true;
   }
 
   void updateUserGoal(String newGoal) {
@@ -2606,7 +2615,25 @@ class _AuthScreenState extends State<AuthScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 22),
+                if (!isSignUp) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => _openForgotPasswordModal(context, state),
+                      child: const Text(
+                        'Forgot Password? 🔒',
+                        style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
 
                 SizedBox(
                   width: double.infinity,
@@ -2629,7 +2656,27 @@ class _AuthScreenState extends State<AuthScreen> {
                           goal: selectedGoal,
                         );
                       } else {
-                        state.login(emailCtrl.text.trim(), passCtrl.text);
+                        final success = state.login(emailCtrl.text.trim(), passCtrl.text);
+                        if (!success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: Colors.redAccent,
+                              content: Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.white, size: 20),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '❌ Invalid email or password. Please check your credentials or reset password.',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        }
                       }
                     },
                     child: Text(
@@ -2662,6 +2709,192 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
+      ),
+    );
+  }
+
+  void _openForgotPasswordModal(BuildContext context, MyPtProvider state) {
+    final resetEmailCtrl = TextEditingController(text: emailCtrl.text.trim());
+    final newPassCtrl = TextEditingController();
+    final confirmPassCtrl = TextEditingController();
+    final resetFormKey = GlobalKey<FormState>();
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    String? resetError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          return SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
+              child: Form(
+                key: resetFormKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF5722).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.lock_reset_rounded, color: Color(0xFFFF5722), size: 22),
+                          ),
+                          const SizedBox(width: 10),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Reset Account Password', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text('Set a new password for your myPT account', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (resetError != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(resetError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold))),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: resetEmailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Registered Email Address',
+                          hintText: 'name@example.com',
+                          prefixIcon: Icon(Icons.email_outlined),
+                          filled: true,
+                          fillColor: Color(0xFF161B22),
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) return 'Email is required';
+                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          if (!emailRegex.hasMatch(val.trim())) return 'Enter a valid email address';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: newPassCtrl,
+                        obscureText: obscureNew,
+                        decoration: InputDecoration(
+                          labelText: 'New Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
+                            onPressed: () => setSheetState(() => obscureNew = !obscureNew),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF161B22),
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'New password is required';
+                          if (val.length < 6) return 'Password must be at least 6 characters';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: confirmPassCtrl,
+                        obscureText: obscureConfirm,
+                        decoration: InputDecoration(
+                          labelText: 'Confirm New Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
+                            onPressed: () => setSheetState(() => obscureConfirm = !obscureConfirm),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF161B22),
+                          border: const OutlineInputBorder(),
+                        ),
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'Please confirm your password';
+                          if (val != newPassCtrl.text) return 'Passwords do not match';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Update Password & Sign In 🚀', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          onPressed: () {
+                            if (!resetFormKey.currentState!.validate()) return;
+                            final targetEmail = resetEmailCtrl.text.trim();
+                            final success = state.resetPassword(targetEmail, newPassCtrl.text);
+                            if (!success) {
+                              setSheetState(() => resetError = 'No account found with $targetEmail. Please check the email or sign up.');
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            // Automatically sign in with newly set credentials
+                            state.login(targetEmail, newPassCtrl.text);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: const Color(0xFF00E676),
+                                content: Text('✓ Password reset successfully for $targetEmail! Signed in.'),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -2787,13 +3020,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     final List<(IconData, String)> navTabs = switch (user.role) {
       UserRole.client => const [
-        (Icons.home, 'Home'),
+        (Icons.dashboard_rounded, 'Dashboard'),
         (Icons.search, 'Discover'),
         (Icons.fitness_center, 'Workouts'),
-        (Icons.analytics_outlined, 'Analytics'),
-        (Icons.calendar_month, 'Schedule'),
         (Icons.trending_up, 'Progress'),
-        (Icons.shopping_bag, 'Packages'),
       ],
       UserRole.coach => const [
         (Icons.dashboard, 'Dashboard'),
@@ -2818,9 +3048,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
         (Icons.build, 'Equipment'),
       ],
       UserRole.superAdmin => const [
-        (Icons.toggle_on, 'Flags'),
+        (Icons.dashboard_rounded, 'Dashboard'),
         (Icons.admin_panel_settings, 'Accounts'),
+        (Icons.toggle_on, 'Flags'),
         (Icons.dns, 'Telemetry'),
+        (Icons.person, 'Profile'),
       ],
     };
 
@@ -3210,25 +3442,23 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   // ============================================================================
-  // 6. CLIENT VIEWS (7 TABS: Home, Discover, Workouts, Analytics, Schedule, Progress, Packages)
+  // 6. CLIENT VIEWS (4 TABS: Dashboard, Discover, Workouts, Progress)
   // ============================================================================
   Widget _buildClientView(MyPtProvider state, int tab) {
     return switch (tab) {
-      0 => _clientHomeTab(state),
+      0 => _clientDashboardTab(state),
       1 => _clientDiscoverTab(state),
       2 => _clientWorkoutsTab(state),
-      3 => _clientChartsTab(state),
-      4 => _clientScheduleTab(state),
-      5 => _clientProgressTab(state),
-      6 => _clientPackagesTab(state),
-      _ => _clientHomeTab(state),
+      3 => _clientProgressTab(state),
+      _ => _clientDashboardTab(state),
     };
   }
 
-  // --- HOME SCREEN (SIMPLIFIED HIERARCHY BASED ON USER TESTING FEEDBACK) ---
-  Widget _clientHomeTab(MyPtProvider state) {
+  // --- DASHBOARD TAB (HOME + PACKAGES BELOW PT CREDITS + SCHEDULE & INQUIRIES) ---
+  Widget _clientDashboardTab(MyPtProvider state) {
     final user = state.currentUser!;
-    final userSessions = state.getSessionsForUser(user);
+    final allUserSessions = state.getSessionsForUser(user);
+    final allUserRequests = state.getRequestsForUser(user);
 
     // Find assigned trainer details if any
     UserModel? assignedTrainer;
@@ -3243,6 +3473,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
     final hasCoach = assignedTrainer != null && user.trainerApprovalStatus == TrainerApprovalStatus.approved;
     final isPendingCoach = user.trainerApprovalStatus == TrainerApprovalStatus.pending;
+    final trainerPackages = state.getPackagesForTrainer(user.trainerId);
 
     // Accurate dynamic weight delta calculations
     final double weightDiff = user.startingWeight - user.currentWeight;
@@ -3258,6 +3489,28 @@ class _MainShellScreenState extends State<MainShellScreen> {
       weightSubtitle = 'Maintaining baseline (${user.startingWeight} kg)';
       deltaColor = Colors.white70;
     }
+
+    // Schedule status filters
+    final confirmedSessions = allUserSessions.where((s) => s.status == RequestStatus.confirmed).toList();
+    final pendingSessions = allUserSessions.where((s) => s.status == RequestStatus.pending).toList();
+    final completedSessions = allUserSessions.where((s) => s.status == RequestStatus.completed).toList();
+    final cancelledSessions = allUserSessions.where((s) => s.status == RequestStatus.cancelled).toList();
+
+    List<SessionItem> filteredSessions = switch (_sessionFilter) {
+      'Confirmed' => confirmedSessions,
+      'Pending' => pendingSessions,
+      'Completed' => completedSessions,
+      'Cancelled' => cancelledSessions,
+      _ => allUserSessions,
+    };
+
+    final filterOptions = [
+      ('All', allUserSessions.length),
+      ('Confirmed', confirmedSessions.length),
+      ('Pending', pendingSessions.length),
+      ('Completed', completedSessions.length),
+      ('Cancelled', cancelledSessions.length),
+    ];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -3307,7 +3560,13 @@ class _MainShellScreenState extends State<MainShellScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _tabIndex = 6),
+                onTap: () {
+                  if (hasCoach && trainerPackages.isNotEmpty) {
+                    _openPurchaseOptionsModal(context, state, trainerPackages.first);
+                  } else {
+                    setState(() => _tabIndex = 1);
+                  }
+                },
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -3336,9 +3595,172 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
-        // 3. Primary Hero Section: Active Trainer & Next Steps
+        // 3. PACKAGES SECTION (DIRECTLY BELOW PT CREDITS)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.location_on, color: Color(0xFFFF5722), size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('PRICING REGION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
+                    Text('${state.currentCurrencyInfo.flag} ${state.selectedCountry} (${state.selectedCurrency})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.white24),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                ),
+                icon: const Icon(Icons.currency_exchange, size: 12, color: Color(0xFFFF5722)),
+                label: const Text('Change', style: TextStyle(fontSize: 11)),
+                onPressed: () => _openCurrencySelector(context, state),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        if (hasCoach) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Packages by Coach ${assignedTrainer.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text('Direct personal training packages with custom pricing', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF5722).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${user.ptCredits} Credits',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          ...trainerPackages.map((p) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: p.sessionsCount == 12 ? const Color(0xFFFF5722).withOpacity(0.6) : Colors.white12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(p.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                        Text(state.formatPrice(p.priceInr), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text('+${p.sessionsCount} x 1-on-1 Sessions • Expiry in ${p.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
+                    const SizedBox(height: 4),
+                    Text(p.description, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: p.perks.map((perk) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(6)),
+                        child: Text(perk, style: const TextStyle(fontSize: 9.5, color: Colors.white70)),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFFF5722),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _openPurchaseOptionsModal(context, state, p),
+                        child: Text('Purchase Package (${state.formatPrice(p.priceInr)}) 💳', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ] else ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5722).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.inventory_2_outlined, color: Color(0xFFFF5722), size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Personal Trainer Packages', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                      SizedBox(height: 2),
+                      Text('Select a coach in Discover to view customized 1-on-1 PT packages and pricing.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF5722),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    minimumSize: Size.zero,
+                  ),
+                  onPressed: () => setState(() => _tabIndex = 1),
+                  child: const Text('Discover', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // 4. Primary Hero Section: Active Trainer & Next Steps
         if (hasCoach) ...[
           // --- ACTIVE PERSONAL TRAINER CARD ---
           Container(
@@ -3457,92 +3879,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
             ),
           ),
           const SizedBox(height: 18),
-
-          // Next Upcoming Session Card
-          if (userSessions.isNotEmpty) ...[
-            () {
-              final nextSession = userSessions.first;
-              final isPending = nextSession.status == RequestStatus.pending;
-              final isConfirmed = nextSession.status == RequestStatus.confirmed;
-              final statusColor = isPending ? const Color(0xFFFF9800) : (isConfirmed ? const Color(0xFF00E676) : Colors.white60);
-              final statusText = isPending ? '⏳ PENDING APPROVAL' : (isConfirmed ? '✓ CONFIRMED' : nextSession.status.name.toUpperCase());
-
-              return Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161B22),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: statusColor.withOpacity(0.4), width: 1.2),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isPending ? 'Your Requested Session' : 'Your Next Upcoming Session',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white70),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: statusColor.withOpacity(0.4), width: 0.8),
-                          ),
-                          child: Text(statusText, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(nextSession.focusArea, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${DateFormat('EEEE, dd MMMM yyyy').format(nextSession.date)} • ${nextSession.timeSlot}',
-                      style: const TextStyle(color: Color(0xFFFF5722), fontSize: 13, fontWeight: FontWeight.w600),
-                    ),
-                    Text(
-                      isPending
-                          ? 'Trainer: Coach ${nextSession.trainerName} (Awaiting coach approval)'
-                          : 'Trainer: Coach ${nextSession.trainerName}',
-                      style: const TextStyle(color: Colors.white60, fontSize: 12),
-                    ),
-                    const Divider(height: 20, color: Colors.white12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFF5722),
-                              side: const BorderSide(color: Color(0xFFFF5722)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            icon: const Icon(Icons.chat_bubble_outline, size: 14),
-                            label: const Text('Message Coach', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            onPressed: () => _openChatModal(context, state, peerName: nextSession.trainerName),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF5722),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            icon: const Icon(Icons.calendar_month, size: 14),
-                            label: const Text('View Schedule', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            onPressed: () => setState(() => _tabIndex = 4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }(),
-          ],
         ] else if (isPendingCoach) ...[
           // State B: Coach Request Pending
           Container(
@@ -3685,96 +4021,433 @@ class _MainShellScreenState extends State<MainShellScreen> {
           const SizedBox(height: 18),
         ],
 
-        // 4. Scheduled Sessions List (Shown only when sessions exist, eliminating redundant empty boxes)
-        if (userSessions.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('All Scheduled Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              TextButton.icon(
-                icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF5722)),
-                label: const Text('Book New', style: TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
-                onPressed: () => _openScheduleModal(context, state),
+        // 5. SCHEDULE & BOOKINGS SECTION (ALL DATA FROM PREVIOUS SESSIONS TAB)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Bookings & Schedule', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  '${allUserSessions.length} sessions booked • ${user.ptCredits} PT Credits left',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5722),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-            ],
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Book Session 📅', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+              onPressed: () => _openScheduleModal(context, state),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Multi-status Filter Chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: filterOptions.map((opt) {
+              final (label, count) = opt;
+              final isSelected = _sessionFilter == label;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  label: Text('$label ($count)'),
+                  selected: isSelected,
+                  selectedColor: const Color(0xFFFF5722),
+                  backgroundColor: const Color(0xFF161B22),
+                  labelStyle: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.white : Colors.white70,
+                  ),
+                  side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+                  onSelected: (sel) {
+                    if (sel) setState(() => _sessionFilter = label);
+                  },
+                ),
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 8),
-          ...userSessions.map((s) {
+        ),
+        const SizedBox(height: 14),
+
+        // Session Cards Section
+        if (filteredSessions.isEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161B22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  _sessionFilter == 'All' ? Icons.event_busy : Icons.filter_alt_off,
+                  size: 40,
+                  color: Colors.white38,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _sessionFilter == 'All'
+                      ? 'No 1-on-1 sessions booked yet'
+                      : 'No ${_sessionFilter.toLowerCase()} sessions found',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _sessionFilter == 'All'
+                      ? 'Schedule a session with your coach or send a consultation request to get started.'
+                      : 'Try switching the filter tab above to view other sessions.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+                if (_sessionFilter == 'All') ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                        icon: const Icon(Icons.calendar_month, size: 16),
+                        label: const Text('Book Session 📅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        onPressed: () => _openScheduleModal(context, state),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white24),
+                        ),
+                        icon: const Icon(Icons.search, size: 16),
+                        label: const Text('Find Coach 🤝', style: TextStyle(fontSize: 12)),
+                        onPressed: () => setState(() => _tabIndex = 1),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ] else ...[
+          ...filteredSessions.map((s) {
             final isPending = s.status == RequestStatus.pending;
             final isConfirmed = s.status == RequestStatus.confirmed;
+            final isCompleted = s.status == RequestStatus.completed;
+
+            final statusColor = isConfirmed
+                ? const Color(0xFF00E676)
+                : isPending
+                    ? const Color(0xFFFF9800)
+                    : isCompleted
+                        ? const Color(0xFF29B6F6)
+                        : Colors.white38;
+
+            final statusLabel = isConfirmed
+                ? '✓ CONFIRMED'
+                : isPending
+                    ? '⏳ PENDING APPROVAL'
+                    : isCompleted
+                        ? '✓ COMPLETED'
+                        : '❌ CANCELLED';
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 12),
               color: const Color(0xFF161B22),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
-                  color: isPending ? const Color(0xFFFF9800).withOpacity(0.5) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.3) : Colors.white10,
+                  color: isConfirmed
+                      ? const Color(0xFF00E676).withOpacity(0.35)
+                      : isPending
+                          ? const Color(0xFFFF9800).withOpacity(0.4)
+                          : Colors.white12,
+                  width: (isConfirmed || isPending) ? 1.2 : 1,
                 ),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CircleAvatar(
-                          radius: 18,
-                          backgroundColor: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : const Color(0xFFFF5722).withOpacity(0.15),
-                          child: Icon(isPending ? Icons.hourglass_top_rounded : Icons.event, color: isPending ? const Color(0xFFFF9800) : const Color(0xFFFF5722), size: 18),
+                          radius: 20,
+                          backgroundColor: statusColor.withOpacity(0.15),
+                          child: Icon(
+                            isPending
+                                ? Icons.hourglass_top_rounded
+                                : isConfirmed
+                                    ? Icons.event_available
+                                    : isCompleted
+                                        ? Icons.task_alt
+                                        : Icons.event_busy,
+                            color: statusColor,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                              const SizedBox(height: 3),
                               Text(
-                                '${DateFormat('EEE, dd MMM').format(s.date)} • ${s.timeSlot}',
-                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                '${DateFormat('EEEE, dd MMMM yyyy').format(s.date)} • ${s.timeSlot}',
+                                style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12.5, fontWeight: FontWeight.w600),
                               ),
+                              const SizedBox(height: 2),
+                              Text('Trainer: Coach ${s.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
                             ],
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: isPending ? const Color(0xFFFF9800).withOpacity(0.15) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFF21262D),
+                            color: statusColor.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isPending ? const Color(0xFFFF9800).withOpacity(0.4) : isConfirmed ? const Color(0xFF00E676).withOpacity(0.4) : Colors.white12,
-                              width: 0.8,
-                            ),
+                            border: Border.all(color: statusColor.withOpacity(0.5), width: 0.8),
                           ),
                           child: Text(
-                            isPending ? '⏳ PENDING APPROVAL' : isConfirmed ? '✓ CONFIRMED' : s.status.name.toUpperCase(),
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isPending ? const Color(0xFFFF9800) : isConfirmed ? const Color(0xFF00E676) : Colors.white70),
+                            statusLabel,
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const Divider(height: 20, color: Colors.white12),
+
+                    // Action Buttons Row
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        if (isConfirmed) ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00E676),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.videocam, size: 14, color: Colors.black),
+                            label: const Text('Join Live 📹', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF00E676),
+                                  content: Text('📹 Opening live meeting room with Coach ${s.trainerName}... (${s.meetingLink ?? 'https://meet.mypt.pro'})'),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            },
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF29B6F6),
+                              side: const BorderSide(color: Color(0xFF29B6F6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
+                            label: const Text('Reschedule 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openRescheduleModal(context, state, s),
+                          ),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.cancel_outlined, size: 13, color: Colors.redAccent),
+                            label: const Text('Cancel Session', style: TextStyle(fontSize: 11)),
+                            onPressed: () => _openCancelSessionModal(context, state, s),
+                          ),
+                        ] else if (isPending) ...[
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.close, size: 13, color: Colors.redAccent),
+                            label: const Text('Withdraw Request', style: TextStyle(fontSize: 11)),
+                            onPressed: () => state.cancelSession(s),
+                          ),
+                        ] else ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF5722),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            ),
+                            icon: const Icon(Icons.replay, size: 13),
+                            label: const Text('Book Again 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openScheduleModal(context, state),
+                          ),
+                        ],
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFF5722),
+                            side: const BorderSide(color: Color(0xFFFF5722)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                          icon: const Icon(Icons.chat_bubble_outline, size: 13, color: Color(0xFFFF5722)),
+                          label: const Text('Message', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          onPressed: () => _openChatModal(context, state, peerName: s.trainerName),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+
+        // Consultation Inquiries Section
+        if (allUserRequests.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          const Text('1-on-1 Consultation Inquiries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          const Text('Status of prospective coaching & inquiry requests submitted to trainers.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+          const SizedBox(height: 12),
+
+          ...allUserRequests.map((req) {
+            final isReqPending = req.status == RequestStatus.pending;
+            final isReqConfirmed = req.status == RequestStatus.confirmed;
+            final isReqCancelled = req.status == RequestStatus.cancelled;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: isReqPending
+                      ? const Color(0xFFFF9800).withOpacity(0.5)
+                      : isReqConfirmed
+                          ? const Color(0xFF00E676).withOpacity(0.4)
+                          : Colors.redAccent.withOpacity(0.4),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Coach ${s.trainerName}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                        Row(
-                          children: [
-                            TextButton.icon(
-                              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), minimumSize: Size.zero),
-                              icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
-                              label: const Text('Reschedule', style: TextStyle(fontSize: 11, color: Color(0xFF29B6F6))),
-                              onPressed: () => _openRescheduleModal(context, state, s),
+                        Expanded(
+                          child: Text(
+                            'Inquiry: ${req.requestType}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isReqPending
+                                ? const Color(0xFFFF9800).withOpacity(0.15)
+                                : isReqConfirmed
+                                    ? const Color(0xFF00E676).withOpacity(0.15)
+                                    : Colors.redAccent.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            isReqPending
+                                ? '⏳ PENDING REVIEW'
+                                : isReqConfirmed
+                                    ? '✓ ACCEPTED'
+                                    : '❌ DECLINED',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.bold,
+                              color: isReqPending
+                                  ? const Color(0xFFFF9800)
+                                  : isReqConfirmed
+                                      ? const Color(0xFF00E676)
+                                      : Colors.redAccent,
                             ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () => _openChatModal(context, state, peerName: s.trainerName),
-                              child: const Text('Message', style: TextStyle(fontSize: 11, color: Color(0xFFFF5722), fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Coach: ${req.trainerName ?? 'Personal Trainer'} • Submitted ${DateFormat('dd MMM, hh:mm a').format(req.date)}',
+                      style: const TextStyle(color: Colors.white60, fontSize: 11),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '"${req.message}"',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
+                    ),
+                    if (isReqCancelled && req.declineReason != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.redAccent, size: 14),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Reason: ${req.declineReason}',
+                                style: const TextStyle(fontSize: 11, color: Colors.white70),
+                              ),
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                    const Divider(height: 16, color: Colors.white12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (isReqPending) ...[
+                          TextButton(
+                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                            onPressed: () => state.cancelConsultationRequest(req),
+                            child: const Text('Cancel Inquiry', style: TextStyle(fontSize: 12)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                            icon: const Icon(Icons.chat_bubble_outline, size: 13),
+                            label: const Text('Message Coach', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openChatModal(context, state, peerName: req.trainerName ?? 'Coach'),
+                          ),
+                        ] else if (isReqCancelled) ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                            icon: const Icon(Icons.explore, size: 14),
+                            label: const Text('Explore Other Coaches 🚀', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => setState(() => _tabIndex = 1),
+                          ),
+                        ] else ...[
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
+                            icon: const Icon(Icons.calendar_month, size: 14, color: Colors.black),
+                            label: const Text('Book 1-on-1 Session 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: () => _openScheduleModal(context, state),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -4389,193 +5062,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- ANALYTICS TAB (CLEAR HIERARCHY FOR NUTRITION, SPLITS, PROGRESS) ---
-  Widget _clientChartsTab(MyPtProvider state) {
-    final user = state.currentUser!;
-    final measurements = state.measurementHistory;
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-      children: [
-        const Text('Performance & Body Analytics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        const Text('Current training phase, nutrition targets, and 8-week progress trajectory.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-        const SizedBox(height: 16),
-
-        // Section 1: Current Plan & Nutrition Targets
-        Card(
-          color: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Phase 1: Hypertrophy & Fat Loss', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                      child: const Text('ACTIVE PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text('Assigned by primary coach for body recomposition', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                const Divider(height: 20, color: Colors.white12),
-
-                const Text('Daily Nutrition Targets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _macroPill('Calories', '1,950 kcal', const Color(0xFFFF5722)),
-                    const SizedBox(width: 6),
-                    _macroPill('Protein', '150g', const Color(0xFF29B6F6)),
-                    const SizedBox(width: 6),
-                    _macroPill('Carbs', '190g', const Color(0xFF00E676)),
-                    const SizedBox(width: 6),
-                    _macroPill('Fat', '55g', Colors.amber),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                const Text('Weekly Workout Split', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-                const SizedBox(height: 6),
-                const Text('• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Section 2: Weight Loss & Body Fat Progression Chart (8 Weeks)
-        Card(
-          color: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('📉 Weight & Body Fat Decline (6 Scans)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                      child: const Text('ON TRACK 🎯', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                const Text('Progress tracking from starting baseline to current check-in.', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                const Divider(height: 20, color: Colors.white12),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: measurements.reversed.map((m) {
-                    final normalizedHeight = ((m.weightKg - 60.0) / (70.0 - 60.0)).clamp(0.2, 1.0) * 100.0;
-                    final dateLabel = DateFormat('dd MMM').format(m.date);
-
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text('${m.weightKg}k', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70)),
-                        const SizedBox(height: 4),
-                        Container(
-                          width: 24,
-                          height: normalizedHeight,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [Color(0xFFFF5722), Color(0xFF29B6F6)],
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(dateLabel, style: const TextStyle(fontSize: 9, color: Colors.white54)),
-                      ],
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('TOTAL LOSS', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
-                            Text('-${(user.startingWeight - user.currentWeight).toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('BODY FAT', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
-                            Text('18.2% (-3.3%)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF29B6F6))),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('PACE', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
-                            Text('-0.5 kg/wk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static Widget _macroPill(String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
-        child: Column(
-          children: [
-            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
-            const SizedBox(height: 2),
-            Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- PROGRESS TAB WITH FLOATING MEASUREMENT ADD BUTTON ---
+  // --- PROGRESS TAB (MERGED ANALYTICS & BODY TRANSFORMATION TRACKER) ---
   Widget _clientProgressTab(MyPtProvider state) {
     final user = state.currentUser!;
     final history = state.measurementHistory;
@@ -4590,12 +5077,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
         onPressed: () => _openAddMeasurementModal(context, state),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
         children: [
+          // 1. Header & Weight Log Action
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Body Transformation Tracker', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Progress & Body Transformation', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 2),
+                  Text('Nutrition targets, splits, progression chart & body scans', style: TextStyle(color: Colors.white60, fontSize: 11.5)),
+                ],
+              ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF21262D),
@@ -4611,6 +5106,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const SizedBox(height: 14),
 
+          // 2. Weight Stat Cards Row
           Row(
             children: [
               Expanded(child: _statCard('STARTING WEIGHT', '${user.startingWeight} kg', 'Baseline', const Color(0xFF21262D))),
@@ -4622,6 +5118,165 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const SizedBox(height: 16),
 
+          // 3. Nutrition Targets & Training Split (From Analytics)
+          Card(
+            color: const Color(0xFF161B22),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Phase 1: Hypertrophy & Fat Loss', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                        child: const Text('ACTIVE PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Assigned by primary coach for body recomposition', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                  const Divider(height: 20, color: Colors.white12),
+
+                  const Text('Daily Nutrition Targets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _macroPill('Calories', '1,950 kcal', const Color(0xFFFF5722)),
+                      const SizedBox(width: 6),
+                      _macroPill('Protein', '150g', const Color(0xFF29B6F6)),
+                      const SizedBox(width: 6),
+                      _macroPill('Carbs', '190g', const Color(0xFF00E676)),
+                      const SizedBox(width: 6),
+                      _macroPill('Fat', '55g', Colors.amber),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Text('Weekly Workout Split', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 4. Weight & Body Fat Progression Chart (8 Weeks - From Analytics)
+          Card(
+            color: const Color(0xFF161B22),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('📉 Weight & Body Fat Decline (6 Scans)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                        child: const Text('ON TRACK 🎯', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('Progress tracking from starting baseline to current check-in.', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                  const Divider(height: 20, color: Colors.white12),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: history.reversed.map((m) {
+                      final normalizedHeight = ((m.weightKg - 60.0) / (70.0 - 60.0)).clamp(0.2, 1.0) * 100.0;
+                      final dateLabel = DateFormat('dd MMM').format(m.date);
+
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('${m.weightKg}k', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70)),
+                          const SizedBox(height: 4),
+                          Container(
+                            width: 24,
+                            height: normalizedHeight,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Color(0xFFFF5722), Color(0xFF29B6F6)],
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(dateLabel, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('TOTAL LOSS', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
+                              Text('-${(user.startingWeight - user.currentWeight).toStringAsFixed(1)} kg', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('BODY FAT', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
+                              Text('18.2% (-3.3%)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF29B6F6))),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(10)),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('PACE', style: TextStyle(fontSize: 9, color: Colors.white54, fontWeight: FontWeight.bold)),
+                              Text('-0.5 kg/wk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 5. Circumference Measurements Card (Latest Scan)
           Card(
             color: const Color(0xFF161B22),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
@@ -4645,6 +5300,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const SizedBox(height: 16),
 
+          // 6. Scan History Logs
           const Text('Scan History Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...history.map((entry) {
@@ -4667,640 +5323,19 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  // --- PACKAGES TAB ---
-  Widget _clientPackagesTab(MyPtProvider state) {
-    final user = state.currentUser!;
-    final isApproved = user.trainerApprovalStatus == TrainerApprovalStatus.approved && user.trainerId != null;
-
-    UserModel? trainer;
-    if (user.trainerId != null) {
-      for (final t in state.allTrainers) {
-        if (t.id == user.trainerId) {
-          trainer = t;
-          break;
-        }
-      }
-    }
-
-    final trainerPackages = state.getPackagesForTrainer(user.trainerId);
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161B22),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on, color: Color(0xFFFF5722), size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('PRICING REGION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
-                    Text('${state.currentCurrencyInfo.flag} ${state.selectedCountry} (${state.selectedCurrency})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ],
-                ),
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                ),
-                icon: const Icon(Icons.currency_exchange, size: 12, color: Color(0xFFFF5722)),
-                label: const Text('Change', style: TextStyle(fontSize: 11)),
-                onPressed: () => _openCurrencySelector(context, state),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        if (!isApproved) ...[
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.3)),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.lock_person_outlined, size: 48, color: Color(0xFFFF5722)),
-                const SizedBox(height: 12),
-                const Text('Trainer Assignment Required', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 8),
-                const Text(
-                  'Packages in myPT are customized and priced directly by certified personal trainers, not generic bundles.\nPlease choose a coach from Discover and get approved to view their personalized training packages.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                  icon: const Icon(Icons.explore),
-                  label: const Text('Discover Coaches 🚀', style: TextStyle(fontWeight: FontWeight.bold)),
-                  onPressed: () => setState(() => _tabIndex = 1),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Packages by Coach ${trainer?.name ?? 'Your Trainer'}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Text('Direct personal training packages with custom pricing', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF5722).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  'Balance: ${user.ptCredits} PT Credits',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          ...trainerPackages.map((p) {
-            return Card(
-              margin: const EdgeInsets.only(bottom: 14),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: p.sessionsCount == 12 ? const Color(0xFFFF5722).withOpacity(0.6) : Colors.white12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(p.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
-                        Text(state.formatPrice(p.priceInr), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text('+${p.sessionsCount} x 1-on-1 Sessions • Expiry in ${p.durationWeeks} Weeks', style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 6),
-                    Text(p.description, style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: p.perks.map((perk) => Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(6)),
-                        child: Text(perk, style: const TextStyle(fontSize: 10, color: Colors.white70)),
-                      )).toList(),
-                    ),
-                    const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF5722),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onPressed: () => _openPurchaseOptionsModal(context, state, p),
-                        child: Text('Purchase Package (${state.formatPrice(p.priceInr)}) 💳', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-      ],
-    );
-  }
-
-  Widget _clientScheduleTab(MyPtProvider state) {
-    final user = state.currentUser!;
-    final allUserSessions = state.getSessionsForUser(user);
-    final allUserRequests = state.getRequestsForUser(user);
-
-    final confirmedSessions = allUserSessions.where((s) => s.status == RequestStatus.confirmed).toList();
-    final pendingSessions = allUserSessions.where((s) => s.status == RequestStatus.pending).toList();
-    final completedSessions = allUserSessions.where((s) => s.status == RequestStatus.completed).toList();
-    final cancelledSessions = allUserSessions.where((s) => s.status == RequestStatus.cancelled).toList();
-
-    List<SessionItem> filteredSessions = switch (_sessionFilter) {
-      'Confirmed' => confirmedSessions,
-      'Pending' => pendingSessions,
-      'Completed' => completedSessions,
-      'Cancelled' => cancelledSessions,
-      _ => allUserSessions,
-    };
-
-    final filterOptions = [
-      ('All', allUserSessions.length),
-      ('Confirmed', confirmedSessions.length),
-      ('Pending', pendingSessions.length),
-      ('Completed', completedSessions.length),
-      ('Cancelled', cancelledSessions.length),
-    ];
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  static Widget _macroPill(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.3))),
+        child: Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Bookings & Schedule', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text(
-                  '${allUserSessions.length} sessions booked • ${user.ptCredits} PT Credits left',
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
-                ),
-              ],
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF5722),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Book Session 📅', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
-              onPressed: () => _openScheduleModal(context, state),
-            ),
+            Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+            const SizedBox(height: 2),
+            Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
-        const SizedBox(height: 14),
-
-        // Multi-status Filter Chips
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: filterOptions.map((opt) {
-              final (label, count) = opt;
-              final isSelected = _sessionFilter == label;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: ChoiceChip(
-                  label: Text('$label ($count)'),
-                  selected: isSelected,
-                  selectedColor: const Color(0xFFFF5722),
-                  backgroundColor: const Color(0xFF161B22),
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? Colors.white : Colors.white70,
-                  ),
-                  side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
-                  onSelected: (sel) {
-                    if (sel) setState(() => _sessionFilter = label);
-                  },
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // Session Cards Section
-        if (filteredSessions.isEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  _sessionFilter == 'All' ? Icons.event_busy : Icons.filter_alt_off,
-                  size: 40,
-                  color: Colors.white38,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _sessionFilter == 'All'
-                      ? 'No 1-on-1 sessions booked yet'
-                      : 'No ${_sessionFilter.toLowerCase()} sessions found',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _sessionFilter == 'All'
-                      ? 'Schedule a session with your coach or send a consultation request to get started.'
-                      : 'Try switching the filter tab above to view other sessions.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
-                ),
-                if (_sessionFilter == 'All') ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                        icon: const Icon(Icons.calendar_month, size: 16),
-                        label: const Text('Book Session 📅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                        onPressed: () => _openScheduleModal(context, state),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.white24),
-                        ),
-                        icon: const Icon(Icons.search, size: 16),
-                        label: const Text('Find Coach 🤝', style: TextStyle(fontSize: 12)),
-                        onPressed: () => setState(() => _tabIndex = 1),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ] else ...[
-          ...filteredSessions.map((s) {
-            final isPending = s.status == RequestStatus.pending;
-            final isConfirmed = s.status == RequestStatus.confirmed;
-            final isCompleted = s.status == RequestStatus.completed;
-
-            final statusColor = isConfirmed
-                ? const Color(0xFF00E676)
-                : isPending
-                    ? const Color(0xFFFF9800)
-                    : isCompleted
-                        ? const Color(0xFF29B6F6)
-                        : Colors.white38;
-
-            final statusLabel = isConfirmed
-                ? '✓ CONFIRMED'
-                : isPending
-                    ? '⏳ PENDING APPROVAL'
-                    : isCompleted
-                        ? '✓ COMPLETED'
-                        : '❌ CANCELLED';
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(
-                  color: isConfirmed
-                      ? const Color(0xFF00E676).withOpacity(0.35)
-                      : isPending
-                          ? const Color(0xFFFF9800).withOpacity(0.4)
-                          : Colors.white12,
-                  width: (isConfirmed || isPending) ? 1.2 : 1,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: statusColor.withOpacity(0.15),
-                          child: Icon(
-                            isPending
-                                ? Icons.hourglass_top_rounded
-                                : isConfirmed
-                                    ? Icons.event_available
-                                    : isCompleted
-                                        ? Icons.task_alt
-                                        : Icons.event_busy,
-                            color: statusColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(s.focusArea, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                              const SizedBox(height: 3),
-                              Text(
-                                '${DateFormat('EEEE, dd MMMM yyyy').format(s.date)} • ${s.timeSlot}',
-                                style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12.5, fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 2),
-                              Text('Trainer: Coach ${s.trainerName}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: statusColor.withOpacity(0.5), width: 0.8),
-                          ),
-                          child: Text(
-                            statusLabel,
-                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: statusColor),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 20, color: Colors.white12),
-
-                    // Action Buttons Row
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      alignment: WrapAlignment.end,
-                      children: [
-                        if (isConfirmed) ...[
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00E676),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            icon: const Icon(Icons.videocam, size: 14, color: Colors.black),
-                            label: const Text('Join Live 📹', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: const Color(0xFF00E676),
-                                  content: Text('📹 Opening live meeting room with Coach ${s.trainerName}... (${s.meetingLink ?? 'https://meet.mypt.pro'})'),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            },
-                          ),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF29B6F6),
-                              side: const BorderSide(color: Color(0xFF29B6F6)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            icon: const Icon(Icons.edit_calendar, size: 13, color: Color(0xFF29B6F6)),
-                            label: const Text('Reschedule 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _openRescheduleModal(context, state, s),
-                          ),
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.redAccent,
-                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            icon: const Icon(Icons.cancel_outlined, size: 13, color: Colors.redAccent),
-                            label: const Text('Cancel Session', style: TextStyle(fontSize: 11)),
-                            onPressed: () => _openCancelSessionModal(context, state, s),
-                          ),
-                        ] else if (isPending) ...[
-                          OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.redAccent,
-                              side: BorderSide(color: Colors.redAccent.withOpacity(0.6)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            icon: const Icon(Icons.close, size: 13, color: Colors.redAccent),
-                            label: const Text('Withdraw Request', style: TextStyle(fontSize: 11)),
-                            onPressed: () => state.cancelSession(s),
-                          ),
-                        ] else ...[
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF5722),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            ),
-                            icon: const Icon(Icons.replay, size: 13),
-                            label: const Text('Book Again 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _openScheduleModal(context, state),
-                          ),
-                        ],
-                        OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFFF5722),
-                            side: const BorderSide(color: Color(0xFFFF5722)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          ),
-                          icon: const Icon(Icons.chat_bubble_outline, size: 13, color: Color(0xFFFF5722)),
-                          label: const Text('Message', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                          onPressed: () => _openChatModal(context, state, peerName: s.trainerName),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-
-        // Consultation Inquiries Section
-        if (allUserRequests.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const Text('1-on-1 Consultation Inquiries', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          const Text('Status of prospective coaching & inquiry requests submitted to trainers.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-          const SizedBox(height: 12),
-
-          ...allUserRequests.map((req) {
-            final isReqPending = req.status == RequestStatus.pending;
-            final isReqConfirmed = req.status == RequestStatus.confirmed;
-            final isReqCancelled = req.status == RequestStatus.cancelled;
-
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(
-                  color: isReqPending
-                      ? const Color(0xFFFF9800).withOpacity(0.5)
-                      : isReqConfirmed
-                          ? const Color(0xFF00E676).withOpacity(0.4)
-                          : Colors.redAccent.withOpacity(0.4),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Inquiry: ${req.requestType}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isReqPending
-                                ? const Color(0xFFFF9800).withOpacity(0.15)
-                                : isReqConfirmed
-                                    ? const Color(0xFF00E676).withOpacity(0.15)
-                                    : Colors.redAccent.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            isReqPending
-                                ? '⏳ PENDING REVIEW'
-                                : isReqConfirmed
-                                    ? '✓ ACCEPTED'
-                                    : '❌ DECLINED',
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
-                              color: isReqPending
-                                  ? const Color(0xFFFF9800)
-                                  : isReqConfirmed
-                                      ? const Color(0xFF00E676)
-                                      : Colors.redAccent,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Coach: ${req.trainerName ?? 'Personal Trainer'} • Submitted ${DateFormat('dd MMM, hh:mm a').format(req.date)}',
-                      style: const TextStyle(color: Colors.white60, fontSize: 11),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '"${req.message}"',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, fontStyle: FontStyle.italic),
-                    ),
-                    if (isReqCancelled && req.declineReason != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D1117),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.info_outline, color: Colors.redAccent, size: 14),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Reason: ${req.declineReason}',
-                                style: const TextStyle(fontSize: 11, color: Colors.white70),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const Divider(height: 16, color: Colors.white12),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (isReqPending) ...[
-                          TextButton(
-                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                            onPressed: () => state.cancelConsultationRequest(req),
-                            child: const Text('Cancel Inquiry', style: TextStyle(fontSize: 12)),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                            icon: const Icon(Icons.chat_bubble_outline, size: 13),
-                            label: const Text('Message Coach', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _openChatModal(context, state, peerName: req.trainerName ?? 'Coach'),
-                          ),
-                        ] else if (isReqCancelled) ...[
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                            icon: const Icon(Icons.explore, size: 14),
-                            label: const Text('Explore Other Coaches 🚀', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => setState(() => _tabIndex = 1),
-                          ),
-                        ] else ...[
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00E676), foregroundColor: Colors.black),
-                            icon: const Icon(Icons.calendar_month, size: 14, color: Colors.black),
-                            label: const Text('Book 1-on-1 Session 📅', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                            onPressed: () => _openScheduleModal(context, state),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-      ],
+      ),
     );
   }
 
@@ -7450,11 +7485,427 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   Widget _buildAdminView(MyPtProvider state, int tab) {
     return switch (tab) {
-      0 => _adminFlagsTab(state),
+      0 => _adminDashboardTab(state),
       1 => _adminAccountsTab(state),
-      2 => _adminTelemetryTab(state),
-      _ => _adminFlagsTab(state),
+      2 => _adminFlagsTab(state),
+      3 => _adminTelemetryTab(state),
+      4 => _adminProfileTab(state),
+      _ => _adminDashboardTab(state),
     };
+  }
+
+  Widget _adminDashboardTab(MyPtProvider state) {
+    final allUsers = state.getAllAccounts();
+    final clientCount = allUsers.where((u) => u.role == UserRole.client).length;
+    final coachCount = allUsers.where((u) => u.role == UserRole.coach).length;
+    final allSessions = state.sessions;
+    final totalInquiries = state.trainerRequests.length;
+    final activeFlags = state.globalFlags.values.where((v) => v).length;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        // 1. Header with Master Governance Badge
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Master Admin Command Center 👑', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  'Full governance • ${allUsers.length} accounts • ${allSessions.length} total sessions',
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5722),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              ),
+              icon: const Icon(Icons.swap_horiz, size: 14),
+              label: const Text('Switch User 👑', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              onPressed: () => _openMasterUserSwitcherModal(context, state),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // 2. High Level Platform KPI Bento
+        Row(
+          children: [
+            Expanded(child: _statCard('TOTAL USERS', '${allUsers.length}', '$clientCount Clients • $coachCount Coaches', const Color(0xFFFF5722))),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('BOOKED SESSIONS', '${allSessions.length}', '$totalInquiries Inquiries', const Color(0xFF00E676))),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: _statCard('FLAGS ACTIVE', '$activeFlags / ${state.globalFlags.length}', 'Runtime Controls', const Color(0xFF29B6F6))),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('CURRENCY & REGION', '${state.currentCurrencyInfo.flag} ${state.selectedCurrency}', state.selectedCountry, Colors.amber)),
+          ],
+        ),
+        const SizedBox(height: 18),
+
+        // 3. Quick Master Governance Shortcuts
+        const Text('Governance Shortcuts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _adminShortcutCard(
+                icon: Icons.admin_panel_settings_outlined,
+                title: 'User Accounts',
+                subtitle: 'Manage roles & clients',
+                color: const Color(0xFF29B6F6),
+                onTap: () => setState(() => _tabIndex = 1),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _adminShortcutCard(
+                icon: Icons.toggle_on_outlined,
+                title: 'Feature Flags',
+                subtitle: 'Toggle kill-switches',
+                color: const Color(0xFFFF5722),
+                onTap: () => setState(() => _tabIndex = 2),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _adminShortcutCard(
+                icon: Icons.dns_outlined,
+                title: 'Telemetry & DB',
+                subtitle: 'Audit logs & metrics',
+                color: const Color(0xFF00E676),
+                onTap: () => setState(() => _tabIndex = 3),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _adminShortcutCard(
+                icon: Icons.person_outline,
+                title: 'Master Profile',
+                subtitle: 'Theme & privileges',
+                color: Colors.amber,
+                onTap: () => setState(() => _tabIndex = 4),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 4. Recent System Events & Activity Log
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Live Activity Stream', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Row(
+                      children: [
+                        CircleAvatar(radius: 4, backgroundColor: Color(0xFF00E676)),
+                        SizedBox(width: 6),
+                        Text('ONLINE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                      ],
+                    ),
+                  ],
+                ),
+                const Divider(height: 20, color: Colors.white12),
+                if (state.notifications.isNotEmpty) ...[
+                  ...state.notifications.take(4).map((n) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.notifications_active_outlined, size: 16, color: Color(0xFFFF5722)),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(n.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text(n.message, style: const TextStyle(fontSize: 11, color: Colors.white60)),
+                            ],
+                          ),
+                        ),
+                        Text(DateFormat('hh:mm a').format(n.timestamp), style: const TextStyle(fontSize: 9.5, color: Colors.white38)),
+                      ],
+                    ),
+                  )),
+                ] else ...[
+                  const Text('No recent alerts. System operating normally.', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminShortcutCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161B22),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(fontSize: 10.5, color: Colors.white54), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _adminProfileTab(MyPtProvider state) {
+    final user = state.currentUser!;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      children: [
+        // Master Admin User Header Card
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                child: Text(
+                  user.name.isNotEmpty ? user.name[0] : '👑',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(user.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('SUPER ADMIN 👑', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Color(0xFF00E676))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(user.email, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                    const SizedBox(height: 4),
+                    const Text('Master governance & omnipotent test privileges', style: TextStyle(color: Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Dual Roles & Privileges
+        const Text('DUAL ROLES & TESTING CAPABILITIES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Assigned Persona Roles:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _roleBadge('👑 Super Admin', const Color(0xFF00E676)),
+                  _roleBadge('🥇 Head Coach', const Color(0xFFFFD54F)),
+                  _roleBadge('🏢 Gym Manager', const Color(0xFFAB47BC)),
+                  _roleBadge('🏋️ Coach / Trainer', const Color(0xFFFF5722)),
+                  _roleBadge('👤 Client / Trainee', const Color(0xFF29B6F6)),
+                ],
+              ),
+              const Divider(height: 20, color: Colors.white12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF5722),
+                    side: const BorderSide(color: Color(0xFFFF5722)),
+                  ),
+                  icon: const Icon(Icons.swap_horiz, size: 16),
+                  label: const Text('Open 1-Tap Persona Switcher 👑', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  onPressed: () => _openMasterUserSwitcherModal(context, state),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Theme & Appearance (Dark / Light Mode)
+        const Text('THEME & APPEARANCE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (state.isDarkMode ? const Color(0xFF7C4DFF) : const Color(0xFFFFB300)).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                state.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: state.isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFFFB300),
+                size: 20,
+              ),
+            ),
+            title: Text(
+              state.isDarkMode ? 'Dark Mode' : 'Light Mode',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+            subtitle: Text(
+              state.isDarkMode ? 'Sleek midnight dark theme active' : 'Bright crisp daylight theme active',
+              style: const TextStyle(fontSize: 12, color: Colors.white60),
+            ),
+            trailing: Switch.adaptive(
+              value: state.isDarkMode,
+              activeColor: const Color(0xFFFF5722),
+              inactiveThumbColor: const Color(0xFFFFB300),
+              inactiveTrackColor: Colors.white24,
+              onChanged: (val) => state.setIsDarkMode(val),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Regional Currency Selector
+        const Text('CURRENCY & PRICING REGION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF00E676).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.currency_exchange, color: Color(0xFF00E676), size: 20),
+            ),
+            title: Text(
+              '${state.currentCurrencyInfo.flag} ${state.selectedCountry} (${state.selectedCurrency})',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+            subtitle: const Text('Change default currency across the platform', style: TextStyle(fontSize: 12, color: Colors.white60)),
+            trailing: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white24),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              ),
+              onPressed: () => _openCurrencySelector(context, state),
+              child: const Text('Change', style: TextStyle(fontSize: 12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Sign Out Button
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF21262D),
+              foregroundColor: Colors.redAccent,
+              side: BorderSide(color: Colors.redAccent.withOpacity(0.4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.logout, size: 16),
+            label: const Text('Sign Out from myPT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            onPressed: () => state.logout(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _roleBadge(String label, Color col) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: col.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: col.withOpacity(0.35)),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: col)),
+    );
   }
 
   String _formatFlagTitle(String key) {
@@ -8996,7 +9447,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             content: Text('You have 0 PT Credits available. Please view training packages to top up credits.'),
           ),
         );
-        setState(() => _tabIndex = 6); // Open Packages tab
+        setState(() => _tabIndex = 0); // Open Dashboard Packages section
         return;
       }
     }
