@@ -3712,42 +3712,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
         const SizedBox(height: 16),
 
         // 3. PACKAGES SECTION (DIRECTLY BELOW PT CREDITS)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161B22),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on, color: Color(0xFFFF5722), size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('PRICING REGION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white54)),
-                    Text('${state.currentCurrencyInfo.flag} ${state.selectedCountry} (${state.selectedCurrency})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ],
-                ),
-              ),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                ),
-                icon: const Icon(Icons.currency_exchange, size: 12, color: Color(0xFFFF5722)),
-                label: const Text('Change', style: TextStyle(fontSize: 11)),
-                onPressed: () => _openCurrencySelector(context, state),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
         if (hasCoach) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -12639,8 +12603,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                             const Divider(height: 1, color: Colors.white10),
                             ListTile(
                               leading: const Icon(Icons.currency_exchange, color: Color(0xFF00E676)),
-                              title: const Text('Currency & Regional Pricing', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                              subtitle: Text('${state.currentCurrencyInfo.name} (${state.selectedCurrency})', style: const TextStyle(fontSize: 12, color: Colors.white60)),
+                              title: const Text('Pricing Region & Currency', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              subtitle: Text('${state.currentCurrencyInfo.flag} ${state.selectedCountry} • ${state.currentCurrencyInfo.name} (${state.selectedCurrency})', style: const TextStyle(fontSize: 12, color: Colors.white60)),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
                               onTap: () {
                                 Navigator.pop(ctx);
