@@ -343,6 +343,34 @@ class BodyMeasurementEntry {
   });
 }
 
+class ClientChartProtocol {
+  final String clientId;
+  String phaseTitle;
+  int calorieTarget;
+  int proteinTargetGrams;
+  int carbsTargetGrams;
+  int fatTargetGrams;
+  double waterTargetLiters;
+  int dailyStepsTarget;
+  String workoutSplit;
+  String notes;
+  DateTime updatedAt;
+
+  ClientChartProtocol({
+    required this.clientId,
+    this.phaseTitle = 'Phase 1: Hypertrophy & Fat Loss',
+    this.calorieTarget = 1950,
+    this.proteinTargetGrams = 150,
+    this.carbsTargetGrams = 190,
+    this.fatTargetGrams = 55,
+    this.waterTargetLiters = 3.5,
+    this.dailyStepsTarget = 10000,
+    this.workoutSplit = '• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core',
+    this.notes = 'Focus on progressive overload on compound lifts. Stay hydrated and hit your daily protein goal.',
+    required this.updatedAt,
+  });
+}
+
 class ClientRequestItem {
   final String id;
   final String? clientId;
@@ -1364,6 +1392,50 @@ class MyPtProvider extends ChangeNotifier {
       type: 'warning',
     );
 
+    notifyListeners();
+  }
+
+  // --- CLIENT CHART & NUTRITION PROTOCOLS ---
+  Map<String, ClientChartProtocol> clientProtocols = {
+    'usr_sarah': ClientChartProtocol(
+      clientId: 'usr_sarah',
+      phaseTitle: 'Phase 1: Hypertrophy & Fat Loss',
+      calorieTarget: 1950,
+      proteinTargetGrams: 150,
+      carbsTargetGrams: 190,
+      fatTargetGrams: 55,
+      waterTargetLiters: 3.5,
+      dailyStepsTarget: 10000,
+      workoutSplit: '• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core',
+      notes: 'Focus on progressive overload on compound lifts. Stay hydrated and hit your daily protein goal.',
+      updatedAt: DateTime.now().subtract(const Duration(days: 3)),
+    ),
+  };
+
+  ClientChartProtocol getProtocolForClient(String clientId) {
+    return clientProtocols[clientId] ?? ClientChartProtocol(
+      clientId: clientId,
+      phaseTitle: 'Phase 1: Hypertrophy & Fat Loss',
+      calorieTarget: 2000,
+      proteinTargetGrams: 150,
+      carbsTargetGrams: 200,
+      fatTargetGrams: 60,
+      waterTargetLiters: 3.0,
+      dailyStepsTarget: 10000,
+      workoutSplit: '• Monday: Upper Body (Push/Pull)\n• Tuesday: Lower Body & Core\n• Thursday: Chest & Back Hypertrophy\n• Friday: Legs & Shoulders',
+      notes: 'Execute movements with controlled tempo. 7-8 hours sleep for recovery.',
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  void saveClientProtocol(ClientChartProtocol protocol, {String? trainerName}) {
+    clientProtocols[protocol.clientId] = protocol;
+    addNotification(
+      title: '📋 Workout & Nutrition Protocol Updated',
+      message: 'Coach ${trainerName ?? "your trainer"} updated your customized nutrition & workout split chart (${protocol.calorieTarget} kcal, ${protocol.proteinTargetGrams}g Protein).',
+      recipientRole: UserRole.client,
+      type: 'system',
+    );
     notifyListeners();
   }
 
@@ -3127,10 +3199,22 @@ class _MainShellScreenState extends State<MainShellScreen> {
   ];
 
   // --- TRAINER GOOGLE CALENDAR SCHEDULE STATE ---
-  String _calendarViewMode = 'Month'; // 'Month', 'Week', '3-Day', 'Day', 'Schedule'
+  String _calendarViewMode = 'Schedule'; // Sequence: 'Schedule', 'Day', '3-Day', 'Week', 'Month'
   DateTime _calendarFocusedDate = DateTime.now();
   DateTime _calendarSelectedDate = DateTime.now();
   String _calendarStatusFilter = 'All'; // 'All', 'Confirmed', 'Pending'
+
+  // --- BUILD CHART (CLIENT-SPECIFIC) CONTROLLERS & STATE ---
+  String? _selectedBuildChartClientId;
+  final TextEditingController _chartPhaseCtrl = TextEditingController();
+  final TextEditingController _chartCalorieCtrl = TextEditingController();
+  final TextEditingController _chartProteinCtrl = TextEditingController();
+  final TextEditingController _chartCarbsCtrl = TextEditingController();
+  final TextEditingController _chartFatCtrl = TextEditingController();
+  final TextEditingController _chartWaterCtrl = TextEditingController();
+  final TextEditingController _chartStepsCtrl = TextEditingController();
+  final TextEditingController _chartSplitCtrl = TextEditingController();
+  final TextEditingController _chartNotesCtrl = TextEditingController();
 
   // --- EXERCISE MOVEMENT LIBRARY FILTER STATE ---
   int _coachDashboardSectionTab = 0; // 0: Upcoming Sessions, 1: Messages
@@ -3171,6 +3255,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   void dispose() {
     _coachSearchCtrl.dispose();
+    _chartPhaseCtrl.dispose();
+    _chartCalorieCtrl.dispose();
+    _chartProteinCtrl.dispose();
+    _chartCarbsCtrl.dispose();
+    _chartFatCtrl.dispose();
+    _chartWaterCtrl.dispose();
+    _chartStepsCtrl.dispose();
+    _chartSplitCtrl.dispose();
+    _chartNotesCtrl.dispose();
     super.dispose();
   }
 
@@ -5146,55 +5239,79 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 3. Nutrition Targets & Training Split (From Analytics)
-          Card(
-            color: const Color(0xFF161B22),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Phase 1: Hypertrophy & Fat Loss', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+          // 3. Nutrition Targets & Training Split (From Assigned Coach Chart Protocol)
+          () {
+            final protocol = state.getProtocolForClient(user.id);
+            return Card(
+              color: const Color(0xFF161B22),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(protocol.phaseTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white), overflow: TextOverflow.ellipsis),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
+                          child: const Text('ACTIVE PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Assigned by coach • Last updated ${DateFormat('dd MMM yyyy').format(protocol.updatedAt)}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                    const Divider(height: 20, color: Colors.white12),
+
+                    const Text('Daily Nutrition Targets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _macroPill('Calories', '${NumberFormat('#,##0').format(protocol.calorieTarget)} kcal', const Color(0xFFFF5722)),
+                        const SizedBox(width: 6),
+                        _macroPill('Protein', '${protocol.proteinTargetGrams}g', const Color(0xFF29B6F6)),
+                        const SizedBox(width: 6),
+                        _macroPill('Carbs', '${protocol.carbsTargetGrams}g', const Color(0xFF00E676)),
+                        const SizedBox(width: 6),
+                        _macroPill('Fat', '${protocol.fatTargetGrams}g', Colors.amber),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    const Text('Weekly Workout Split', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
+                    const SizedBox(height: 6),
+                    Text(
+                      protocol.workoutSplit,
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                    ),
+                    if (protocol.notes.isNotEmpty) ...[
+                      const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: const Color(0xFF00E676).withOpacity(0.15), borderRadius: BorderRadius.circular(8)),
-                        child: const Text('ACTIVE PLAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.tips_and_updates, size: 14, color: Color(0xFFFF5722)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(protocol.notes, style: const TextStyle(fontSize: 11, color: Colors.white70))),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text('Assigned by primary coach for body recomposition', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                  const Divider(height: 20, color: Colors.white12),
-
-                  const Text('Daily Nutrition Targets', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _macroPill('Calories', '1,950 kcal', const Color(0xFFFF5722)),
-                      const SizedBox(width: 6),
-                      _macroPill('Protein', '150g', const Color(0xFF29B6F6)),
-                      const SizedBox(width: 6),
-                      _macroPill('Carbs', '190g', const Color(0xFF00E676)),
-                      const SizedBox(width: 6),
-                      _macroPill('Fat', '55g', Colors.amber),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  const Text('Weekly Workout Split', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white70)),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '• Monday: Upper Hypertrophy & Arms\n• Tuesday: Lower Body Quads & Calves\n• Thursday: Push Strength & Shoulders\n• Friday: Pull Biomechanics & Core',
-                    style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          }(),
           const SizedBox(height: 16),
 
           // 4. Weight & Body Fat Progression Chart (8 Weeks - From Analytics)
@@ -5376,7 +5493,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       1 => _coachRequestsTab(state),
       2 => _coachScheduleTab(state),
       3 => _coachClientsTab(state),
-      4 => _coachBuildChartTab(),
+      4 => _coachBuildChartTab(state),
       5 => _coachLibraryTab(state),
       6 => _coachPackagesTab(state),
       _ => _coachDashboardTab(state),
@@ -6580,12 +6697,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
             _buildCalendarHeader(context, state, coach, trainerSessions),
             Expanded(
               child: switch (_calendarViewMode) {
-                'Month' => _buildMonthView(context, state, coach, trainerSessions),
-                'Week' => _buildWeekView(context, state, coach, trainerSessions),
-                '3-Day' => _buildThreeDayView(context, state, coach, trainerSessions),
-                'Day' => _buildDayView(context, state, coach, trainerSessions),
                 'Schedule' => _buildScheduleAgendaView(context, state, coach, trainerSessions),
-                _ => _buildMonthView(context, state, coach, trainerSessions),
+                'Day' => _buildDayView(context, state, coach, trainerSessions),
+                '3-Day' => _buildThreeDayView(context, state, coach, trainerSessions),
+                'Week' => _buildWeekView(context, state, coach, trainerSessions),
+                'Month' => _buildMonthView(context, state, coach, trainerSessions),
+                _ => _buildScheduleAgendaView(context, state, coach, trainerSessions),
               },
             ),
           ],
@@ -6699,20 +6816,20 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
           const SizedBox(height: 8),
 
-          // Row 2: Google Calendar View Switcher (Pill tabs)
+          // Row 2: Google Calendar View Switcher (Pill tabs: Schedule, Day, 3-Day, Week, Month)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _calendarViewPill('Month', Icons.calendar_view_month),
-                const SizedBox(width: 6),
-                _calendarViewPill('Week', Icons.calendar_view_week),
-                const SizedBox(width: 6),
-                _calendarViewPill('3-Day', Icons.view_column),
+                _calendarViewPill('Schedule', Icons.view_agenda),
                 const SizedBox(width: 6),
                 _calendarViewPill('Day', Icons.calendar_view_day),
                 const SizedBox(width: 6),
-                _calendarViewPill('Schedule', Icons.view_agenda),
+                _calendarViewPill('3-Day', Icons.view_column),
+                const SizedBox(width: 6),
+                _calendarViewPill('Week', Icons.calendar_view_week),
+                const SizedBox(width: 6),
+                _calendarViewPill('Month', Icons.calendar_view_month),
               ],
             ),
           ),
@@ -7895,45 +8012,576 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  Widget _coachBuildChartTab() {
+  static const List<(String, String)> _splitTemplates = [
+    ('Push / Pull / Legs', '• Monday: Push (Chest, Delts, Triceps)\n• Tuesday: Pull (Back, Rear Delts, Biceps)\n• Thursday: Legs (Quads, Hamstrings, Calves)\n• Friday: Upper Hypertrophy & Arms\n• Saturday: Active Recovery & Mobility'),
+    ('Upper / Lower (4-Day)', '• Monday: Upper Body Strength & Power\n• Tuesday: Lower Body Strength & Core\n• Thursday: Upper Body Hypertrophy\n• Friday: Lower Body Hypertrophy & Calves\n• Weekend: Rest & Light Cardio'),
+    ('Full Body (3-Day)', '• Monday: Full Body Compound Focus A\n• Wednesday: Full Body Biomechanics Focus B\n• Friday: Full Body Metabolic Volume C\n• Tue/Thu/Weekend: Active Recovery'),
+    ('Bro Split (5-Day)', '• Monday: Chest & Abs\n• Tuesday: Back & Traps\n• Wednesday: Shoulders & Lateral Delts\n• Thursday: Legs & Calves\n• Friday: Biceps, Triceps & Core'),
+  ];
+
+  void _loadClientProtocolIntoControllers(MyPtProvider state, String clientId) {
+    final p = state.getProtocolForClient(clientId);
+    _chartPhaseCtrl.text = p.phaseTitle;
+    _chartCalorieCtrl.text = '${p.calorieTarget}';
+    _chartProteinCtrl.text = '${p.proteinTargetGrams}';
+    _chartCarbsCtrl.text = '${p.carbsTargetGrams}';
+    _chartFatCtrl.text = '${p.fatTargetGrams}';
+    _chartWaterCtrl.text = '${p.waterTargetLiters}';
+    _chartStepsCtrl.text = '${p.dailyStepsTarget}';
+    _chartSplitCtrl.text = p.workoutSplit;
+    _chartNotesCtrl.text = p.notes;
+  }
+
+  void _saveProtocol(MyPtProvider state, UserModel? client) {
+    if (client == null) return;
+    final cal = int.tryParse(_chartCalorieCtrl.text) ?? 2000;
+    final prot = int.tryParse(_chartProteinCtrl.text) ?? 150;
+    final carb = int.tryParse(_chartCarbsCtrl.text) ?? 200;
+    final fat = int.tryParse(_chartFatCtrl.text) ?? 60;
+    final water = double.tryParse(_chartWaterCtrl.text) ?? 3.5;
+    final steps = int.tryParse(_chartStepsCtrl.text) ?? 10000;
+    final phase = _chartPhaseCtrl.text.trim().isNotEmpty ? _chartPhaseCtrl.text.trim() : 'Phase 1: Hypertrophy & Fat Loss';
+    final split = _chartSplitCtrl.text.trim().isNotEmpty ? _chartSplitCtrl.text.trim() : 'Custom Assigned Workout Split';
+    final notes = _chartNotesCtrl.text.trim();
+
+    final protocol = ClientChartProtocol(
+      clientId: client.id,
+      phaseTitle: phase,
+      calorieTarget: cal,
+      proteinTargetGrams: prot,
+      carbsTargetGrams: carb,
+      fatTargetGrams: fat,
+      waterTargetLiters: water,
+      dailyStepsTarget: steps,
+      workoutSplit: split,
+      notes: notes,
+      updatedAt: DateTime.now(),
+    );
+
+    state.saveClientProtocol(protocol, trainerName: state.currentUser?.name);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF00E676),
+        behavior: SnackBarBehavior.floating,
+        content: Text('✓ Successfully saved and assigned chart protocol to ${client.name}!'),
+      ),
+    );
+  }
+
+  Widget _buildNumericAdjuster({
+    required String label,
+    required TextEditingController controller,
+    required String unit,
+    required num step,
+    required Color color,
+    required VoidCallback onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1117),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 10.5, color: Colors.white54, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    suffixText: unit,
+                    suffixStyle: const TextStyle(fontSize: 11, color: Colors.white54),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (_) => onChanged(),
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  final val = double.tryParse(controller.text) ?? 0;
+                  final newVal = (val - step).clamp(0, 50000);
+                  controller.text = newVal % 1 == 0 ? '${newVal.toInt()}' : newVal.toStringAsFixed(1);
+                  onChanged();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: const Color(0xFF21262D), borderRadius: BorderRadius.circular(6)),
+                  child: const Icon(Icons.remove, size: 14, color: Colors.white70),
+                ),
+              ),
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: () {
+                  final val = double.tryParse(controller.text) ?? 0;
+                  final newVal = val + step;
+                  controller.text = newVal % 1 == 0 ? '${newVal.toInt()}' : newVal.toStringAsFixed(1);
+                  onChanged();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: const Color(0xFF21262D), borderRadius: BorderRadius.circular(6)),
+                  child: const Icon(Icons.add, size: 14, color: Colors.white70),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coachBuildChartTab(MyPtProvider state) {
+    final coach = state.currentUser!;
+    final myClients = state.getClientsForTrainer(coach.id);
+    final allSelectableClients = myClients.isNotEmpty ? myClients : state.rosterClients;
+
+    if (allSelectableClients.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people_outline, size: 48, color: Colors.white38),
+              SizedBox(height: 12),
+              Text('No Trainees Available', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+              SizedBox(height: 6),
+              Text('You need assigned trainees to build and assign custom workout and nutrition charts.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white60)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_selectedBuildChartClientId == null || !allSelectableClients.any((c) => c.id == _selectedBuildChartClientId)) {
+      _selectedBuildChartClientId = allSelectableClients.first.id;
+      _loadClientProtocolIntoControllers(state, _selectedBuildChartClientId!);
+    }
+
+    final selectedClient = allSelectableClients.firstWhere(
+      (c) => c.id == _selectedBuildChartClientId,
+      orElse: () => allSelectableClients.first,
+    );
+
+    // Dynamic macro calculations
+    final proteinG = int.tryParse(_chartProteinCtrl.text) ?? 0;
+    final carbsG = int.tryParse(_chartCarbsCtrl.text) ?? 0;
+    final fatG = int.tryParse(_chartFatCtrl.text) ?? 0;
+    final calculatedKcal = (proteinG * 4) + (carbsG * 4) + (fatG * 9);
+    final targetKcal = int.tryParse(_chartCalorieCtrl.text) ?? 0;
+
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
       children: [
-        const Text('Client Protocol Builder', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+        // 1. Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Client Protocol & Chart Builder', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                const SizedBox(height: 2),
+                Text('Prescribe custom macros, hydration, & weekly workout splits per trainee', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11.5)),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // 2. Client Selection Carousel
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('SELECT TRAINEE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
+            Text('${allSelectableClients.length} Trainees', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: allSelectableClients.map((client) {
+              final isSelected = client.id == selectedClient.id;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedBuildChartClientId = client.id;
+                    _loadClientProtocolIntoControllers(state, client.id);
+                  });
+                },
+                child: Container(
+                  width: 140,
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFFFF5722).withOpacity(0.15) : const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: isSelected ? const Color(0xFFFF5722) : const Color(0xFF21262D),
+                            child: Text(
+                              client.name.isNotEmpty ? client.name[0] : '?',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected ? Colors.white : const Color(0xFFFF5722),
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(color: const Color(0xFFFF5722), borderRadius: BorderRadius.circular(6)),
+                              child: const Text('ACTIVE', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white)),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        client.name,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.bold,
+                          color: isSelected ? Colors.white : Colors.white70,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        client.goal,
+                        style: const TextStyle(fontSize: 9.5, color: Colors.white38),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${client.currentWeight} kg • ${client.ptCredits} Credits',
+                        style: const TextStyle(fontSize: 9.5, color: Color(0xFF00E676), fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 3. Active Trainee Bio Card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
+                child: Text(
+                  selectedClient.name.isNotEmpty ? selectedClient.name[0] : '?',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            selectedClient.name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00E676).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('Chart Target', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Goal: ${selectedClient.goal} • Current: ${selectedClient.currentWeight}kg (Start: ${selectedClient.startingWeight}kg)',
+                      style: const TextStyle(fontSize: 10.5, color: Colors.white60),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFFF5722), size: 18),
+                tooltip: 'Message Trainee',
+                onPressed: () => _openChatModal(context, state, peerName: selectedClient.name),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 4. Daily Nutrition & Macro Target Card
         Card(
           color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Prescribe Daily Macro Targets', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                const TextField(decoration: InputDecoration(labelText: 'Calorie Target (kcal)', border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                const Row(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: TextField(decoration: InputDecoration(labelText: 'Protein (g)', border: OutlineInputBorder()))),
-                    SizedBox(width: 8),
-                    Expanded(child: TextField(decoration: InputDecoration(labelText: 'Carbs (g)', border: OutlineInputBorder()))),
-                    SizedBox(width: 8),
-                    Expanded(child: TextField(decoration: InputDecoration(labelText: 'Fat (g)', border: OutlineInputBorder()))),
+                    const Row(
+                      children: [
+                        Icon(Icons.restaurant_menu, color: Color(0xFFFF5722), size: 16),
+                        SizedBox(width: 6),
+                        Text('Prescribe Daily Nutrition & Macros', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFFFF9800).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'Macro Sum: $calculatedKcal kcal',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.bold,
+                          color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676) : const Color(0xFFFF9800),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Protocol saved and assigned to client!')));
-                    },
-                    child: const Text('Save & Assign to Client', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+
+                // Calorie Target
+                _buildNumericAdjuster(
+                  label: 'Daily Calorie Target',
+                  controller: _chartCalorieCtrl,
+                  unit: 'kcal',
+                  step: 50,
+                  color: const Color(0xFFFF5722),
+                  onChanged: () => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+
+                // Protein, Carbs, Fat in 3 columns
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildNumericAdjuster(
+                        label: 'Protein',
+                        controller: _chartProteinCtrl,
+                        unit: 'g',
+                        step: 5,
+                        color: const Color(0xFF29B6F6),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildNumericAdjuster(
+                        label: 'Carbs',
+                        controller: _chartCarbsCtrl,
+                        unit: 'g',
+                        step: 5,
+                        color: const Color(0xFF00E676),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildNumericAdjuster(
+                        label: 'Fat',
+                        controller: _chartFatCtrl,
+                        unit: 'g',
+                        step: 2,
+                        color: Colors.amber,
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Water & Step Goals Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildNumericAdjuster(
+                        label: 'Daily Water Intake',
+                        controller: _chartWaterCtrl,
+                        unit: 'L',
+                        step: 0.5,
+                        color: const Color(0xFF29B6F6),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildNumericAdjuster(
+                        label: 'Daily Steps Goal',
+                        controller: _chartStepsCtrl,
+                        unit: 'steps',
+                        step: 500,
+                        color: const Color(0xFFFF5722),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 5. Weekly Workout Split & Program Phase Card
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.calendar_month, color: Color(0xFF29B6F6), size: 16),
+                    SizedBox(width: 6),
+                    Text('Program Phase & Weekly Workout Split', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: _chartPhaseCtrl,
+                  style: const TextStyle(fontSize: 13, color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Training Phase / Program Name',
+                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                    filled: true,
+                    fillColor: const Color(0xFF0D1117),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Quick Split Templates
+                const Text('Quick Split Templates (Tap to Insert)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _splitTemplates.map((template) {
+                    final (title, splitContent) = template;
+                    return ActionChip(
+                      backgroundColor: const Color(0xFF0D1117),
+                      side: const BorderSide(color: Colors.white12),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      label: Text(title, style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
+                      onPressed: () {
+                        setState(() {
+                          _chartSplitCtrl.text = splitContent;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: _chartSplitCtrl,
+                  maxLines: 5,
+                  style: const TextStyle(fontSize: 12.5, color: Colors.white, height: 1.35),
+                  decoration: InputDecoration(
+                    labelText: 'Weekly Workout Split Structure',
+                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                    filled: true,
+                    fillColor: const Color(0xFF0D1117),
+                    contentPadding: const EdgeInsets.all(12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                TextField(
+                  controller: _chartNotesCtrl,
+                  maxLines: 2,
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Coach Instructions & Recovery Guidelines',
+                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                    filled: true,
+                    fillColor: const Color(0xFF0D1117),
+                    contentPadding: const EdgeInsets.all(12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
                   ),
                 ),
               ],
             ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 6. Save & Publish Button
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF5722),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+            ),
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: Text(
+              'Save & Assign Chart to ${selectedClient.name.split(" ").first} 🚀',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+            ),
+            onPressed: () => _saveProtocol(state, selectedClient),
           ),
         ),
       ],
