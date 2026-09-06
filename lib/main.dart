@@ -6141,7 +6141,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 const Text('Client Requests & Bookings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 4),
                 Text(
-                  'Review workout session bookings & consultations',
+                  'Manage workout session bookings and consultations',
                   style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
                 ),
               ],
@@ -6170,40 +6170,122 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Segmented Filter Tabs (All Requests | Workout Sessions | Consultations)
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
+        // 2 PARALLEL TABS (Workout Sessions | Consultations)
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
           child: Row(
             children: [
-              _buildRequestFilterPill(
-                title: 'All Requests',
-                count: totalPending,
-                isSelected: _coachRequestsFilterTab == 0,
-                onTap: () => setState(() => _coachRequestsFilterTab = 0),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _coachRequestsFilterTab = 0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _coachRequestsFilterTab == 0 ? const Color(0xFFFF5722) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.fitness_center_rounded,
+                          size: 15,
+                          color: _coachRequestsFilterTab == 0 ? Colors.white : Colors.white60,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Workout Sessions',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: _coachRequestsFilterTab == 0 ? Colors.white : Colors.white60,
+                          ),
+                        ),
+                        if (pendingSessionCount > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: _coachRequestsFilterTab == 0 ? Colors.black.withOpacity(0.3) : const Color(0xFFFF9800).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$pendingSessionCount',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _coachRequestsFilterTab == 0 ? Colors.white : const Color(0xFFFF9800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-              _buildRequestFilterPill(
-                title: 'Workout Sessions',
-                count: pendingSessionCount,
-                isSelected: _coachRequestsFilterTab == 1,
-                icon: Icons.fitness_center_rounded,
-                onTap: () => setState(() => _coachRequestsFilterTab = 1),
-              ),
-              const SizedBox(width: 8),
-              _buildRequestFilterPill(
-                title: 'Consultations',
-                count: pendingConsultCount,
-                isSelected: _coachRequestsFilterTab == 2,
-                icon: Icons.contact_mail_rounded,
-                onTap: () => setState(() => _coachRequestsFilterTab = 2),
+              const SizedBox(width: 4),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _coachRequestsFilterTab = 1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _coachRequestsFilterTab == 1 ? const Color(0xFFFF5722) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.contact_mail_rounded,
+                          size: 15,
+                          color: _coachRequestsFilterTab == 1 ? Colors.white : Colors.white60,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Consultations',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: _coachRequestsFilterTab == 1 ? Colors.white : Colors.white60,
+                          ),
+                        ),
+                        if (pendingConsultCount > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: _coachRequestsFilterTab == 1 ? Colors.black.withOpacity(0.3) : const Color(0xFFFF9800).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$pendingConsultCount',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _coachRequestsFilterTab == 1 ? Colors.white : const Color(0xFFFF9800),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 18),
 
-        // SECTION 1: WORKOUT SESSION REQUESTS
-        if (_coachRequestsFilterTab == 0 || _coachRequestsFilterTab == 1) ...[
+        // TAB 0: WORKOUT SESSION REQUESTS
+        if (_coachRequestsFilterTab == 0) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -6243,19 +6325,24 @@ class _MainShellScreenState extends State<MainShellScreen> {
             'Trainees who booked a 1-on-1 coaching session with your calendar',
             style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           if (sessionReqs.isEmpty)
             Container(
-              padding: const EdgeInsets.all(22),
-              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: const Color(0xFF161B22),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white10),
               ),
-              child: const Center(
-                child: Text('No workout session booking requests.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              child: const Column(
+                children: [
+                  Icon(Icons.event_busy, size: 36, color: Colors.white38),
+                  SizedBox(height: 8),
+                  Text('No Workout Session Requests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                  SizedBox(height: 4),
+                  Text('When trainees book a 1-on-1 workout session, it will appear here for your approval.', style: TextStyle(color: Colors.white54, fontSize: 11), textAlign: TextAlign.center),
+                ],
               ),
             )
           else ...[
@@ -6442,11 +6529,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
               );
             }),
           ],
-          const SizedBox(height: 16),
-        ],
-
-        // SECTION 2: CLIENT CONSULTATION REQUESTS
-        if (_coachRequestsFilterTab == 0 || _coachRequestsFilterTab == 2) ...[
+        ] else ...[
+          // TAB 1: CLIENT CONSULTATION REQUESTS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -6486,18 +6570,24 @@ class _MainShellScreenState extends State<MainShellScreen> {
             'Review prospective trainees seeking 1-on-1 coaching',
             style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
           if (consultReqs.isEmpty)
             Container(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(28),
               decoration: BoxDecoration(
                 color: const Color(0xFF161B22),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white10),
               ),
-              child: const Center(
-                child: Text('No pending consultation requests.', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              child: const Column(
+                children: [
+                  Icon(Icons.inbox_rounded, size: 36, color: Colors.white38),
+                  SizedBox(height: 8),
+                  Text('No Consultation Requests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                  SizedBox(height: 4),
+                  Text('When prospective trainees request coaching consultations, they will appear here.', style: TextStyle(color: Colors.white54, fontSize: 11), textAlign: TextAlign.center),
+                ],
               ),
             )
           else ...[
@@ -6595,62 +6685,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ],
         ],
       ],
-    );
-  }
-
-  Widget _buildRequestFilterPill({
-    required String title,
-    required int count,
-    required bool isSelected,
-    required VoidCallback onTap,
-    IconData? icon,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF5722) : const Color(0xFF161B22),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 13, color: isSelected ? Colors.white : Colors.white70),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.white70,
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.black.withOpacity(0.3) : const Color(0xFFFF9800).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : const Color(0xFFFF9800),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
