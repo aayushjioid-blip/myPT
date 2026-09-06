@@ -5383,131 +5383,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
     };
   }
 
-  void _openTrainerRequestsModal(BuildContext context, MyPtProvider state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1117),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-              Expanded(child: _coachRequestsTab(state)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openTrainerClientsModal(BuildContext context, MyPtProvider state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1117),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-              Expanded(child: _coachClientsTab(state)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openTrainerBuildChartModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1117),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-              Expanded(child: _coachBuildChartTab()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openTrainerLibraryModal(BuildContext context, MyPtProvider state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1117),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-              Expanded(child: _coachLibraryTab(state)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openTrainerPackagesModal(BuildContext context, MyPtProvider state) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF0D1117),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => SafeArea(
-        child: SizedBox(
-          height: MediaQuery.of(ctx).size.height * 0.85,
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-              ),
-              Expanded(child: _coachPackagesTab(state)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _coachDashboardTab(MyPtProvider state) {
     final coach = state.currentUser!;
     final myClients = state.getClientsForTrainer(coach.id);
@@ -5536,66 +5411,25 @@ class _MainShellScreenState extends State<MainShellScreen> {
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () => _openTrainerClientsModal(context, state),
+                onTap: () => setState(() => _tabIndex = 3),
                 child: _statCard('ASSIGNED CLIENTS', '${myClients.length}', 'Active Roster >', const Color(0xFFFF5722)),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: GestureDetector(
-                onTap: () => _openTrainerPackagesModal(context, state),
+                onTap: () => setState(() => _tabIndex = 6),
                 child: _statCard('EST. REVENUE', state.formatPrice(45990), 'This Month >', const Color(0xFF00E676)),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: GestureDetector(
-                onTap: () => _openTrainerRequestsModal(context, state),
+                onTap: () => setState(() => _tabIndex = 1),
                 child: _statCard('PENDING REQUESTS', '${pendingSessions + pendingOfflinePayments.length}', 'Needs Review >', const Color(0xFFFF9800)),
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-
-        // Quick Coach Toolkit Row
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              ActionChip(
-                backgroundColor: const Color(0xFF161B22),
-                side: const BorderSide(color: Colors.white12),
-                avatar: const Icon(Icons.post_add, size: 14, color: Color(0xFFFF5722)),
-                label: const Text('Build Workout Chart', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                onPressed: () => _openTrainerBuildChartModal(context),
-              ),
-              const SizedBox(width: 8),
-              ActionChip(
-                backgroundColor: const Color(0xFF161B22),
-                side: const BorderSide(color: Colors.white12),
-                avatar: const Icon(Icons.fitness_center, size: 14, color: Color(0xFF29B6F6)),
-                label: const Text('Exercise Library', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                onPressed: () => _openTrainerLibraryModal(context, state),
-              ),
-              const SizedBox(width: 8),
-              ActionChip(
-                backgroundColor: const Color(0xFF161B22),
-                side: const BorderSide(color: Colors.white12),
-                avatar: const Icon(Icons.inventory_2, size: 14, color: Color(0xFFFFB300)),
-                label: const Text('My Packages', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                onPressed: () => _openTrainerPackagesModal(context, state),
-              ),
-              const SizedBox(width: 8),
-              ActionChip(
-                backgroundColor: const Color(0xFF161B22),
-                side: const BorderSide(color: Colors.white12),
-                avatar: const Icon(Icons.inbox, size: 14, color: Color(0xFF00E676)),
-                label: const Text('Consultation Requests', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                onPressed: () => _openTrainerRequestsModal(context, state),
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 16),
 
