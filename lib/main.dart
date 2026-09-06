@@ -3206,7 +3206,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
   String _calendarStatusFilter = 'All'; // 'All', 'Confirmed', 'Pending'
 
   // --- BUILD CHART (CLIENT-SPECIFIC) CONTROLLERS & STATE ---
-  String? _selectedBuildChartClientId;
   final TextEditingController _chartPhaseCtrl = TextEditingController();
   final TextEditingController _chartCalorieCtrl = TextEditingController();
   final TextEditingController _chartProteinCtrl = TextEditingController();
@@ -3303,8 +3302,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
         (Icons.inbox, 'Requests'),
         (Icons.calendar_month, 'Schedule'),
         (Icons.people, 'Clients'),
-        (Icons.post_add, 'Build Chart'),
-        (Icons.fitness_center, 'Library'),
         (Icons.inventory_2, 'Packages'),
       ],
       UserRole.headCoach => const [
@@ -5486,7 +5483,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   // ============================================================================
-  // 7. COACH VIEWS (7 TABS: Dashboard, Requests, Schedule, Clients, Build Chart, Library, Packages)
+  // 7. COACH VIEWS (5 TABS: Dashboard, Requests, Schedule, Clients, Packages)
   // ============================================================================
   Widget _buildCoachView(MyPtProvider state, int tab) {
     return switch (tab) {
@@ -5494,9 +5491,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       1 => _coachRequestsTab(state),
       2 => _coachScheduleTab(state),
       3 => _coachClientsTab(state),
-      4 => _coachBuildChartTab(state),
-      5 => _coachLibraryTab(state),
-      6 => _coachPackagesTab(state),
+      4 => _coachPackagesTab(state),
       _ => _coachDashboardTab(state),
     };
   }
@@ -5536,7 +5531,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => _tabIndex = 6),
+                onTap: () => setState(() => _tabIndex = 4),
                 child: _statCard('EST. REVENUE', state.formatPrice(45990), 'This Month >', const Color(0xFF00E676)),
               ),
             ),
@@ -5548,6 +5543,71 @@ class _MainShellScreenState extends State<MainShellScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 16),
+
+        // Workout & Exercise Library Quick-Access Card
+        Card(
+          color: const Color(0xFF161B22),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: Colors.white12),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => _openWorkoutLibraryModal(context, state),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF5722).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF5722).withOpacity(0.4)),
+                    ),
+                    child: const Icon(Icons.fitness_center_rounded, color: Color(0xFFFF5722), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Workout Library',
+                              style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00E676).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                '${state.movementLibrary.length} Exercises',
+                                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Browse movement database, muscle targets, or create custom workouts',
+                          style: TextStyle(color: Colors.white60, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white38),
+                ],
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -8149,14 +8209,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
                               foregroundColor: const Color(0xFF29B6F6),
                             ),
                             icon: const Icon(Icons.post_add, size: 18),
-                            tooltip: 'Edit Protocol',
-                            onPressed: () {
-                              setState(() {
-                                _selectedBuildChartClientId = client.id;
-                                _loadClientProtocolIntoControllers(state, client.id);
-                                _tabIndex = 4;
-                              });
-                            },
+                            tooltip: 'Build Chart Protocol',
+                            onPressed: () => _openBuildChartModal(context, state, client),
                           ),
                         ],
                       ),
@@ -8346,14 +8400,10 @@ class _MainShellScreenState extends State<MainShellScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       icon: const Icon(Icons.post_add, size: 16),
-                      label: const Text('Edit Protocol', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      label: const Text('Build Chart', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                       onPressed: () {
                         Navigator.pop(ctx);
-                        setState(() {
-                          _selectedBuildChartClientId = client.id;
-                          _loadClientProtocolIntoControllers(state, client.id);
-                          _tabIndex = 4;
-                        });
+                        _openBuildChartModal(context, state, client);
                       },
                     ),
                   ),
@@ -8629,11 +8679,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           label: const Text('Customize Protocol in Build Chart ➔', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                           onPressed: () {
                             Navigator.pop(ctx);
-                            setState(() {
-                              _selectedBuildChartClientId = client.id;
-                              _loadClientProtocolIntoControllers(state, client.id);
-                              _tabIndex = 4;
-                            });
+                            _openBuildChartModal(context, state, client);
                           },
                         ),
                       ),
@@ -9005,451 +9051,387 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  Widget _coachBuildChartTab(MyPtProvider state) {
-    final coach = state.currentUser!;
-    final myClients = state.getClientsForTrainer(coach.id);
-    final allSelectableClients = myClients.isNotEmpty ? myClients : state.rosterClients;
+  void _openBuildChartModal(BuildContext context, MyPtProvider state, UserModel client) {
+    _loadClientProtocolIntoControllers(state, client.id);
 
-    if (allSelectableClients.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.people_outline, size: 48, color: Colors.white38),
-              SizedBox(height: 12),
-              Text('No Trainees Available', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-              SizedBox(height: 6),
-              Text('You need assigned trainees to build and assign custom workout and nutrition charts.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.white60)),
-            ],
-          ),
-        ),
-      );
-    }
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          // Dynamic macro calculations
+          final proteinG = int.tryParse(_chartProteinCtrl.text) ?? 0;
+          final carbsG = int.tryParse(_chartCarbsCtrl.text) ?? 0;
+          final fatG = int.tryParse(_chartFatCtrl.text) ?? 0;
+          final calculatedKcal = (proteinG * 4) + (carbsG * 4) + (fatG * 9);
+          final targetKcal = int.tryParse(_chartCalorieCtrl.text) ?? 0;
 
-    if (_selectedBuildChartClientId == null || !allSelectableClients.any((c) => c.id == _selectedBuildChartClientId)) {
-      _selectedBuildChartClientId = allSelectableClients.first.id;
-      _loadClientProtocolIntoControllers(state, _selectedBuildChartClientId!);
-    }
-
-    final selectedClient = allSelectableClients.firstWhere(
-      (c) => c.id == _selectedBuildChartClientId,
-      orElse: () => allSelectableClients.first,
-    );
-
-    // Dynamic macro calculations
-    final proteinG = int.tryParse(_chartProteinCtrl.text) ?? 0;
-    final carbsG = int.tryParse(_chartCarbsCtrl.text) ?? 0;
-    final fatG = int.tryParse(_chartFatCtrl.text) ?? 0;
-    final calculatedKcal = (proteinG * 4) + (carbsG * 4) + (fatG * 9);
-    final targetKcal = int.tryParse(_chartCalorieCtrl.text) ?? 0;
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      children: [
-        // 1. Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Client Protocol & Chart Builder', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-                const SizedBox(height: 2),
-                Text('Prescribe custom macros, hydration, & weekly workout splits per trainee', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11.5)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        // 2. Client Selection Carousel
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('SELECT TRAINEE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5)),
-            Text('${allSelectableClients.length} Trainees', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: allSelectableClients.map((client) {
-              final isSelected = client.id == selectedClient.id;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedBuildChartClientId = client.id;
-                    _loadClientProtocolIntoControllers(state, client.id);
-                  });
-                },
-                child: Container(
-                  width: 140,
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFFFF5722).withOpacity(0.15) : const Color(0xFF161B22),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? const Color(0xFFFF5722) : Colors.white12,
-                      width: isSelected ? 1.5 : 1.0,
+          return DraggableScrollableSheet(
+            initialChildSize: 0.92,
+            minChildSize: 0.5,
+            maxChildSize: 0.96,
+            expand: false,
+            builder: (context, scrollController) {
+              return ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  // 1. Drag Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+
+                  // 2. Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: isSelected ? const Color(0xFFFF5722) : const Color(0xFF21262D),
-                            child: Text(
-                              client.name.isNotEmpty ? client.name[0] : '?',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isSelected ? Colors.white : const Color(0xFFFF5722),
-                              ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.assignment_outlined, color: Color(0xFFFF5722), size: 22),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    'Build Chart: ${client.name}',
+                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          if (isSelected)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(color: const Color(0xFFFF5722), borderRadius: BorderRadius.circular(6)),
-                              child: const Text('ACTIVE', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white)),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Prescribe custom macros, hydration, & weekly workout split for this trainee',
+                              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11.5),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        client.name,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : Colors.white70,
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        client.goal,
-                        style: const TextStyle(fontSize: 9.5, color: Colors.white38),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${client.currentWeight} kg • ${client.ptCredits} Credits',
-                        style: const TextStyle(fontSize: 9.5, color: Color(0xFF00E676), fontWeight: FontWeight.w600),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 14),
+                  const SizedBox(height: 16),
 
-        // 3. Active Trainee Bio Card
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161B22),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
-                child: Text(
-                  selectedClient.name.isNotEmpty ? selectedClient.name[0] : '?',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  // 3. Trainee Bio Card
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161B22),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Row(
                       children: [
-                        Flexible(
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: const Color(0xFFFF5722).withOpacity(0.2),
                           child: Text(
-                            selectedClient.name,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
+                            client.name.isNotEmpty ? client.name[0] : '?',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00E676).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      client.name,
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('Target Trainee', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Goal: ${client.goal} • Current: ${client.currentWeight}kg (Start: ${client.startingWeight}kg)',
+                                style: const TextStyle(fontSize: 10.5, color: Colors.white60),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          child: const Text('Chart Target', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFF00E676))),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFFF5722), size: 18),
+                          tooltip: 'Message Trainee',
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _openChatModal(context, state, peerName: client.name);
+                          },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Goal: ${selectedClient.goal} • Current: ${selectedClient.currentWeight}kg (Start: ${selectedClient.startingWeight}kg)',
-                      style: const TextStyle(fontSize: 10.5, color: Colors.white60),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFFF5722), size: 18),
-                tooltip: 'Message Trainee',
-                onPressed: () => _openChatModal(context, state, peerName: selectedClient.name),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // 4. Daily Nutrition & Macro Target Card
-        Card(
-          color: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.restaurant_menu, color: Color(0xFFFF5722), size: 16),
-                        SizedBox(width: 6),
-                        Text('Prescribe Daily Nutrition & Macros', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFFFF9800).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Macro Sum: $calculatedKcal kcal',
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.bold,
-                          color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676) : const Color(0xFFFF9800),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Calorie Target
-                _buildNumericAdjuster(
-                  label: 'Daily Calorie Target',
-                  controller: _chartCalorieCtrl,
-                  unit: 'kcal',
-                  step: 50,
-                  color: const Color(0xFFFF5722),
-                  onChanged: () => setState(() {}),
-                ),
-                const SizedBox(height: 12),
-
-                // Protein, Carbs, Fat in 3 columns
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildNumericAdjuster(
-                        label: 'Protein',
-                        controller: _chartProteinCtrl,
-                        unit: 'g',
-                        step: 5,
-                        color: const Color(0xFF29B6F6),
-                        onChanged: () => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildNumericAdjuster(
-                        label: 'Carbs',
-                        controller: _chartCarbsCtrl,
-                        unit: 'g',
-                        step: 5,
-                        color: const Color(0xFF00E676),
-                        onChanged: () => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildNumericAdjuster(
-                        label: 'Fat',
-                        controller: _chartFatCtrl,
-                        unit: 'g',
-                        step: 2,
-                        color: Colors.amber,
-                        onChanged: () => setState(() {}),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Water & Step Goals Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildNumericAdjuster(
-                        label: 'Daily Water Intake',
-                        controller: _chartWaterCtrl,
-                        unit: 'L',
-                        step: 0.5,
-                        color: const Color(0xFF29B6F6),
-                        onChanged: () => setState(() {}),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildNumericAdjuster(
-                        label: 'Daily Steps Goal',
-                        controller: _chartStepsCtrl,
-                        unit: 'steps',
-                        step: 500,
-                        color: const Color(0xFFFF5722),
-                        onChanged: () => setState(() {}),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-
-        // 5. Weekly Workout Split & Program Phase Card
-        Card(
-          color: const Color(0xFF161B22),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.calendar_month, color: Color(0xFF29B6F6), size: 16),
-                    SizedBox(width: 6),
-                    Text('Program Phase & Weekly Workout Split', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                TextField(
-                  controller: _chartPhaseCtrl,
-                  style: const TextStyle(fontSize: 13, color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Training Phase / Program Name',
-                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
-                    filled: true,
-                    fillColor: const Color(0xFF0D1117),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
-                // Quick Split Templates
-                const Text('Quick Split Templates (Tap to Insert)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60)),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: _splitTemplates.map((template) {
-                    final (title, splitContent) = template;
-                    return ActionChip(
-                      backgroundColor: const Color(0xFF0D1117),
-                      side: const BorderSide(color: Colors.white12),
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      label: Text(title, style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
+                  // 4. Daily Nutrition & Macro Target Card
+                  Card(
+                    color: const Color(0xFF161B22),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.restaurant_menu, color: Color(0xFFFF5722), size: 16),
+                                  SizedBox(width: 6),
+                                  Text('Prescribe Daily Nutrition & Macros', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676).withOpacity(0.15) : const Color(0xFFFF9800).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Macro Sum: $calculatedKcal kcal',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: (calculatedKcal - targetKcal).abs() <= 50 ? const Color(0xFF00E676) : const Color(0xFFFF9800),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Calorie Target
+                          _buildNumericAdjuster(
+                            label: 'Daily Calorie Target',
+                            controller: _chartCalorieCtrl,
+                            unit: 'kcal',
+                            step: 50,
+                            color: const Color(0xFFFF5722),
+                            onChanged: () => setModalState(() {}),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Protein, Carbs, Fat in 3 columns
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildNumericAdjuster(
+                                  label: 'Protein',
+                                  controller: _chartProteinCtrl,
+                                  unit: 'g',
+                                  step: 5,
+                                  color: const Color(0xFF29B6F6),
+                                  onChanged: () => setModalState(() {}),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildNumericAdjuster(
+                                  label: 'Carbs',
+                                  controller: _chartCarbsCtrl,
+                                  unit: 'g',
+                                  step: 5,
+                                  color: const Color(0xFF00E676),
+                                  onChanged: () => setModalState(() {}),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildNumericAdjuster(
+                                  label: 'Fat',
+                                  controller: _chartFatCtrl,
+                                  unit: 'g',
+                                  step: 2,
+                                  color: Colors.amber,
+                                  onChanged: () => setModalState(() {}),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Water & Step Goals Row
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildNumericAdjuster(
+                                  label: 'Daily Water Intake',
+                                  controller: _chartWaterCtrl,
+                                  unit: 'L',
+                                  step: 0.5,
+                                  color: const Color(0xFF29B6F6),
+                                  onChanged: () => setModalState(() {}),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildNumericAdjuster(
+                                  label: 'Daily Steps Goal',
+                                  controller: _chartStepsCtrl,
+                                  unit: 'steps',
+                                  step: 500,
+                                  color: const Color(0xFFFF5722),
+                                  onChanged: () => setModalState(() {}),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 5. Weekly Workout Split & Program Phase Card
+                  Card(
+                    color: const Color(0xFF161B22),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: const BorderSide(color: Colors.white12)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.calendar_month, color: Color(0xFF29B6F6), size: 16),
+                              SizedBox(width: 6),
+                              Text('Program Phase & Weekly Workout Split', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextField(
+                            controller: _chartPhaseCtrl,
+                            style: const TextStyle(fontSize: 13, color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Training Phase / Program Name',
+                              labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                              filled: true,
+                              fillColor: const Color(0xFF0D1117),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Quick Split Templates
+                          const Text('Quick Split Templates (Tap to Insert)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white60)),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: _splitTemplates.map((template) {
+                              final (title, splitContent) = template;
+                              return ActionChip(
+                                backgroundColor: const Color(0xFF0D1117),
+                                side: const BorderSide(color: Colors.white12),
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                label: Text(title, style: const TextStyle(fontSize: 10.5, color: Colors.white70)),
+                                onPressed: () {
+                                  setModalState(() {
+                                    _chartSplitCtrl.text = splitContent;
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 10),
+
+                          TextField(
+                            controller: _chartSplitCtrl,
+                            maxLines: 5,
+                            style: const TextStyle(fontSize: 12.5, color: Colors.white, height: 1.35),
+                            decoration: InputDecoration(
+                              labelText: 'Weekly Workout Split Structure',
+                              labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                              filled: true,
+                              fillColor: const Color(0xFF0D1117),
+                              contentPadding: const EdgeInsets.all(12),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          TextField(
+                            controller: _chartNotesCtrl,
+                            maxLines: 2,
+                            style: const TextStyle(fontSize: 12, color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Coach Instructions & Recovery Guidelines',
+                              labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
+                              filled: true,
+                              fillColor: const Color(0xFF0D1117),
+                              contentPadding: const EdgeInsets.all(12),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 6. Save & Publish Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF5722),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 4,
+                      ),
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: Text(
+                        'Save & Assign Chart to ${client.name.split(" ").first} 🚀',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                      ),
                       onPressed: () {
-                        setState(() {
-                          _chartSplitCtrl.text = splitContent;
-                        });
+                        _saveProtocol(state, client);
+                        Navigator.pop(ctx);
                       },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 10),
-
-                TextField(
-                  controller: _chartSplitCtrl,
-                  maxLines: 5,
-                  style: const TextStyle(fontSize: 12.5, color: Colors.white, height: 1.35),
-                  decoration: InputDecoration(
-                    labelText: 'Weekly Workout Split Structure',
-                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
-                    filled: true,
-                    fillColor: const Color(0xFF0D1117),
-                    contentPadding: const EdgeInsets.all(12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                TextField(
-                  controller: _chartNotesCtrl,
-                  maxLines: 2,
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Coach Instructions & Recovery Guidelines',
-                    labelStyle: const TextStyle(fontSize: 12, color: Colors.white60),
-                    filled: true,
-                    fillColor: const Color(0xFF0D1117),
-                    contentPadding: const EdgeInsets.all(12),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.white12)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // 6. Save & Publish Button
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF5722),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 4,
-            ),
-            icon: const Icon(Icons.check_circle_outline, size: 18),
-            label: Text(
-              'Save & Assign Chart to ${selectedClient.name.split(" ").first} 🚀',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-            ),
-            onPressed: () => _saveProtocol(state, selectedClient),
-          ),
-        ),
-      ],
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -9506,261 +9488,443 @@ class _MainShellScreenState extends State<MainShellScreen> {
     );
   }
 
-  Widget _coachLibraryTab(MyPtProvider state) {
-    final searchLower = _exerciseSearchQuery.trim().toLowerCase();
-    final filtered = state.movementLibrary.where((m) {
-      // Muscle filter match
-      if (_selectedMuscleFilter != 'All') {
-        final matchesPrimary = m.primaryMuscle.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
-        final matchesSecondary = m.secondaryMuscles.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
-        final matchesCategory = m.category.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
-        if (!matchesPrimary && !matchesSecondary && !matchesCategory) {
-          return false;
-        }
-      }
+  void _openWorkoutLibraryModal(BuildContext context, MyPtProvider state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      backgroundColor: const Color(0xFF0D1117),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final searchLower = _exerciseSearchQuery.trim().toLowerCase();
+          final filtered = state.movementLibrary.where((m) {
+            // Muscle filter match
+            if (_selectedMuscleFilter != 'All') {
+              final matchesPrimary = m.primaryMuscle.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+              final matchesSecondary = m.secondaryMuscles.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+              final matchesCategory = m.category.toLowerCase().contains(_selectedMuscleFilter.toLowerCase());
+              if (!matchesPrimary && !matchesSecondary && !matchesCategory) {
+                return false;
+              }
+            }
 
-      // Search text match
-      if (searchLower.isNotEmpty) {
-        final matchesName = m.name.toLowerCase().contains(searchLower);
-        final matchesMuscle = m.primaryMuscle.toLowerCase().contains(searchLower) || m.secondaryMuscles.toLowerCase().contains(searchLower);
-        final matchesEquip = m.equipment.toLowerCase().contains(searchLower);
-        final matchesDiff = m.difficulty.toLowerCase().contains(searchLower);
-        return matchesName || matchesMuscle || matchesEquip || matchesDiff;
-      }
-      return true;
-    }).toList();
+            // Search text match
+            if (searchLower.isNotEmpty) {
+              final matchesName = m.name.toLowerCase().contains(searchLower);
+              final matchesMuscle = m.primaryMuscle.toLowerCase().contains(searchLower) || m.secondaryMuscles.toLowerCase().contains(searchLower);
+              final matchesEquip = m.equipment.toLowerCase().contains(searchLower);
+              final matchesDiff = m.difficulty.toLowerCase().contains(searchLower);
+              return matchesName || matchesMuscle || matchesEquip || matchesDiff;
+            }
+            return true;
+          }).toList();
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-      children: [
-        // Title row with count and Create button
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Exercise Movement Library', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 2),
-                Text('${state.movementLibrary.length} Exercises Cataloged', style: const TextStyle(color: Color(0xFFFF5722), fontSize: 12, fontWeight: FontWeight.bold)),
-              ],
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF5722),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('+ Create Exercise', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              onPressed: () => _openCreateExerciseModal(context, state),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        // Search Bar
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFF161B22),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: TextField(
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Search exercise, muscle target, equipment...',
-              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
-              suffixIcon: _exerciseSearchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.white54, size: 16),
-                      onPressed: () => setState(() => _exerciseSearchQuery = ''),
-                    )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-            ),
-            onChanged: (val) => setState(() => _exerciseSearchQuery = val),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Muscle filter chips
-        SizedBox(
-          height: 34,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _muscleFilterCategories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (ctx, idx) {
-              final cat = _muscleFilterCategories[idx];
-              final isSelected = cat == _selectedMuscleFilter;
-              return ChoiceChip(
-                label: Text(cat, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal, color: isSelected ? Colors.white : Colors.white70)),
-                selected: isSelected,
-                selectedColor: const Color(0xFFFF5722),
-                backgroundColor: const Color(0xFF161B22),
-                side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _selectedMuscleFilter = cat);
-                  }
-                },
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Empty state or list of cards
-        if (filtered.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
-            child: Center(
-              child: Column(
+          return DraggableScrollableSheet(
+            initialChildSize: 0.92,
+            minChildSize: 0.5,
+            maxChildSize: 0.96,
+            expand: false,
+            builder: (context, scrollController) {
+              return ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                 children: [
-                  const Icon(Icons.fitness_center, color: Colors.white30, size: 42),
-                  const SizedBox(height: 12),
-                  Text(
-                    _exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All'
-                        ? 'No exercises match your search filters.'
-                        : 'No exercises in library yet.',
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                  const SizedBox(height: 12),
-                  if (_exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All')
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(foregroundColor: Colors.white70, side: const BorderSide(color: Colors.white24)),
-                      onPressed: () => setState(() {
-                        _exerciseSearchQuery = '';
-                        _selectedMuscleFilter = 'All';
-                      }),
-                      child: const Text('Reset Filters'),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Create First Exercise'),
-                      onPressed: () => _openCreateExerciseModal(context, state),
+                  // 1. Drag Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
                     ),
-                ],
-              ),
-            ),
-          )
-        else
-          ...filtered.map((m) {
-            final idx = state.movementLibrary.indexOf(m);
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              color: const Color(0xFF161B22),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: Colors.white.withOpacity(0.08)),
-              ),
-              child: InkWell(
-                onTap: () => _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx),
-                borderRadius: BorderRadius.circular(14),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2. Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Header Row: Exercise Name, Difficulty Pill & More Actions
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              m.name,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.fitness_center_rounded, color: Color(0xFFFF5722), size: 22),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Workout & Exercise Library',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildDifficultyBadge(m.difficulty),
-                          const SizedBox(width: 4),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, color: Colors.white54, size: 18),
-                            color: const Color(0xFF1C2128),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onSelected: (val) {
-                              if (val == 'edit') {
-                                _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx);
-                              } else if (val == 'delete') {
-                                state.deleteMovementItem(idx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Removed "${m.name}" from library')),
-                                );
-                              }
-                            },
-                            itemBuilder: (ctx) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit, size: 16, color: Colors.blueAccent),
-                                    SizedBox(width: 8),
-                                    Text('Edit Exercise', style: TextStyle(color: Colors.white, fontSize: 13)),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
-                                    SizedBox(width: 8),
-                                    Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            Text(
+                              '${state.movementLibrary.length} Cataloged Movements • Custom Routines',
+                              style: const TextStyle(color: Color(0xFFFF5722), fontSize: 11.5, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      const Divider(height: 1, color: Colors.white10),
-                      const SizedBox(height: 10),
-
-                      // 1. Muscle Targetted
-                      _exerciseInfoItem(
-                        icon: Icons.track_changes,
-                        iconColor: const Color(0xFFFF5722),
-                        label: 'Muscle Targetted',
-                        value: (m.secondaryMuscles.isNotEmpty && m.secondaryMuscles != 'None')
-                            ? '${m.primaryMuscle} (${m.secondaryMuscles})'
-                            : m.primaryMuscle,
-                      ),
-                      const SizedBox(height: 6),
-
-                      // 2. Equipments
-                      _exerciseInfoItem(
-                        icon: Icons.fitness_center,
-                        iconColor: const Color(0xFF00E676),
-                        label: 'Equipments',
-                        value: m.equipment,
-                      ),
-                      const SizedBox(height: 6),
-
-                      // 3. Suggested Sets and Reps
-                      _exerciseInfoItem(
-                        icon: Icons.repeat,
-                        iconColor: const Color(0xFF40C4FF),
-                        label: 'Suggested Sets & Reps',
-                        value: m.defaultSetsReps,
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
                     ],
                   ),
-                ),
-              ),
-            );
-          }),
-      ],
+                  const SizedBox(height: 14),
+
+                  // Quick Action Buttons Row: + Create Movement & + Create Routine
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF5722),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text('+ New Movement', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            _openCreateExerciseModal(context, state);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF00E676),
+                            side: const BorderSide(color: Color(0xFF00E676)),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          icon: const Icon(Icons.playlist_add, size: 16),
+                          label: const Text('+ New Routine', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            _openCreateWorkoutModal(context, state);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Search Bar
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161B22),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: TextField(
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Search exercise, muscle target, equipment...',
+                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 20),
+                        suffixIcon: _exerciseSearchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.white54, size: 16),
+                                onPressed: () {
+                                  setState(() => _exerciseSearchQuery = '');
+                                  setModalState(() {});
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (val) {
+                        setState(() => _exerciseSearchQuery = val);
+                        setModalState(() {});
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Muscle filter chips
+                  SizedBox(
+                    height: 34,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _muscleFilterCategories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, idx) {
+                        final cat = _muscleFilterCategories[idx];
+                        final isSelected = cat == _selectedMuscleFilter;
+                        return ChoiceChip(
+                          label: Text(
+                            cat,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.white : Colors.white70,
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFFFF5722),
+                          backgroundColor: const Color(0xFF161B22),
+                          side: BorderSide(color: isSelected ? const Color(0xFFFF5722) : Colors.white12),
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _selectedMuscleFilter = cat);
+                              setModalState(() {});
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Custom Routines Banner / Preview if any exist
+                  if (state.customWorkouts.isNotEmpty && _selectedMuscleFilter == 'All' && _exerciseSearchQuery.isEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'ASSIGNED & CUSTOM ROUTINES',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5),
+                        ),
+                        Text(
+                          '${state.customWorkouts.length} Templates',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00E676)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 110,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: state.customWorkouts.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 10),
+                        itemBuilder: (context, idx) {
+                          final routine = state.customWorkouts[idx];
+                          return Container(
+                            width: 230,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161B22),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF5722).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text('ROUTINE', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.bold, color: Color(0xFFFF5722))),
+                                    ),
+                                    const Spacer(),
+                                    Text('${routine.exercises.length} Exercises', style: const TextStyle(fontSize: 9.5, color: Color(0xFF00E676), fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                Text(
+                                  routine.name,
+                                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  routine.focusArea,
+                                  style: const TextStyle(fontSize: 10, color: Colors.white54),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    const Divider(height: 1, color: Colors.white12),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'CATALOGED MOVEMENT DATABASE',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white54, letterSpacing: 0.5),
+                        ),
+                        Text(
+                          '${filtered.length} Movements',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFFF5722)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // Empty state or list of cards
+                  if (filtered.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(28),
+                      decoration: BoxDecoration(color: const Color(0xFF161B22), borderRadius: BorderRadius.circular(14)),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(Icons.fitness_center, color: Colors.white30, size: 42),
+                            const SizedBox(height: 12),
+                            Text(
+                              _exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All'
+                                  ? 'No exercises match your search filters.'
+                                  : 'No exercises in library yet.',
+                              style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            ),
+                            const SizedBox(height: 12),
+                            if (_exerciseSearchQuery.isNotEmpty || _selectedMuscleFilter != 'All')
+                              OutlinedButton(
+                                style: OutlinedButton.styleFrom(foregroundColor: Colors.white70, side: const BorderSide(color: Colors.white24)),
+                                onPressed: () {
+                                  setState(() {
+                                    _exerciseSearchQuery = '';
+                                    _selectedMuscleFilter = 'All';
+                                  });
+                                  setModalState(() {});
+                                },
+                                child: const Text('Reset Filters'),
+                              )
+                            else
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF5722)),
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('Create First Exercise'),
+                                onPressed: () => _openCreateExerciseModal(context, state),
+                              ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...filtered.map((m) {
+                      final idx = state.movementLibrary.indexOf(m);
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        color: const Color(0xFF161B22),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        child: InkWell(
+                          onTap: () => _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx),
+                          borderRadius: BorderRadius.circular(14),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header Row: Exercise Name, Difficulty Pill & More Actions
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        m.name,
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildDifficultyBadge(m.difficulty),
+                                    const SizedBox(width: 4),
+                                    PopupMenuButton<String>(
+                                      icon: const Icon(Icons.more_vert, color: Colors.white54, size: 18),
+                                      color: const Color(0xFF1C2128),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      onSelected: (val) {
+                                        if (val == 'edit') {
+                                          _openCreateExerciseModal(context, state, existingItem: m, existingIndex: idx);
+                                        } else if (val == 'delete') {
+                                          state.deleteMovementItem(idx);
+                                          setModalState(() {});
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Removed "${m.name}" from library')),
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (ctx) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.edit, size: 16, color: Colors.blueAccent),
+                                              SizedBox(width: 8),
+                                              Text('Edit Exercise', style: TextStyle(color: Colors.white, fontSize: 13)),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
+                                              SizedBox(width: 8),
+                                              Text('Delete', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                const Divider(height: 1, color: Colors.white10),
+                                const SizedBox(height: 10),
+
+                                // 1. Muscle Targetted
+                                _exerciseInfoItem(
+                                  icon: Icons.track_changes,
+                                  iconColor: const Color(0xFFFF5722),
+                                  label: 'Muscle Targetted',
+                                  value: (m.secondaryMuscles.isNotEmpty && m.secondaryMuscles != 'None')
+                                      ? '${m.primaryMuscle} (${m.secondaryMuscles})'
+                                      : m.primaryMuscle,
+                                ),
+                                const SizedBox(height: 6),
+
+                                // 2. Equipments
+                                _exerciseInfoItem(
+                                  icon: Icons.fitness_center,
+                                  iconColor: const Color(0xFF00E676),
+                                  label: 'Equipments',
+                                  value: m.equipment,
+                                ),
+                                const SizedBox(height: 6),
+
+                                // 3. Suggested Sets and Reps
+                                _exerciseInfoItem(
+                                  icon: Icons.repeat,
+                                  iconColor: const Color(0xFF40C4FF),
+                                  label: 'Suggested Sets & Reps',
+                                  value: m.defaultSetsReps,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
